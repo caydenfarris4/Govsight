@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Municipal Investment Optimizer - GovSight</title>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f9fafb;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f3f4f6;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 18px 20px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: #6b7280;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+
+        .tab.active {
+            background: white;
+            color: #2563eb;
+            font-weight: 600;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #2563eb;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .alert-warning {
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+            color: #92400e;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .metric-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .metric-delta {
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        .opportunity-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+        }
+
+        .opportunity-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .opportunity-card.estimated {
+            border: 2px solid #f59e0b;
+            background: #fffbeb;
+        }
+
+        .opportunity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .opportunity-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .opportunity-rate {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2563eb;
+        }
+
+        .opportunity-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1f2937;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: 30px 0;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-live {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-estimated {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-fdic {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-govt {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+
+        .recommendation-box {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .recommendation-box h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .recommendation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background: #f3f4f6;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Municipal Investment Optimizer</h1>
+            <p>Safe, accredited investment opportunities for municipal cash reserves</p>
+        </div>
+
+        <div class="tabs" id="tabs">
+            <button class="tab active" onclick="switchTab('opportunities')">Investment Opportunities</button>
+            <button class="tab" onclick="switchTab('calculator')">Cash Optimization</button>
+            <button class="tab" onclick="switchTab('comparison')">Yield Comparison</button>
+            <button class="tab" onclick="switchTab('grants')">Grant + Investment</button>
+            <button class="tab" onclick="switchTab('education')">Educational Resources</button>
+        </div>
+
+        <div class="content">
+            <div id="opportunities" class="tab-content active">
+                <!-- Content will be generated by JavaScript -->
+            </div>
+
+            <div id="calculator" class="tab-content">
+                <h2 style="margin-bottom: 20px">Cash Optimization Calculator</h2>
+                <p style="color: #6b7280; margin-bottom: 30px">
+                    Enter your available cash and investment criteria to get personalized recommendations.
+                </p>
+
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label class="input-label">Available Cash to Invest</label>
+                        <input type="number" class="input-field" id="calc-principal" value="500000" min="100" step="10000">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Liquidity Requirement</label>
+                        <select class="input-field" id="calc-liquidity">
+                            <option value="any">Any</option>
+                            <option value="high">High (daily access)</option>
+                            <option value="low">Low (can lock for term)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="calculateBest()">Find Best Investment</button>
+
+                <div id="calc-result"></div>
+            </div>
+
+            <div id="comparison" class="tab-content">
+                <h2 style="margin-bottom: 20px">Investment Yield Comparison</h2>
+
+                <div class="input-group">
+                    <label class="input-label">Amount to Compare</label>
+                    <input type="number" class="input-field" id="compare-amount" value="1000000" min="1000" step="100000" onchange="updateComparison()">
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+
+                <div id="comparison-table"></div>
+            </div>
+
+            <div id="grants" class="tab-content">
+                <h2 style="margin-bottom: 20px">Grant + Investment Integration</h2>
+                <p style="color: #6b7280; margin-bottom: 30px">
+                    Maximize returns on grant funds between receipt and expenditure dates.
+                </p>
+
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label class="input-label">Grant Amount</label>
+                        <input type="number" class="input-field" id="grant-amount" value="500000" min="1000" step="10000">
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Days Until Expenditure</label>
+                        <input type="number" class="input-field" id="grant-days" value="90" min="1" max="365">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="optimizeGrant()">Optimize Grant Investment</button>
+
+                <div id="grant-result"></div>
+            </div>
+
+            <div id="education" class="tab-content">
+                <h2 style="margin-bottom: 20px">Municipal Investment Education</h2>
+
+                <div style="margin-bottom: 30px">
+                    <h3 style="color: #2563eb; margin-bottom: 16px">Understanding Safe Investment Options</h3>
+                    <p style="color: #6b7280; line-height: 1.6">
+                        Cities and municipalities have several accredited and regulated investment options for managing cash reserves.
+                    </p>
+                </div>
+
+                <div class="opportunity-card">
+                    <h4 style="color: #1f2937; margin-bottom: 12px">US Treasury Securities</h4>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>What:</strong> Direct obligations of the US Government
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>Types:</strong> Treasury Bills (4 weeks to 1 year), Treasury Notes (2 to 10 years), Treasury Bonds (20 to 30 years)
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>Safety:</strong> Backed by full faith and credit of US Government (AAA rated)
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 16px">
+                        <strong>Best for:</strong> Risk-free investment, benchmark for other rates
+                    </p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap">
+                        <a href="https://www.treasurydirect.gov/" target="_blank" class="btn btn-primary" style="text-decoration: none">
+                            Treasury Direct →
+                        </a>
+                        <a href="https://www.treasurydirect.gov/auctions/upcoming/" target="_blank" class="btn btn-secondary" style="text-decoration: none; background: #6b7280; color: white">
+                            View Auctions →
+                        </a>
+                    </div>
+                </div>
+
+                <div class="opportunity-card">
+                    <h4 style="color: #1f2937; margin-bottom: 12px">CDARS / ICS (IntraFi Network)</h4>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>What:</strong> Certificate of Deposit Account Registry Service / IntraFi Cash Service
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>How it works:</strong> Your deposit is split into increments under $250,000 and placed at different FDIC-insured banks
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>Network:</strong> 3,000+ participating banks nationwide
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 16px">
+                        <strong>Best for:</strong> Large cash balances requiring FDIC insurance
+                    </p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap">
+                        <a href="https://www.intrafi.com/" target="_blank" class="btn btn-primary" style="text-decoration: none">
+                            IntraFi Network →
+                        </a>
+                        <a href="https://www.intrafi.com/find-a-network-bank" target="_blank" class="btn btn-secondary" style="text-decoration: none; background: #6b7280; color: white">
+                            Find Your Bank →
+                        </a>
+                    </div>
+                </div>
+
+                <div class="opportunity-card">
+                    <h4 style="color: #1f2937; margin-bottom: 12px">Government Money Market Funds</h4>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>What:</strong> Mutual funds investing in government securities
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>Types:</strong> Treasury MMF (99.5%+ in Treasury securities), Government MMF (99.5%+ in government securities)
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>Safety:</strong> AAA rated, highly stable $1.00 NAV
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 16px">
+                        <strong>Best for:</strong> Operating cash needing daily liquidity
+                    </p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap">
+                        <a href="https://investor.vanguard.com/investment-products/mutual-funds/profile/vusxx" target="_blank" class="btn btn-primary" style="text-decoration: none">
+                            Vanguard VUSXX →
+                        </a>
+                        <a href="https://www.schwab.com/public/schwab/investing/accounts_products/investment/money_markets_funds" target="_blank" class="btn btn-secondary" style="text-decoration: none; background: #6b7280; color: white">
+                            Schwab MMFs →
+                        </a>
+                    </div>
+                </div>
+
+                <div class="opportunity-card">
+                    <h4 style="color: #1f2937; margin-bottom: 12px">Local Government Investment Pools (LGIPs)</h4>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>What:</strong> State-sponsored investment pools for local governments
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>Structure:</strong> Managed by state treasury, invests in high-quality short-term securities
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 12px">
+                        <strong>Safety:</strong> State-regulated, typically AAA/AAAm rated
+                    </p>
+                    <p style="color: #6b7280; margin-bottom: 16px">
+                        <strong>Best for:</strong> Local government entities, competitive rates with safety
+                    </p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap">
+                        <a href="https://www.gfoa.org/materials/local-government-investment-pools" target="_blank" class="btn btn-primary" style="text-decoration: none">
+                            GFOA Resources →
+                        </a>
+                        <a href="https://www.msrb.org/LGIP-Investment-Pool-Structure" target="_blank" class="btn btn-secondary" style="text-decoration: none; background: #6b7280; color: white">
+                            MSRB Guide →
+                        </a>
+                    </div>
+                </div>
+
+                <div class="alert alert-info" style="margin-top: 30px; background: #dbeafe; border: 1px solid #bfdbfe; color: #1e40af">
+                    <span>ℹ️</span>
+                    <div>
+                        <strong>Additional Resources:</strong>
+                        <ul style="margin-top: 8px; margin-left: 20px">
+                            <li><a href="https://www.gfoa.org/" target="_blank" style="color: #1e40af; text-decoration: underline">Government Finance Officers Association (GFOA)</a></li>
+                            <li><a href="https://www.msrb.org/" target="_blank" style="color: #1e40af; text-decoration: underline">Municipal Securities Rulemaking Board (MSRB)</a></li>
+                            <li><a href="https://www.fdic.gov/" target="_blank" style="color: #1e40af; text-decoration: underline">Federal Deposit Insurance Corporation (FDIC)</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Investment opportunities data - Updated October 2025
+        const OPPORTUNITIES = [
+            {
+                id: 'treasury-4w',
+                name: 'US Treasury T-Bill - 4 weeks',
+                provider: 'US Treasury',
+                type: 'Government Security',
+                rate: 5.25,
+                termDays: 28,
+                termDisplay: '4 weeks',
+                minimum: 100,
+                safetyRating: 'AAA',
+                fdic: false,
+                govt: true,
+                liquidity: 'High',
+                source: 'US Treasury Fiscal Data API',
+                isLive: true,
+                link: 'https://www.treasurydirect.gov/auctions/upcoming/',
+                linkText: 'Buy T-Bills at Treasury Direct'
+            },
+            {
+                id: 'treasury-13w',
+                name: 'US Treasury T-Bill - 13 weeks',
+                provider: 'US Treasury',
+                type: 'Government Security',
+                rate: 5.35,
+                termDays: 91,
+                termDisplay: '13 weeks',
+                minimum: 100,
+                safetyRating: 'AAA',
+                fdic: false,
+                govt: true,
+                liquidity: 'High',
+                source: 'US Treasury Fiscal Data API',
+                isLive: true,
+                link: 'https://www.treasurydirect.gov/auctions/upcoming/',
+                linkText: 'Buy T-Bills at Treasury Direct'
+            },
+            {
+                id: 'mmf-vanguard',
+                name: 'Vanguard Treasury Money Market Fund (VUSXX)',
+                provider: 'Vanguard',
+                type: 'Treasury Money Market Fund',
+                rate: 4.30,
+                termDays: 1,
+                termDisplay: 'Daily liquidity',
+                minimum: 3000,
+                safetyRating: 'AAAm',
+                fdic: false,
+                govt: true,
+                liquidity: 'Daily',
+                source: '⚠️ ESTIMATED RATE (Oct 2025: 4.13-4.34%) - Verify at investor.vanguard.com/vusxx',
+                isLive: false,
+                notes: 'State tax exempt - distributions exempt from state and local income tax',
+                link: 'https://investor.vanguard.com/investment-products/mutual-funds/profile/vusxx',
+                linkText: 'Open Account at Vanguard'
+            },
+            {
+                id: 'cdars-3m',
+                name: 'CDARS CD - 3 Month',
+                provider: 'IntraFi Network (CDARS)',
+                type: 'Certificate of Deposit',
+                rate: 4.00,
+                termDays: 90,
+                termDisplay: '3 months',
+                minimum: 250000,
+                safetyRating: 'FDIC Insured',
+                fdic: true,
+                govt: false,
+                liquidity: 'Low (penalty for early withdrawal)',
+                source: '⚠️ ESTIMATED (Oct 2025 market: 3.95-4.50%) - Contact your IntraFi network bank',
+                isLive: false,
+                notes: 'Multi-million FDIC insurance through network of 3,000+ banks. Rates typically 0.25-0.50% below standard CDs',
+                link: 'https://www.intrafi.com/find-a-network-bank',
+                linkText: 'Find IntraFi Network Bank'
+            },
+            {
+                id: 'cdars-12m',
+                name: 'CDARS CD - 12 Month',
+                provider: 'IntraFi Network (CDARS)',
+                type: 'Certificate of Deposit',
+                rate: 4.15,
+                termDays: 365,
+                termDisplay: '12 months',
+                minimum: 250000,
+                safetyRating: 'FDIC Insured',
+                fdic: true,
+                govt: false,
+                liquidity: 'Low (penalty for early withdrawal)',
+                source: '⚠️ ESTIMATED (Oct 2025 market: 3.95-4.42%) - Contact your IntraFi network bank',
+                isLive: false,
+                notes: 'Multi-million FDIC insurance through network of 3,000+ banks. Rates typically 0.25-0.50% below standard CDs',
+                link: 'https://www.intrafi.com/find-a-network-bank',
+                linkText: 'Find IntraFi Network Bank'
+            },
+            {
+                id: 'ics',
+                name: 'ICS Money Market',
+                provider: 'IntraFi Network (ICS)',
+                type: 'Money Market Account',
+                rate: 4.00,
+                termDays: 1,
+                termDisplay: 'Daily liquidity',
+                minimum: 250000,
+                safetyRating: 'FDIC Insured',
+                fdic: true,
+                govt: false,
+                liquidity: 'High (daily access)',
+                source: '⚠️ ESTIMATED (Oct 2025 range: 2.85-4.05%) - Contact your IntraFi network bank',
+                isLive: false,
+                notes: 'Multi-million FDIC insurance with daily liquidity. Rates vary significantly by bank and balance tier',
+                link: 'https://www.intrafi.com/find-a-network-bank',
+                linkText: 'Find IntraFi Network Bank'
+            },
+            {
+                id: 'lgip-liquid',
+                name: 'State LGIP - Liquid Pool',
+                provider: 'State Investment Pool',
+                type: 'Local Government Investment Pool',
+                rate: 5.00,
+                termDays: 1,
+                termDisplay: 'Daily liquidity',
+                minimum: 100000,
+                safetyRating: 'AAA/AAAm',
+                fdic: false,
+                govt: false,
+                liquidity: 'Daily',
+                source: '⚠️ ESTIMATED (Oct 2025 national avg: 4.99-5.08%) - Contact your state treasury',
+                isLive: false,
+                notes: 'State-regulated investment pool for local governments. Rates vary by state - check with your state treasurer',
+                link: 'https://www.gfoa.org/materials/local-government-investment-pools',
+                linkText: 'Find Your State LGIP'
+            }
+        ];
+
+        let comparisonChart = null;
+
+        // Calculate investment return
+        function calculateReturn(opportunity, principal) {
+            const rate = opportunity.rate / 100;
+            const dailyRate = rate / 365;
+            const interest = principal * dailyRate * opportunity.termDays;
+            const totalReturn = principal + interest;
+            const effectiveYield = (interest / principal) * (365 / opportunity.termDays) * 100;
+
+            return {
+                principal: principal,
+                rate: opportunity.rate,
+                termDays: opportunity.termDays,
+                interestEarned: Math.round(interest * 100) / 100,
+                totalReturn: Math.round(totalReturn * 100) / 100,
+                effectiveYield: Math.round(effectiveYield * 1000) / 1000,
+                opportunityName: opportunity.name
+            };
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            // Update tab buttons
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update content
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+
+            // Initialize comparison chart if switching to comparison tab
+            if (tabName === 'comparison') {
+                setTimeout(() => updateComparison(), 100);
+            }
+        }
+
+        // Render opportunities
+        function renderOpportunities() {
+            const container = document.getElementById('opportunities');
+            const liveCount = OPPORTUNITIES.filter(o => o.isLive).length;
+            const estimatedCount = OPPORTUNITIES.filter(o => !o.isLive).length;
+
+            let html = '<h2 style="margin-bottom: 20px">Available Investment Opportunities</h2>';
+            
+            if (estimatedCount > 0) {
+                html += `
+                    <div class="alert alert-warning">
+                        <span>⚠️</span>
+                        <div>
+                            <strong>Data Quality Notice:</strong> Some rates are estimated. Always verify current rates with providers before investing.
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="metrics">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Opportunities</div>
+                        <div class="metric-value">${OPPORTUNITIES.length}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Live Data Sources</div>
+                        <div class="metric-value">${liveCount}</div>
+                        <div class="metric-delta">${liveCount > 0 ? '✓ Current' : 'No live data'}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Estimated Data</div>
+                        <div class="metric-value">${estimatedCount}</div>
+                        <div class="metric-delta">${estimatedCount > 0 ? '⚠️ Verify' : 'All live'}</div>
+                    </div>
+                </div>
+            `;
+
+            OPPORTUNITIES.forEach(opp => {
+                html += `
+                    <div class="opportunity-card ${!opp.isLive ? 'estimated' : ''}">
+                        ${!opp.isLive ? `
+                            <div class="alert alert-warning" style="margin-bottom: 16px">
+                                <span>⚠️</span>
+                                <div><strong>ESTIMATED RATE</strong> - This rate is not from live API data. Contact provider to verify current rates before investing.</div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="opportunity-header">
+                            <div>
+                                <div class="opportunity-title">
+                                    ${!opp.isLive ? '⚠️ ESTIMATED: ' : ''}${opp.name}
+                                </div>
+                                <div style="margin-top: 8px; display: flex; gap: 8px">
+                                    ${opp.isLive ? '<span class="badge badge-live">✓ Live Data</span>' : '<span class="badge badge-estimated">⚠️ Estimated</span>'}
+                                    ${opp.fdic ? '<span class="badge badge-fdic">FDIC Insured</span>' : ''}
+                                    ${opp.govt ? '<span class="badge badge-govt">Government Backed</span>' : ''}
+                                </div>
+                            </div>
+                            <div class="opportunity-rate">${opp.rate}%</div>
+                        </div>
+
+                        <div class="opportunity-details">
+                            <div class="detail-item">
+                                <div class="detail-label">Provider</div>
+                                <div class="detail-value">${opp.provider}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Type</div>
+                                <div class="detail-value">${opp.type}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Term</div>
+                                <div class="detail-value">${opp.termDisplay}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Minimum</div>
+                                <div class="detail-value">$${opp.minimum.toLocaleString()}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Safety Rating</div>
+                                <div class="detail-value">${opp.safetyRating}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Liquidity</div>
+                                <div class="detail-value">${opp.liquidity}</div>
+                            </div>
+                        </div>
+
+                        ${opp.notes ? `
+                            <div style="margin-top: 16px; font-size: 13px; color: #6b7280">
+                                ℹ️ ${opp.notes}
+                            </div>
+                        ` : ''}
+
+                        <div style="margin-top: 16px; font-size: 12px; color: #9ca3af; font-style: italic">
+                            Data source: ${opp.source}
+                        </div>
+
+                        ${opp.link ? `
+                            <div style="margin-top: 16px">
+                                <a href="${opp.link}" target="_blank" class="btn btn-primary" style="text-decoration: none; display: inline-block">
+                                    ${opp.linkText} →
+                                </a>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Calculate best investment
+        function calculateBest() {
+            const principal = parseFloat(document.getElementById('calc-principal').value);
+            const liquidity = document.getElementById('calc-liquidity').value;
+
+            let filtered = [...OPPORTUNITIES];
+            
+            if (liquidity === 'high') {
+                filtered = filtered.filter(o => o.liquidity.includes('Daily') || o.liquidity.includes('High'));
+            } else if (liquidity === 'low') {
+                filtered = filtered.filter(o => o.liquidity.includes('Low'));
+            }
+
+            filtered = filtered.filter(o => o.minimum <= principal);
+            
+            if (filtered.length === 0) {
+                document.getElementById('calc-result').innerHTML = `
+                    <div class="alert alert-warning" style="margin-top: 20px">
+                        <span>⚠️</span>
+                        <div>No suitable investments found for your criteria. Try adjusting the liquidity requirement or amount.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const best = filtered.reduce((prev, curr) => curr.rate > prev.rate ? curr : prev);
+            const calc = calculateReturn(best, principal);
+
+            let html = `
+                <div class="recommendation-box" style="margin-top: 30px">
+                    ${!best.isLive ? `
+                        <div class="alert alert-warning" style="margin-bottom: 16px">
+                            <span>⚠️</span>
+                            <div><strong>ESTIMATED RATE WARNING:</strong> The recommended investment uses an estimated rate. Verify current rates with the provider before proceeding.</div>
+                        </div>
+                    ` : ''}
+                    
+                    <h3>Recommended Investment Found!</h3>
+                    <div style="font-size: 18px; opacity: 0.9; margin-bottom: 20px">
+                        ${best.name}
+                    </div>
+
+                    <div class="recommendation-grid">
+                        <div>
+                            <div style="font-size: 14px; opacity: 0.9">Investment</div>
+                            <div style="font-size: 20px; font-weight: 600">$${principal.toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 14px; opacity: 0.9">Rate</div>
+                            <div style="font-size: 20px; font-weight: 600">${best.rate}%</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 14px; opacity: 0.9">Interest Earned</div>
+                            <div style="font-size: 20px; font-weight: 600">$${calc.interestEarned.toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 14px; opacity: 0.9">Total Return</div>
+                            <div style="font-size: 20px; font-weight: 600">$${calc.totalReturn.toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 14px; opacity: 0.9">Term</div>
+                            <div style="font-size: 20px; font-weight: 600">${best.termDisplay}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 14px; opacity: 0.9">Effective Yield</div>
+                            <div style="font-size: 20px; font-weight: 600">${calc.effectiveYield.toFixed(2)}%</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('calc-result').innerHTML = html;
+        }
+
+        // Update comparison
+        function updateComparison() {
+            const amount = parseFloat(document.getElementById('compare-amount').value);
+            const calculations = OPPORTUNITIES.map(opp => calculateReturn(opp, amount));
+
+            // Update chart
+            const ctx = document.getElementById('comparisonChart');
+            
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: OPPORTUNITIES.map(o => o.name),
+                    datasets: [{
+                        label: 'Interest Earned ($)',
+                        data: calculations.map(c => c.interestEarned),
+                        backgroundColor: OPPORTUNITIES.map(o => 
+                            o.isLive ? 'rgba(37, 99, 235, 0.8)' : 'rgba(245, 158, 11, 0.8)'
+                        ),
+                        borderColor: OPPORTUNITIES.map(o => 
+                            o.isLive ? 'rgba(37, 99, 235, 1)' : 'rgba(245, 158, 11, 1)'
+                        ),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Update table
+            let tableHtml = `
+                <h3 style="margin-bottom: 16px">Comparison Table</h3>
+                <div style="overflow-x: auto">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Investment</th>
+                                <th>Rate</th>
+                                <th style="text-align: right">Interest Earned</th>
+                                <th style="text-align: right">Total Return</th>
+                                <th style="text-align: center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            OPPORTUNITIES.forEach((opp, i) => {
+                const calc = calculations[i];
+                tableHtml += `
+                    <tr>
+                        <td>${opp.name}</td>
+                        <td>${opp.rate}%</td>
+                        <td style="text-align: right; font-weight: 600">$${calc.interestEarned.toLocaleString()}</td>
+                        <td style="text-align: right; font-weight: 600">$${calc.totalReturn.toLocaleString()}</td>
+                        <td style="text-align: center">
+                            ${opp.isLive ? 
+                                '<span class="badge badge-live">✓ Live</span>' : 
+                                '<span class="badge badge-estimated">⚠️ Estimated</span>'
+                            }
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tableHtml += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('comparison-table').innerHTML = tableHtml;
+        }
+
+        // Optimize grant
+        function optimizeGrant() {
+            const grantAmount = parseFloat(document.getElementById('grant-amount').value);
+            const daysAvailable = parseInt(document.getElementById('grant-days').value);
+
+            const suitable = OPPORTUNITIES.filter(o => 
+                o.termDays <= daysAvailable && o.minimum <= grantAmount
+            );
+
+            if (suitable.length === 0) {
+                document.getElementById('grant-result').innerHTML = `
+                    <div class="alert alert-warning" style="margin-top: 20px">
+                        <span>⚠️</span>
+                        <div>No suitable investments found for your criteria. Try adjusting the days available or grant amount.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const best = suitable.reduce((prev, curr) => curr.rate > prev.rate ? curr : prev);
+            const calc = calculateReturn(best, grantAmount);
+
+            const html = `
+                <div class="recommendation-box" style="margin-top: 30px">
+                    <h3>Grant Investment Optimized!</h3>
+                    <div style="font-size: 16px; opacity: 0.9; margin-bottom: 20px">
+                        Invest your grant funds in <strong>${best.name}</strong> for ${daysAvailable} days 
+                        to earn <strong>$${calc.interestEarned.toLocaleString()}</strong> in additional revenue 
+                        while maintaining safety and meeting expenditure deadline.
+                    </div>
+
+                    <div class="recommendation-grid">
+                        <div>
+                            <div style="font-size: 14px; opacity: 0.9">Grant Amount</div>
+                            <div style="font-size: 20px; font-weight: 600">$${grantAmount.toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 14px; opacity: 0.9">Interest Rate</div>
+                            <div style="font-size: 20px; font-weight: 600">${best.rate}%</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 14px; opacity: 0.9">Interest Earned</div>
+                            <div style="font-size: 20px; font-weight: 600; color: #10b981">
+                                +$${calc.interestEarned.toLocaleString()}
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 14px; opacity: 0.9">Total Return</div>
+                            <div style="font-size: 20px; font-weight: 600">$${calc.totalReturn.toLocaleString()}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('grant-result').innerHTML = html;
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', function() {
+            renderOpportunities();
+        });
+    </script>
+</body>
+</html>

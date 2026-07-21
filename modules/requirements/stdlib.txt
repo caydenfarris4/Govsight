@@ -1,0 +1,36 @@
+# Python Standard Library Dependencies
+# These are typically included with Python but listed for completeness
+
+# Core Standard Library (Python 3.8+)
+json>=3.8.0
+os>=3.8.0
+sys>=3.8.0
+re>=3.8.0
+csv>=3.8.0
+time>=3.8.0
+datetime>=3.8.0
+pathlib>=3.8.0
+tempfile>=3.8.0
+subprocess>=3.8.0
+zipfile>=3.8.0
+base64>=3.8.0
+urllib>=3.8.0
+
+# Security Standard Library
+hashlib>=3.8.0
+secrets>=3.8.0
+threading>=3.8.0
+sqlite3>=3.8.0
+logging>=3.8.0
+
+# Data Handling Standard Library
+io>=3.8.0
+typing>=3.8.0
+dataclasses>=3.8.0
+enum>=3.8.0
+
+# Testing Standard Library
+unittest>=3.8.0
+
+# Note: Most of these are included in Python standard library
+# This file exists for documentation and compatibility checking purposes

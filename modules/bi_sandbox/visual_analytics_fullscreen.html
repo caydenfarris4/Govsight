@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GovSight Visual Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f0f2f5;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        /* Main dashboard area - takes up most of the screen */
+        .dashboard {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            margin: 8px;
+            margin-right: 4px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        /* Header bar */
+        .header {
+            background: linear-gradient(135deg, #0078d4 0%, #004e8c 100%);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 500;
+            margin: 0;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .header button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .header button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Chart grid area */
+        .chart-grid {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 16px;
+            grid-auto-rows: 400px;
+        }
+        
+        .chart-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .chart-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+        
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .chart-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chart-actions button {
+            background: transparent;
+            border: none;
+            color: #666;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .chart-actions button:hover {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .chart-content {
+            flex: 1;
+            padding: 16px;
+            position: relative;
+        }
+        
+        /* Sidebar for field selection */
+        .sidebar {
+            width: 320px;
+            background: white;
+            margin: 8px;
+            margin-left: 4px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+        
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .field-search {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        .field-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .field-category {
+            margin-bottom: 20px;
+        }
+        
+        .field-category-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .field-item {
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .field-item:hover {
+            background: #e8f0fe;
+        }
+        
+        .field-checkbox {
+            margin-right: 10px;
+        }
+        
+        .field-name {
+            flex: 1;
+            font-size: 13px;
+            color: #333;
+        }
+        
+        .field-type {
+            font-size: 11px;
+            color: #999;
+            background: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        /* Chart toolbar */
+        .chart-toolbar {
+            background: #f8f9fa;
+            padding: 12px 16px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .chart-type-selector {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chart-type-dropdown {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            min-width: 200px;
+            outline: none;
+        }
+        
+        .chart-type-dropdown:hover {
+            border-color: #0078d4;
+        }
+        
+        .chart-type-dropdown:focus {
+            border-color: #0078d4;
+            box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.1);
+        }
+        
+        /* Selected fields display */
+        .selected-fields {
+            background: white;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            min-height: 60px;
+        }
+        
+        .selected-field-tag {
+            display: inline-block;
+            background: #e8f0fe;
+            color: #0078d4;
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin: 2px;
+            font-size: 12px;
+        }
+        
+        .selected-field-tag .remove {
+            margin-left: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #666;
+        }
+        
+        .empty-state p {
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        
+        .add-chart-btn {
+            background: #0078d4;
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .add-chart-btn:hover {
+            background: #106ebe;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1400px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Main Dashboard Area -->
+        <div class="dashboard">
+            <div class="header">
+                <h1>GovSight Visual Analytics Dashboard</h1>
+                <div class="header-actions">
+                    <button onclick="addChart()">+ Add Chart</button>
+                    <button onclick="refreshDashboard()">Refresh</button>
+                    <button onclick="exportDashboard()">Export</button>
+                    <button onclick="clearDashboard()">Clear All</button>
+                </div>
+            </div>
+            
+            <div class="chart-grid" id="chartGrid">
+                <!-- Charts will be added here -->
+                <div class="empty-state" id="emptyState">
+                    <h3>Welcome to Visual Analytics Dashboard</h3>
+                    <p>Start by adding a chart or select fields from the right panel</p>
+                    <button class="add-chart-btn" onclick="addChart()">+ Add Your First Chart</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar for Field Selection -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">Data Fields</div>
+                <input type="text" class="field-search" placeholder="Search fields..." onkeyup="filterFields(this.value)">
+            </div>
+            
+            <div class="selected-fields" id="selectedFields">
+                <div style="color: #999; font-size: 12px;">No fields selected</div>
+            </div>
+            
+            <div class="field-list">
+                <!-- Dimensions -->
+                <div class="field-category">
+                    <div class="field-category-title">Dimensions</div>
+                    <div id="dimensionFields">
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Department" data-type="dimension" onchange="toggleField(this)">
+                            <span class="field-name">Department</span>
+                            <span class="field-type">Text</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Account" data-type="dimension" onchange="toggleField(this)">
+                            <span class="field-name">Account</span>
+                            <span class="field-type">Text</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Category" data-type="dimension" onchange="toggleField(this)">
+                            <span class="field-name">Category</span>
+                            <span class="field-type">Text</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Vendor" data-type="dimension" onchange="toggleField(this)">
+                            <span class="field-name">Vendor</span>
+                            <span class="field-type">Text</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Project" data-type="dimension" onchange="toggleField(this)">
+                            <span class="field-name">Project</span>
+                            <span class="field-type">Text</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Location" data-type="dimension" onchange="toggleField(this)">
+                            <span class="field-name">Location</span>
+                            <span class="field-type">Text</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Status" data-type="dimension" onchange="toggleField(this)">
+                            <span class="field-name">Status</span>
+                            <span class="field-type">Text</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Type" data-type="dimension" onchange="toggleField(this)">
+                            <span class="field-name">Type</span>
+                            <span class="field-type">Text</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Measures -->
+                <div class="field-category">
+                    <div class="field-category-title">Measures</div>
+                    <div id="measureFields">
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Budget" data-type="measure" onchange="toggleField(this)">
+                            <span class="field-name">Budget</span>
+                            <span class="field-type">Number</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Actual" data-type="measure" onchange="toggleField(this)">
+                            <span class="field-name">Actual</span>
+                            <span class="field-type">Number</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Variance" data-type="measure" onchange="toggleField(this)">
+                            <span class="field-name">Variance</span>
+                            <span class="field-type">Number</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Revenue" data-type="measure" onchange="toggleField(this)">
+                            <span class="field-name">Revenue</span>
+                            <span class="field-type">Number</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Expenses" data-type="measure" onchange="toggleField(this)">
+                            <span class="field-name">Expenses</span>
+                            <span class="field-type">Number</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Count" data-type="measure" onchange="toggleField(this)">
+                            <span class="field-name">Count</span>
+                            <span class="field-type">Number</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Amount" data-type="measure" onchange="toggleField(this)">
+                            <span class="field-name">Amount</span>
+                            <span class="field-type">Number</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Percentage" data-type="measure" onchange="toggleField(this)">
+                            <span class="field-name">Percentage</span>
+                            <span class="field-type">Percent</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Date/Time -->
+                <div class="field-category">
+                    <div class="field-category-title">Date/Time</div>
+                    <div id="dateFields">
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Date" data-type="date" onchange="toggleField(this)">
+                            <span class="field-name">Date</span>
+                            <span class="field-type">Date</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Month" data-type="date" onchange="toggleField(this)">
+                            <span class="field-name">Month</span>
+                            <span class="field-type">Date</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Quarter" data-type="date" onchange="toggleField(this)">
+                            <span class="field-name">Quarter</span>
+                            <span class="field-type">Date</span>
+                        </div>
+                        <div class="field-item">
+                            <input type="checkbox" class="field-checkbox" data-field="Year" data-type="date" onchange="toggleField(this)">
+                            <span class="field-name">Year</span>
+                            <span class="field-type">Date</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Dashboard state
+        let dashboardState = {
+            charts: [],
+            selectedFields: [],
+            chartCounter: 0
+        };
+        
+        // Toggle field selection
+        function toggleField(checkbox) {
+            const field = checkbox.dataset.field;
+            const type = checkbox.dataset.type;
+            
+            if (checkbox.checked) {
+                dashboardState.selectedFields.push({ field, type });
+            } else {
+                dashboardState.selectedFields = dashboardState.selectedFields.filter(f => f.field !== field);
+            }
+            
+            updateSelectedFieldsDisplay();
+            updateAllCharts();
+        }
+        
+        // Update selected fields display
+        function updateSelectedFieldsDisplay() {
+            const container = document.getElementById('selectedFields');
+            
+            if (dashboardState.selectedFields.length === 0) {
+                container.innerHTML = '<div style="color: #999; font-size: 12px;">No fields selected</div>';
+                return;
+            }
+            
+            container.innerHTML = dashboardState.selectedFields.map(f => `
+                <span class="selected-field-tag">
+                    ${f.field}
+                    <span class="remove" onclick="removeSelectedField('${f.field}')">×</span>
+                </span>
+            `).join('');
+        }
+        
+        // Remove selected field
+        function removeSelectedField(field) {
+            const checkbox = document.querySelector(`input[data-field="${field}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+                toggleField(checkbox);
+            }
+        }
+        
+        // Filter fields
+        function filterFields(searchTerm) {
+            const fieldItems = document.querySelectorAll('.field-item');
+            searchTerm = searchTerm.toLowerCase();
+            
+            fieldItems.forEach(item => {
+                const fieldName = item.querySelector('.field-name').textContent.toLowerCase();
+                item.style.display = fieldName.includes(searchTerm) ? 'flex' : 'none';
+            });
+        }
+        
+        // Add a new chart
+        function addChart(type = 'bar') {
+            const chartId = `chart_${dashboardState.chartCounter++}`;
+            
+            // Hide empty state
+            document.getElementById('emptyState').style.display = 'none';
+            
+            // Create chart card
+            const chartCard = document.createElement('div');
+            chartCard.className = 'chart-card';
+            chartCard.id = chartId;
+            chartCard.innerHTML = `
+                <div class="chart-header">
+                    <div class="chart-title">Chart ${dashboardState.chartCounter}</div>
+                    <div class="chart-actions">
+                        <button onclick="maximizeChart('${chartId}')">⛶</button>
+                        <button onclick="removeChart('${chartId}')">×</button>
+                    </div>
+                </div>
+                <div class="chart-toolbar">
+                    <div class="chart-type-selector">
+                        <select class="chart-type-dropdown" onchange="changeChartType('${chartId}', this.value)">
+                            <optgroup label="Basic Charts">
+                                <option value="bar" ${type === 'bar' ? 'selected' : ''}>Bar Chart</option>
+                                <option value="line" ${type === 'line' ? 'selected' : ''}>Line Chart</option>
+                                <option value="pie" ${type === 'pie' ? 'selected' : ''}>Pie Chart</option>
+                                <option value="scatter" ${type === 'scatter' ? 'selected' : ''}>Scatter Plot</option>
+                                <option value="area" ${type === 'area' ? 'selected' : ''}>Area Chart</option>
+                                <option value="bubble" ${type === 'bubble' ? 'selected' : ''}>Bubble Chart</option>
+                            </optgroup>
+                            <optgroup label="Advanced Analytics">
+                                <option value="heatmap" ${type === 'heatmap' ? 'selected' : ''}>Heatmap</option>
+                                <option value="treemap" ${type === 'treemap' ? 'selected' : ''}>Treemap</option>
+                                <option value="sunburst" ${type === 'sunburst' ? 'selected' : ''}>Sunburst</option>
+                                <option value="sankey" ${type === 'sankey' ? 'selected' : ''}>Sankey Diagram</option>
+                                <option value="network" ${type === 'network' ? 'selected' : ''}>Network Graph</option>
+                                <option value="chord" ${type === 'chord' ? 'selected' : ''}>Chord Diagram</option>
+                            </optgroup>
+                            <optgroup label="Statistical">
+                                <option value="boxplot" ${type === 'boxplot' ? 'selected' : ''}>Box Plot</option>
+                                <option value="violin" ${type === 'violin' ? 'selected' : ''}>Violin Plot</option>
+                                <option value="histogram" ${type === 'histogram' ? 'selected' : ''}>Histogram</option>
+                                <option value="density" ${type === 'density' ? 'selected' : ''}>Density Plot</option>
+                                <option value="beeswarm" ${type === 'beeswarm' ? 'selected' : ''}>Beeswarm</option>
+                            </optgroup>
+                            <optgroup label="Business Analytics">
+                                <option value="gauge" ${type === 'gauge' ? 'selected' : ''}>Gauge</option>
+                                <option value="radar" ${type === 'radar' ? 'selected' : ''}>Radar Chart</option>
+                                <option value="funnel" ${type === 'funnel' ? 'selected' : ''}>Funnel Chart</option>
+                                <option value="waterfall" ${type === 'waterfall' ? 'selected' : ''}>Waterfall Chart</option>
+                                <option value="candlestick" ${type === 'candlestick' ? 'selected' : ''}>Candlestick</option>
+                                <option value="kpi" ${type === 'kpi' ? 'selected' : ''}>KPI Card</option>
+                            </optgroup>
+                            <optgroup label="Time Series">
+                                <option value="timeline" ${type === 'timeline' ? 'selected' : ''}>Timeline</option>
+                                <option value="calendar" ${type === 'calendar' ? 'selected' : ''}>Calendar Heatmap</option>
+                                <option value="gantt" ${type === 'gantt' ? 'selected' : ''}>Gantt Chart</option>
+                            </optgroup>
+                            <optgroup label="3D Visualizations">
+                                <option value="bar3d" ${type === 'bar3d' ? 'selected' : ''}>3D Bar Chart</option>
+                                <option value="scatter3d" ${type === 'scatter3d' ? 'selected' : ''}>3D Scatter</option>
+                                <option value="surface3d" ${type === 'surface3d' ? 'selected' : ''}>3D Surface</option>
+                            </optgroup>
+                            <optgroup label="Specialized">
+                                <option value="parallel" ${type === 'parallel' ? 'selected' : ''}>Parallel Coordinates</option>
+                                <option value="pictorial" ${type === 'pictorial' ? 'selected' : ''}>Pictorial Bar</option>
+                                <option value="polar" ${type === 'polar' ? 'selected' : ''}>Polar Chart</option>
+                                <option value="graph" ${type === 'graph' ? 'selected' : ''}>Force Graph</option>
+                                <option value="tree" ${type === 'tree' ? 'selected' : ''}>Tree Diagram</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-content" id="${chartId}_content"></div>
+            `;
+            
+            document.getElementById('chartGrid').appendChild(chartCard);
+            
+            // Add to state
+            dashboardState.charts.push({
+                id: chartId,
+                type: type,
+                instance: null
+            });
+            
+            // Render chart
+            renderChart(chartId, type);
+        }
+        
+        // Change chart type
+        function changeChartType(chartId, newType) {
+            // Update chart
+            const chart = dashboardState.charts.find(c => c.id === chartId);
+            if (chart) {
+                chart.type = newType;
+                renderChart(chartId, newType);
+            }
+        }
+        
+        // Render chart
+        function renderChart(chartId, type) {
+            const container = document.getElementById(`${chartId}_content`);
+            
+            // Dispose existing chart
+            const existingChart = dashboardState.charts.find(c => c.id === chartId);
+            if (existingChart && existingChart.instance) {
+                existingChart.instance.dispose();
+            }
+            
+            // Create new chart
+            const chartInstance = echarts.init(container);
+            
+            // Get data based on selected fields
+            const data = generateChartData(type);
+            
+            // Configure chart options
+            const option = getChartOptions(type, data);
+            
+            // Set option
+            chartInstance.setOption(option);
+            
+            // Update state
+            if (existingChart) {
+                existingChart.instance = chartInstance;
+            }
+            
+            // Resize on window resize
+            window.addEventListener('resize', () => chartInstance.resize());
+        }
+        
+        // Generate chart data based on selected fields
+        function generateChartData(type) {
+            const dimensions = dashboardState.selectedFields.filter(f => f.type === 'dimension');
+            const measures = dashboardState.selectedFields.filter(f => f.type === 'measure');
+            const dates = dashboardState.selectedFields.filter(f => f.type === 'date');
+            
+            // Generate sample data based on selected fields
+            let categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+            let values = [120, 200, 150, 80, 70, 110];
+            
+            // Customize based on selected dimension
+            if (dimensions.length > 0) {
+                const dim = dimensions[0].field;
+                if (dim === 'Department') {
+                    categories = ['Police', 'Fire', 'Public Works', 'Parks', 'Finance', 'Admin'];
+                    values = [450000, 380000, 320000, 180000, 150000, 120000];
+                } else if (dim === 'Account') {
+                    categories = ['Personnel', 'Supplies', 'Equipment', 'Utilities', 'Travel', 'Other'];
+                    values = [600000, 80000, 150000, 45000, 30000, 35000];
+                } else if (dim === 'Category') {
+                    categories = ['Operating', 'Capital', 'Debt Service', 'Transfers', 'Reserves'];
+                    values = [800000, 300000, 200000, 150000, 100000];
+                } else if (dim === 'Vendor') {
+                    categories = ['Vendor A', 'Vendor B', 'Vendor C', 'Vendor D', 'Vendor E'];
+                    values = [125000, 98000, 87000, 65000, 43000];
+                }
+            }
+            
+            // Customize based on selected measure
+            if (measures.length > 0) {
+                const measure = measures[0].field;
+                if (measure === 'Budget') {
+                    values = values.map(v => v * 1.2);
+                } else if (measure === 'Actual') {
+                    values = values.map(v => v * 0.95);
+                } else if (measure === 'Percentage') {
+                    values = [85, 92, 78, 88, 95, 82];
+                }
+            }
+            
+            // Use dates if selected
+            if (dates.length > 0) {
+                const dateField = dates[0].field;
+                if (dateField === 'Month') {
+                    categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    values = [120000, 135000, 142000, 128000, 151000, 146000, 158000, 162000, 155000, 168000, 172000, 180000];
+                } else if (dateField === 'Quarter') {
+                    categories = ['Q1', 'Q2', 'Q3', 'Q4'];
+                    values = [397000, 425000, 475000, 520000];
+                } else if (dateField === 'Year') {
+                    categories = ['2019', '2020', '2021', '2022', '2023', '2024'];
+                    values = [1500000, 1650000, 1450000, 1780000, 1920000, 2100000];
+                }
+            }
+            
+            return { categories, values };
+        }
+        
+        // Get chart options based on type
+        function getChartOptions(type, data) {
+            const baseOption = {
+                tooltip: { 
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        if (Array.isArray(params)) {
+                            return params[0].name + '<br/>' + 
+                                   params.map(p => `${p.seriesName || 'Value'}: ${typeof p.value === 'number' ? p.value.toLocaleString() : p.value}`).join('<br/>');
+                        }
+                        return `${params.name}<br/>Value: ${typeof params.value === 'number' ? params.value.toLocaleString() : params.value}`;
+                    }
+                },
+                grid: { left: '12%', right: '10%', bottom: '15%', top: '12%' },
+                color: ['#0078d4', '#00bcf2', '#00188f', '#68768a', '#69797e']
+            };
+            
+            switch (type) {
+                case 'bar':
+                    return {
+                        ...baseOption,
+                        xAxis: { 
+                            type: 'category', 
+                            data: data.categories,
+                            name: 'Categories',
+                            nameLocation: 'middle',
+                            nameGap: 35,
+                            axisLabel: {
+                                rotate: 45,
+                                interval: 0
+                            }
+                        },
+                        yAxis: { 
+                            type: 'value',
+                            name: 'Amount ($)',
+                            nameLocation: 'middle',
+                            nameGap: 50,
+                            axisLabel: {
+                                formatter: function(value) {
+                                    return value >= 1000 ? (value/1000).toFixed(0) + 'K' : value;
+                                }
+                            }
+                        },
+                        series: [{
+                            type: 'bar',
+                            data: data.values,
+                            label: {
+                                show: true,
+                                position: 'top',
+                                formatter: function(params) {
+                                    return params.value >= 1000 ? (params.value/1000).toFixed(1) + 'K' : params.value;
+                                }
+                            },
+                            itemStyle: {
+                                borderRadius: [4, 4, 0, 0]
+                            }
+                        }]
+                    };
+                    
+                case 'line':
+                    return {
+                        ...baseOption,
+                        xAxis: { 
+                            type: 'category', 
+                            data: data.categories,
+                            name: 'Time Period',
+                            nameLocation: 'middle',
+                            nameGap: 35,
+                            axisLabel: {
+                                rotate: 45,
+                                interval: 0
+                            }
+                        },
+                        yAxis: { 
+                            type: 'value',
+                            name: 'Amount ($)',
+                            nameLocation: 'middle',
+                            nameGap: 50,
+                            axisLabel: {
+                                formatter: function(value) {
+                                    return value >= 1000 ? (value/1000).toFixed(0) + 'K' : value;
+                                }
+                            }
+                        },
+                        series: [{
+                            type: 'line',
+                            data: data.values,
+                            smooth: true,
+                            label: {
+                                show: true,
+                                formatter: function(params) {
+                                    return params.value >= 1000 ? (params.value/1000).toFixed(1) + 'K' : params.value;
+                                }
+                            },
+                            areaStyle: { opacity: 0.1 }
+                        }]
+                    };
+                    
+                case 'pie':
+                    return {
+                        ...baseOption,
+                        tooltip: { 
+                            trigger: 'item',
+                            formatter: '{b}: ${c:,.0f} ({d}%)'
+                        },
+                        legend: {
+                            orient: 'vertical',
+                            right: 'right',
+                            top: 'center'
+                        },
+                        series: [{
+                            type: 'pie',
+                            radius: ['40%', '70%'],
+                            center: ['40%', '50%'],
+                            label: {
+                                show: true,
+                                formatter: '{b}\n{d}%'
+                            },
+                            data: data.categories.map((cat, i) => ({
+                                name: cat,
+                                value: data.values[i]
+                            }))
+                        }]
+                    };
+                    
+                case 'scatter':
+                    return {
+                        ...baseOption,
+                        xAxis: { 
+                            type: 'value',
+                            name: 'X Axis',
+                            nameLocation: 'middle',
+                            nameGap: 35
+                        },
+                        yAxis: { 
+                            type: 'value',
+                            name: 'Y Axis ($)',
+                            nameLocation: 'middle',
+                            nameGap: 50,
+                            axisLabel: {
+                                formatter: function(value) {
+                                    return value >= 1000 ? (value/1000).toFixed(0) + 'K' : value;
+                                }
+                            }
+                        },
+                        series: [{
+                            type: 'scatter',
+                            data: data.values.map((v, i) => [i * 10 + Math.random() * 20, v + Math.random() * 50]),
+                            symbolSize: 10
+                        }]
+                    };
+                    
+                case 'area':
+                    return {
+                        ...baseOption,
+                        xAxis: { 
+                            type: 'category', 
+                            data: data.categories,
+                            name: 'Categories',
+                            nameLocation: 'middle',
+                            nameGap: 35,
+                            axisLabel: {
+                                rotate: 45,
+                                interval: 0
+                            }
+                        },
+                        yAxis: { 
+                            type: 'value',
+                            name: 'Amount ($)',
+                            nameLocation: 'middle',
+                            nameGap: 50,
+                            axisLabel: {
+                                formatter: function(value) {
+                                    return value >= 1000 ? (value/1000).toFixed(0) + 'K' : value;
+                                }
+                            }
+                        },
+                        series: [{
+                            type: 'line',
+                            data: data.values,
+                            smooth: true,
+                            areaStyle: {},
+                            label: {
+                                show: true,
+                                position: 'top',
+                                formatter: function(params) {
+                                    return params.value >= 1000 ? (params.value/1000).toFixed(1) + 'K' : params.value;
+                                }
+                            }
+                        }]
+                    };
+                    
+                case 'heatmap':
+                    const heatmapData = [];
+                    for (let i = 0; i < 6; i++) {
+                        for (let j = 0; j < 6; j++) {
+                            heatmapData.push([i, j, Math.random() * 100]);
+                        }
+                    }
+                    return {
+                        ...baseOption,
+                        tooltip: { position: 'top' },
+                        xAxis: { type: 'category', data: data.categories.slice(0, 6) },
+                        yAxis: { type: 'category', data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] },
+                        visualMap: {
+                            min: 0,
+                            max: 100,
+                            calculable: true,
+                            orient: 'horizontal',
+                            left: 'center',
+                            bottom: '0%'
+                        },
+                        series: [{
+                            type: 'heatmap',
+                            data: heatmapData,
+                            label: { show: true }
+                        }]
+                    };
+                    
+                case 'treemap':
+                    return {
+                        ...baseOption,
+                        series: [{
+                            type: 'treemap',
+                            data: data.categories.map((cat, i) => ({
+                                name: cat,
+                                value: data.values[i],
+                                children: [
+                                    { name: cat + ' - Sub 1', value: data.values[i] * 0.6 },
+                                    { name: cat + ' - Sub 2', value: data.values[i] * 0.4 }
+                                ]
+                            }))
+                        }]
+                    };
+                    
+                case 'sunburst':
+                    return {
+                        ...baseOption,
+                        series: [{
+                            type: 'sunburst',
+                            data: data.categories.slice(0, 4).map((cat, i) => ({
+                                name: cat,
+                                value: data.values[i],
+                                children: [
+                                    { name: cat + ' - A', value: data.values[i] * 0.5 },
+                                    { name: cat + ' - B', value: data.values[i] * 0.3 },
+                                    { name: cat + ' - C', value: data.values[i] * 0.2 }
+                                ]
+                            }))
+                        }]
+                    };
+                
+                case 'bubble':
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'value', scale: true },
+                        yAxis: { type: 'value', scale: true },
+                        series: [{
+                            type: 'scatter',
+                            symbolSize: function(data) { return Math.sqrt(data[2]) * 2; },
+                            data: data.values.map((v, i) => [
+                                i * 15 + Math.random() * 30,
+                                v + Math.random() * 100,
+                                Math.random() * 1000 + 100
+                            ])
+                        }]
+                    };
+                
+                case 'sankey':
+                    return {
+                        ...baseOption,
+                        series: [{
+                            type: 'sankey',
+                            layout: 'none',
+                            data: data.categories.slice(0, 6).map(cat => ({ name: cat })),
+                            links: [
+                                { source: data.categories[0], target: data.categories[3], value: 100 },
+                                { source: data.categories[1], target: data.categories[3], value: 150 },
+                                { source: data.categories[2], target: data.categories[4], value: 80 },
+                                { source: data.categories[3], target: data.categories[5], value: 120 },
+                                { source: data.categories[4], target: data.categories[5], value: 90 }
+                            ]
+                        }]
+                    };
+                
+                case 'network':
+                case 'graph':
+                    const nodes = data.categories.slice(0, 8).map((cat, i) => ({
+                        name: cat,
+                        symbolSize: 30 + Math.random() * 30,
+                        x: Math.cos(i * Math.PI / 4) * 100,
+                        y: Math.sin(i * Math.PI / 4) * 100
+                    }));
+                    const links = [];
+                    for (let i = 0; i < nodes.length - 1; i++) {
+                        links.push({ source: i, target: (i + 1) % nodes.length });
+                        if (Math.random() > 0.5) {
+                            links.push({ source: i, target: (i + 3) % nodes.length });
+                        }
+                    }
+                    return {
+                        ...baseOption,
+                        tooltip: {},
+                        series: [{
+                            type: 'graph',
+                            layout: 'force',
+                            data: nodes,
+                            links: links,
+                            roam: true,
+                            force: {
+                                repulsion: 200,
+                                edgeLength: 100
+                            }
+                        }]
+                    };
+                
+                case 'chord':
+                    return {
+                        ...baseOption,
+                        series: [{
+                            type: 'graph',
+                            layout: 'circular',
+                            circular: { rotateLabel: true },
+                            data: data.categories.slice(0, 6).map(cat => ({ name: cat, symbolSize: 30 })),
+                            links: [
+                                { source: 0, target: 1, value: 10 },
+                                { source: 1, target: 2, value: 15 },
+                                { source: 2, target: 3, value: 12 },
+                                { source: 3, target: 4, value: 8 },
+                                { source: 4, target: 5, value: 10 },
+                                { source: 5, target: 0, value: 20 }
+                            ],
+                            lineStyle: { color: 'source', curveness: 0.3 }
+                        }]
+                    };
+                
+                case 'boxplot':
+                    const boxplotData = data.categories.map(() => {
+                        const base = Math.random() * 100 + 50;
+                        return [base - 30, base - 10, base, base + 10, base + 30];
+                    });
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'category', data: data.categories },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            type: 'boxplot',
+                            data: boxplotData
+                        }]
+                    };
+                
+                case 'violin':
+                    // ECharts doesn't have native violin, use custom shape
+                    const violinData = data.categories.map((cat, i) => {
+                        const points = [];
+                        for (let j = 0; j < 100; j++) {
+                            points.push([i + (Math.random() - 0.5) * 0.4, data.values[i] + (Math.random() - 0.5) * 50]);
+                        }
+                        return points;
+                    }).flat();
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'category', data: data.categories },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            type: 'scatter',
+                            data: violinData,
+                            symbolSize: 3
+                        }]
+                    };
+                
+                case 'histogram':
+                    const histData = [];
+                    for (let i = 0; i < 100; i++) {
+                        histData.push(Math.random() * 100);
+                    }
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'value' },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            type: 'bar',
+                            data: histData.sort((a, b) => a - b).map((v, i) => [v, 1]),
+                            barWidth: '99%'
+                        }]
+                    };
+                
+                case 'density':
+                    // Create smooth density curve
+                    const densityPoints = [];
+                    for (let i = 0; i < 100; i++) {
+                        const x = i / 10;
+                        const y = Math.exp(-Math.pow(x - 5, 2) / 2) * 100;
+                        densityPoints.push([x, y]);
+                    }
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'value' },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            type: 'line',
+                            data: densityPoints,
+                            smooth: true,
+                            areaStyle: { opacity: 0.3 }
+                        }]
+                    };
+                
+                case 'beeswarm':
+                    // Simulate beeswarm with scatter
+                    const beeswarmData = [];
+                    data.categories.forEach((cat, catIdx) => {
+                        for (let i = 0; i < 20; i++) {
+                            beeswarmData.push([catIdx + (Math.random() - 0.5) * 0.3, data.values[catIdx] + (Math.random() - 0.5) * 30]);
+                        }
+                    });
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'category', data: data.categories },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            type: 'scatter',
+                            data: beeswarmData,
+                            symbolSize: 8
+                        }]
+                    };
+                
+                case 'gauge':
+                    return {
+                        ...baseOption,
+                        series: [{
+                            type: 'gauge',
+                            progress: { show: true },
+                            detail: { formatter: '{value}%' },
+                            data: [{ value: 75, name: 'Performance' }]
+                        }]
+                    };
+                
+                case 'radar':
+                    return {
+                        ...baseOption,
+                        radar: {
+                            indicator: data.categories.slice(0, 6).map(cat => ({ name: cat, max: 100 }))
+                        },
+                        series: [{
+                            type: 'radar',
+                            data: [{
+                                value: data.values.slice(0, 6).map(v => (v / Math.max(...data.values)) * 100),
+                                name: 'Current'
+                            }]
+                        }]
+                    };
+                
+                case 'funnel':
+                    return {
+                        ...baseOption,
+                        series: [{
+                            type: 'funnel',
+                            data: data.categories.slice(0, 5).map((cat, i) => ({
+                                name: cat,
+                                value: data.values[i]
+                            })).sort((a, b) => b.value - a.value)
+                        }]
+                    };
+                
+                case 'waterfall':
+                    // Simulate waterfall with bar
+                    const waterfallData = [];
+                    let cumulative = 0;
+                    data.values.forEach((v, i) => {
+                        waterfallData.push({
+                            value: v,
+                            itemStyle: { color: v > 0 ? '#5cb85c' : '#d9534f' }
+                        });
+                        cumulative += v;
+                    });
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'category', data: data.categories },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            type: 'bar',
+                            data: waterfallData
+                        }]
+                    };
+                
+                case 'candlestick':
+                    const candleData = data.values.map(v => {
+                        const open = v + (Math.random() - 0.5) * 20;
+                        const close = v + (Math.random() - 0.5) * 20;
+                        const low = Math.min(open, close) - Math.random() * 10;
+                        const high = Math.max(open, close) + Math.random() * 10;
+                        return [open, close, low, high];
+                    });
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'category', data: data.categories },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            type: 'candlestick',
+                            data: candleData
+                        }]
+                    };
+                
+                case 'kpi':
+                    // KPI card visualization
+                    return {
+                        title: {
+                            text: `${data.values[0].toLocaleString()}`,
+                            subtext: data.categories[0],
+                            left: 'center',
+                            top: 'center',
+                            textStyle: { fontSize: 48, fontWeight: 'bold' },
+                            subtextStyle: { fontSize: 16 }
+                        }
+                    };
+                
+                case 'timeline':
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'time' },
+                        yAxis: { type: 'category', data: ['Events'] },
+                        series: [{
+                            type: 'scatter',
+                            symbolSize: 20,
+                            data: data.categories.map((cat, i) => [new Date(2024, i, 1), 0])
+                        }]
+                    };
+                
+                case 'calendar':
+                    const year = new Date().getFullYear();
+                    const calendarData = [];
+                    for (let i = 0; i < 365; i++) {
+                        const date = new Date(year, 0, 1);
+                        date.setDate(date.getDate() + i);
+                        calendarData.push([
+                            echarts.format.formatTime('yyyy-MM-dd', date),
+                            Math.random() * 100
+                        ]);
+                    }
+                    return {
+                        visualMap: { min: 0, max: 100, calculable: true },
+                        calendar: { range: year },
+                        series: [{
+                            type: 'heatmap',
+                            coordinateSystem: 'calendar',
+                            data: calendarData
+                        }]
+                    };
+                
+                case 'gantt':
+                    // Simulate Gantt with custom bars
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'time' },
+                        yAxis: { type: 'category', data: data.categories.slice(0, 5) },
+                        series: [{
+                            type: 'custom',
+                            renderItem: function(params, api) {
+                                const categoryIndex = api.value(0);
+                                const start = api.coord([new Date(2024, categoryIndex, 1), categoryIndex]);
+                                const end = api.coord([new Date(2024, categoryIndex + 1, 1), categoryIndex]);
+                                const height = api.size([0, 1])[1] * 0.6;
+                                return {
+                                    type: 'rect',
+                                    shape: {
+                                        x: start[0],
+                                        y: start[1] - height / 2,
+                                        width: end[0] - start[0],
+                                        height: height
+                                    },
+                                    style: api.style()
+                                };
+                            },
+                            data: data.categories.slice(0, 5).map((cat, i) => [i, new Date(2024, i, 1), new Date(2024, i + 1, 1)])
+                        }]
+                    };
+                
+                case 'bar3d':
+                    // Note: Requires echarts-gl extension
+                    return {
+                        ...baseOption,
+                        xAxis3D: { type: 'category', data: data.categories.slice(0, 4) },
+                        yAxis3D: { type: 'category', data: ['A', 'B', 'C'] },
+                        zAxis3D: { type: 'value' },
+                        grid3D: { boxWidth: 200, boxDepth: 80, viewControl: { distance: 300 } },
+                        series: [{
+                            type: 'bar3D',
+                            data: data.categories.slice(0, 4).map((cat, i) => 
+                                ['A', 'B', 'C'].map((y, j) => [i, j, data.values[i] * (j + 1) / 3])
+                            ).flat()
+                        }]
+                    };
+                
+                case 'scatter3d':
+                    return {
+                        ...baseOption,
+                        xAxis3D: { type: 'value' },
+                        yAxis3D: { type: 'value' },
+                        zAxis3D: { type: 'value' },
+                        grid3D: { viewControl: { distance: 200 } },
+                        series: [{
+                            type: 'scatter3D',
+                            data: Array.from({length: 100}, () => [
+                                Math.random() * 100,
+                                Math.random() * 100,
+                                Math.random() * 100
+                            ])
+                        }]
+                    };
+                
+                case 'surface3d':
+                    return {
+                        ...baseOption,
+                        xAxis3D: { type: 'value' },
+                        yAxis3D: { type: 'value' },
+                        zAxis3D: { type: 'value' },
+                        grid3D: { viewControl: { distance: 200 } },
+                        series: [{
+                            type: 'surface',
+                            data: Array.from({length: 50}, (_, i) =>
+                                Array.from({length: 50}, (_, j) => [i, j, Math.sin(i / 10) * Math.cos(j / 10) * 50])
+                            ).flat()
+                        }]
+                    };
+                
+                case 'parallel':
+                    return {
+                        ...baseOption,
+                        parallelAxis: data.categories.slice(0, 5).map((cat, i) => ({
+                            dim: i,
+                            name: cat,
+                            type: 'value'
+                        })),
+                        series: [{
+                            type: 'parallel',
+                            data: [
+                                data.values.slice(0, 5),
+                                data.values.slice(0, 5).map(v => v * 0.8),
+                                data.values.slice(0, 5).map(v => v * 1.2)
+                            ]
+                        }]
+                    };
+                
+                case 'pictorial':
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'category', data: data.categories.slice(0, 5) },
+                        yAxis: { type: 'value' },
+                        series: [{
+                            type: 'pictorialBar',
+                            symbol: 'rect',
+                            symbolRepeat: true,
+                            symbolSize: [20, 4],
+                            data: data.values.slice(0, 5)
+                        }]
+                    };
+                
+                case 'polar':
+                    return {
+                        ...baseOption,
+                        angleAxis: { type: 'category', data: data.categories },
+                        radiusAxis: {},
+                        polar: {},
+                        series: [{
+                            type: 'bar',
+                            data: data.values,
+                            coordinateSystem: 'polar'
+                        }]
+                    };
+                
+                case 'tree':
+                    const treeData = {
+                        name: 'Root',
+                        children: data.categories.slice(0, 4).map((cat, i) => ({
+                            name: cat,
+                            value: data.values[i],
+                            children: [
+                                { name: cat + '-1', value: data.values[i] * 0.6 },
+                                { name: cat + '-2', value: data.values[i] * 0.4 }
+                            ]
+                        }))
+                    };
+                    return {
+                        ...baseOption,
+                        series: [{
+                            type: 'tree',
+                            data: [treeData],
+                            top: '10%',
+                            left: '10%',
+                            bottom: '10%',
+                            right: '10%',
+                            symbolSize: 10,
+                            label: { position: 'top', verticalAlign: 'middle', align: 'right' }
+                        }]
+                    };
+                    
+                default:
+                    return baseOption;
+            }
+        }
+        
+        // Update all charts when fields change
+        function updateAllCharts() {
+            dashboardState.charts.forEach(chart => {
+                renderChart(chart.id, chart.type);
+            });
+        }
+        
+        // Maximize chart
+        function maximizeChart(chartId) {
+            const chartCard = document.getElementById(chartId);
+            chartCard.style.gridColumn = chartCard.style.gridColumn === 'span 2' ? 'span 1' : 'span 2';
+            
+            // Resize chart
+            const chart = dashboardState.charts.find(c => c.id === chartId);
+            if (chart && chart.instance) {
+                setTimeout(() => chart.instance.resize(), 100);
+            }
+        }
+        
+        // Remove chart
+        function removeChart(chartId) {
+            const chartCard = document.getElementById(chartId);
+            chartCard.remove();
+            
+            // Remove from state
+            const chart = dashboardState.charts.find(c => c.id === chartId);
+            if (chart && chart.instance) {
+                chart.instance.dispose();
+            }
+            dashboardState.charts = dashboardState.charts.filter(c => c.id !== chartId);
+            
+            // Show empty state if no charts
+            if (dashboardState.charts.length === 0) {
+                document.getElementById('emptyState').style.display = 'block';
+            }
+        }
+        
+        // Clear dashboard
+        function clearDashboard() {
+            // Dispose all charts
+            dashboardState.charts.forEach(chart => {
+                if (chart.instance) {
+                    chart.instance.dispose();
+                }
+            });
+            
+            // Clear grid
+            document.getElementById('chartGrid').innerHTML = `
+                <div class="empty-state" id="emptyState">
+                    <h3>Welcome to Visual Analytics Dashboard</h3>
+                    <p>Start by adding a chart or select fields from the right panel</p>
+                    <button class="add-chart-btn" onclick="addChart()">+ Add Your First Chart</button>
+                </div>
+            `;
+            
+            // Reset state
+            dashboardState.charts = [];
+            dashboardState.chartCounter = 0;
+        }
+        
+        // Refresh dashboard
+        function refreshDashboard() {
+            updateAllCharts();
+        }
+        
+        // Export dashboard
+        function exportDashboard() {
+            alert('Export functionality will be implemented');
+        }
+        
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-add first chart for demo
+            setTimeout(() => {
+                addChart('bar');
+            }, 500);
+        });
+    </script>
+</body>
+</html>

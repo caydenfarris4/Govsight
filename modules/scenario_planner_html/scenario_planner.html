@@ -1,0 +1,2765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GovSight Scenario Planner</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        :root {
+            --primary: #1976d2;
+            --success: #4caf50;
+            --danger: #f44336;
+            --warning: #ff9800;
+            --dark: #212121;
+            --white: #ffffff;
+            --border: #e0e0e0;
+            --bg: #f5f5f5;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: var(--bg); color: #333; }
+
+        /* ── Layout ── */
+        .app-shell { display: flex; flex-direction: column; min-height: 100vh; }
+        .top-bar { background: #1565c0; color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .top-bar h1 { font-size: 20px; font-weight: 600; letter-spacing: -.02em; }
+        .top-bar .top-meta { font-size: 13px; opacity: .8; }
+        .main-nav { background: white; border-bottom: 2px solid var(--border); display: flex; overflow-x: auto; }
+        .main-nav button { padding: 14px 22px; background: none; border: none; border-bottom: 3px solid transparent; margin-bottom: -2px; cursor: pointer; font-size: 14px; font-weight: 500; color: #555; white-space: nowrap; transition: all .15s; }
+        .main-nav button:hover { color: var(--primary); }
+        .main-nav button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+        .body-area { display: flex; flex: 1; position: relative; }
+        .content-area { flex: 1; padding: 24px; overflow-y: auto; }
+
+        /* ── Collaboration sidebar ── */
+        .collab-toggle { position: fixed; right: 0; top: 50%; transform: translateY(-50%); background: #1565c0; color: white; border: none; cursor: pointer; writing-mode: vertical-rl; padding: 14px 8px; border-radius: 6px 0 0 6px; font-size: 13px; font-weight: 600; z-index: 100; letter-spacing: .04em; }
+        .collab-sidebar { position: fixed; right: 0; top: 0; bottom: 0; width: 320px; background: white; border-left: 2px solid var(--border); display: flex; flex-direction: column; z-index: 200; transform: translateX(100%); transition: transform .2s; box-shadow: -4px 0 20px rgba(0,0,0,.12); }
+        .collab-sidebar.open { transform: translateX(0); }
+        .collab-header { background: #1565c0; color: white; padding: 16px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .collab-header span { font-weight: 600; font-size: 15px; }
+        .collab-close { background: none; border: 1px solid rgba(255,255,255,.4); color: white; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .collab-body { flex: 1; overflow-y: auto; padding: 14px; }
+        .collab-add { padding: 12px 14px; border-top: 1px solid var(--border); flex-shrink: 0; }
+        .ann-item { background: #fffde7; border: 1px solid #ffe082; border-radius: 5px; padding: 10px; margin-bottom: 8px; }
+        .ann-meta { font-size: 11px; color: #888; margin-bottom: 3px; display: flex; justify-content: space-between; }
+        .ann-target { font-size: 10px; background: #e3f2fd; color: #1565c0; padding: 1px 6px; border-radius: 8px; }
+        .ann-remove { background: none; border: none; color: #ccc; cursor: pointer; font-size: 11px; }
+        .ann-remove:hover { color: #f44336; }
+
+        /* ── Sub-tabs ── */
+        .sub-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+        .sub-nav button { padding: 9px 18px; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; font-size: 13px; font-weight: 500; color: #777; transition: all .15s; }
+        .sub-nav button:hover { color: var(--primary); }
+        .sub-nav button.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+
+        /* ── Cards / UI ── */
+        .card { background: white; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 18px; overflow: hidden; }
+        .card-header { background: #f8f9fa; padding: 11px 16px; font-weight: 600; font-size: 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .card-body { padding: 16px; }
+        h2 { font-size: 19px; margin-bottom: 6px; color: var(--dark); }
+        h3 { font-size: 15px; margin-bottom: 10px; color: #444; }
+        .page-desc { color: #777; font-size: 13px; margin-bottom: 20px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 500; color: #555; margin-bottom: 4px; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 7px 11px; border: 1px solid var(--border); border-radius: 4px; font-size: 14px; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(25,118,210,.1); }
+
+        .btn { padding: 7px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s; }
+        .btn:disabled { opacity: .55; cursor: not-allowed; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover:not(:disabled) { background: #1565c0; }
+        .btn-secondary { background: #e8e8e8; color: #333; }
+        .btn-secondary:hover:not(:disabled) { background: #d0d0d0; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover:not(:disabled) { background: #1b5e20; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover:not(:disabled) { background: #b71c1c; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+        .badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .badge-gray { background: #eee; color: #555; }
+        .badge-blue { background: #e3f2fd; color: #1565c0; }
+        .badge-green { background: #e8f5e9; color: #2e7d32; }
+        .badge-red { background: #ffebee; color: #b71c1c; }
+        .badge-orange { background: #fff3e0; color: #e65100; }
+        .badge-amber { background: #fffde7; color: #f57f17; }
+
+        .alert { padding: 10px 14px; border-radius: 5px; margin-bottom: 14px; font-size: 13px; }
+        .alert-info { background: #e3f2fd; border: 1px solid #90caf9; color: #0d47a1; }
+        .alert-success { background: #e8f5e9; border: 1px solid #a5d6a7; color: #1b5e20; }
+        .alert-warning { background: #fff3e0; border: 1px solid #ffcc80; color: #e65100; }
+        .alert-danger { background: #ffebee; border: 1px solid #ef9a9a; color: #b71c1c; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f5f5f5; padding: 9px 10px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); }
+        td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; }
+        tr:hover td { background: rgba(25,118,210,.025); }
+        .row-gap { background: #ffebee !important; }
+        .row-surplus { background: #e8f5e9 !important; }
+
+        .stat-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+        .stat-value { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 11px; color: #777; margin-top: 3px; text-transform: uppercase; letter-spacing: .04em; }
+
+        .chart-box { position: relative; height: 280px; }
+        .funding-row { display: flex; gap: 10px; margin-bottom: 9px; align-items: center; }
+        .funding-row select { width: 130px; flex-shrink: 0; }
+        .funding-row input[type="text"] { flex: 1; }
+        .funding-row input[type="number"] { width: 130px; flex-shrink: 0; text-align: right; }
+
+        .slider-row { display: flex; align-items: center; gap: 10px; }
+        .slider-row input[type="range"] { flex: 1; }
+        .slider-val { min-width: 52px; text-align: right; font-weight: 600; color: var(--primary); font-size: 14px; }
+
+        .grant-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; background: white; }
+        .grant-row:hover { border-color: #90caf9; }
+
+        .realloc-bar-track { background: #e0e0e0; border-radius: 4px; height: 14px; margin-top: 4px; }
+        .realloc-bar-fill { height: 14px; border-radius: 4px; transition: width .3s; }
+
+        .scenario-panel { border: 2px solid var(--border); border-radius: 8px; padding: 14px; background: white; }
+        .scenario-panel.opt { border-top: 4px solid #4caf50; }
+        .scenario-panel.base { border-top: 4px solid #1976d2; }
+        .scenario-panel.worst { border-top: 4px solid #ff9800; }
+        .net-box { border-radius: 6px; padding: 11px; margin-top: 10px; text-align: center; }
+        .net-label { font-size: 10px; color: #666; text-transform: uppercase; }
+        .net-val { font-size: 20px; font-weight: 700; margin-top: 2px; }
+
+        .diversity-bar-wrap { margin-bottom: 8px; }
+        .diversity-bar-lbl { font-size: 12px; display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .diversity-bar-track { background: #e0e0e0; border-radius: 4px; height: 16px; }
+        .diversity-bar-fill { height: 16px; border-radius: 4px; transition: width .3s; }
+        .score-ring { font-size: 52px; font-weight: 700; text-align: center; padding: 16px; border-radius: 8px; line-height: 1; }
+        .score-ring small { font-size: 16px; font-weight: 400; display: block; margin-top: 4px; }
+        .score-excellent { color: #2e7d32; background: #e8f5e9; }
+        .score-good { color: #1565c0; background: #e3f2fd; }
+        .score-risk { color: #e65100; background: #fff3e0; }
+        .score-critical { color: #b71c1c; background: #ffebee; }
+
+        .roi-box { text-align: center; padding: 12px; border-radius: 8px; background: #f5f5f5; }
+        .roi-val { font-size: 20px; font-weight: 700; color: var(--primary); }
+        .roi-lbl { font-size: 11px; color: #777; margin-top: 2px; }
+
+        .inline-note { background: #fffde7; border: 1px solid #f9a825; border-radius: 4px; padding: 8px 10px; margin-top: 6px; }
+        .comment-link { font-size: 11px; color: var(--primary); cursor: pointer; text-decoration: underline; }
+
+        .share-url-box { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+        .share-url-box input { flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; background: #f9f9f9; }
+
+        .shared-banner { background: #e3f2fd; border-bottom: 2px solid #90caf9; padding: 9px 24px; font-size: 13px; color: #0d47a1; }
+
+        .loading { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; margin-left: 6px; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media print {
+            .collab-toggle, .collab-sidebar, .main-nav, .top-bar, .sub-nav, .no-print { display: none !important; }
+            body { background: white; }
+            .card { box-shadow: none; break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ── Utilities ────────────────────────────────────────────────────────────────
+const fc = (n) => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:0}).format(n||0);
+const fp = (v,d=1) => `${(+v||0).toFixed(d)}%`;
+const genId = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const timeAgo = (ts) => { const s=Math.floor((Date.now()-new Date(ts))/1000); if(s<60)return'just now'; if(s<3600)return`${Math.floor(s/60)}m ago`; if(s<86400)return`${Math.floor(s/3600)}h ago`; return`${Math.floor(s/86400)}d ago`; };
+const daysUntil = (d) => d ? Math.ceil((new Date(d)-new Date())/86400000) : null;
+const lsGet = (k,fb) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):fb; } catch { return fb; } };
+const lsSet = (k,v) => { try { localStorage.setItem(k,JSON.stringify(v)); } catch {} };
+
+// ── API ──────────────────────────────────────────────────────────────────────
+// Priority: server-injected URL > localStorage override > environment detection > localhost fallback
+const getBase = () => {
+    if (window.GOVSIGHT_API_URL) return window.GOVSIGHT_API_URL;
+    const cfg = localStorage.getItem('govsight_api_url'); if(cfg) return cfg;
+    const {hostname,protocol} = window.location;
+    if(hostname.includes('replit.app')) return `${protocol}//${hostname.replace(/-\d+\./, '-8000.')}`;
+    if(hostname.includes('replit.dev')||hostname.includes('repl.co')) {
+        try { let h=hostname; if(window.parent!==window&&window.parent.location) h=window.parent.location.hostname; return `${protocol}//${h.replace(/-5000\b/,'-8000').replace(/-00\b/,'-8000')}`; } catch { return `${protocol}//${hostname.replace(/-5000\b/,'-8000')}`; }
+    }
+    return 'http://localhost:8000';
+};
+const API = getBase();
+const api = {
+    get: async (path) => { const r=await fetch(`${API}${path}`); return r.json(); },
+    post: async (path,body) => { const r=await fetch(`${API}${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); if(!r.ok) throw new Error(`${r.status}`); return r.json(); },
+    getScenarios: () => api.get('/api/scenarios'),
+    saveScenario: (d) => api.post('/api/scenarios',d),
+    getDepartments: () => api.get('/api/departments'),
+    runMonteCarlo: (p) => api.post('/api/monte-carlo/run',p),
+    lookupBill: (p) => api.post('/api/ai/bill-lookup',p),
+    analyzeWhatIf: (q) => api.post('/api/ai/whatif-analysis',{query:q}),
+    searchGrants: (q) => api.get(`/api/grants/search?q=${encodeURIComponent(q)}`),
+};
+
+// ── Grant library (built-in, used for client-side search + auto-matching) ─────
+const GRANT_LIBRARY = [
+    // Infrastructure & Transportation
+    {name:'FHWA Surface Transportation Block Grant',agency:'Dept. of Transportation',category:'Infrastructure',min:500000,max:5000000,deadline:'2026-06-30',keywords:['road','highway','bridge','pavement','transportation'],url:'https://www.fhwa.dot.gov/federal-aidprogram/'},
+    {name:'FTA Bus & Bus Facilities',agency:'Dept. of Transportation',category:'Infrastructure',min:250000,max:3000000,deadline:'2026-07-15',keywords:['transit','bus','fleet','vehicle','transportation'],url:'https://www.transit.dot.gov/funding/grants/bus-and-bus-facilities'},
+    {name:'EPA Clean Water State Revolving Fund',agency:'EPA',category:'Infrastructure',min:250000,max:10000000,deadline:'2026-08-01',keywords:['water','sewer','wastewater','treatment','clean water'],url:'https://www.epa.gov/cwsrf'},
+    {name:'EPA Drinking Water SRF',agency:'EPA',category:'Infrastructure',min:100000,max:5000000,deadline:'2026-08-01',keywords:['drinking water','water main','lead pipe','water supply'],url:'https://www.epa.gov/dwsrf'},
+    {name:'USDA Water & Waste Disposal Loans & Grants',agency:'USDA Rural Development',category:'Infrastructure',min:50000,max:2000000,deadline:'2026-09-30',keywords:['rural','water','waste','wastewater','utility'],url:'https://www.rd.usda.gov/programs-services/water-environmental-programs'},
+    {name:'USDA Community Facilities Grant',agency:'USDA Rural Development',category:'Infrastructure',min:25000,max:500000,deadline:'2026-09-30',keywords:['community','facility','building','rural','public'],url:'https://www.rd.usda.gov/programs-services/community-facilities-programs'},
+    {name:'EDA Public Works Program',agency:'Dept. of Commerce (EDA)',category:'Infrastructure',min:500000,max:10000000,deadline:'2026-05-31',keywords:['economic development','public works','industrial','infrastructure'],url:'https://www.eda.gov/funding/programs/public-works'},
+    {name:'RAISE Discretionary Grants',agency:'Dept. of Transportation',category:'Infrastructure',min:1000000,max:25000000,deadline:'2026-04-14',keywords:['transportation','infrastructure','multimodal','highway','bridge'],url:'https://www.transportation.gov/RAISEgrants'},
+    // Public Safety
+    {name:'COPS Hiring Program',agency:'Dept. of Justice',category:'Public Safety',min:125000,max:1250000,deadline:'2026-05-15',keywords:['police','law enforcement','hiring','officers','public safety'],url:'https://cops.usdoj.gov/grants'},
+    {name:'SAFER Firefighter Staffing',agency:'FEMA',category:'Public Safety',min:200000,max:2000000,deadline:'2026-07-15',keywords:['fire','firefighter','staffing','SAFER','emergency'],url:'https://www.fema.gov/grants/preparedness/firefighters'},
+    {name:'Assistance to Firefighters Grant',agency:'FEMA',category:'Public Safety',min:25000,max:1000000,deadline:'2026-06-15',keywords:['fire','equipment','training','firefighter','AFG'],url:'https://www.fema.gov/grants/preparedness/firefighters/assistance-firefighters'},
+    {name:'BRIC Hazard Mitigation',agency:'FEMA',category:'Public Safety',min:100000,max:5000000,deadline:'2026-09-30',keywords:['hazard','mitigation','flood','disaster','resilience','risk'],url:'https://www.fema.gov/grants/mitigation/building-resilient-infrastructure-communities'},
+    {name:'Edward Byrne Memorial JAG',agency:'Dept. of Justice',category:'Public Safety',min:25000,max:500000,deadline:'2026-08-30',keywords:['criminal justice','law enforcement','corrections','courts','public safety'],url:'https://bja.ojp.gov/program/jag'},
+    // Housing & Community Development
+    {name:'CDBG Community Development Block Grant',agency:'HUD',category:'Housing',min:100000,max:3000000,deadline:'2026-04-30',keywords:['community','housing','low income','development','CDBG'],url:'https://www.hud.gov/program_offices/comm_planning/cdbg'},
+    {name:'HOME Investment Partnerships',agency:'HUD',category:'Housing',min:200000,max:2000000,deadline:'2026-06-30',keywords:['affordable housing','HOME','rental','homeownership','housing'],url:'https://www.hud.gov/program_offices/comm_planning/home'},
+    {name:'Choice Neighborhoods Initiative',agency:'HUD',category:'Housing',min:500000,max:50000000,deadline:'2026-03-31',keywords:['neighborhood','distressed housing','public housing','revitalization'],url:'https://www.hud.gov/program_offices/public_indian_housing/programs/ph/cn'},
+    // Environment & Climate
+    {name:'Climate Pollution Reduction Grant',agency:'EPA',category:'Environment',min:250000,max:5000000,deadline:'2026-07-01',keywords:['climate','emissions','pollution','carbon','greenhouse','sustainability'],url:'https://www.epa.gov/inflation-reduction-act/climate-pollution-reduction-grants'},
+    {name:'Environmental Justice Collaborative',agency:'EPA',category:'Environment',min:50000,max:500000,deadline:'2026-05-01',keywords:['environmental justice','community','pollution','health','equity'],url:'https://www.epa.gov/environmentaljustice'},
+    {name:'Land & Water Conservation Fund',agency:'Dept. of Interior',category:'Parks',min:50000,max:750000,deadline:'2026-03-01',keywords:['parks','recreation','land','conservation','trail','green space'],url:'https://www.nps.gov/subjects/lwcf/index.htm'},
+    // Technology & Innovation
+    {name:'Smart City Technology Initiative',agency:'Dept. of Commerce',category:'Technology',min:250000,max:2500000,deadline:'2026-06-01',keywords:['smart city','technology','IoT','broadband','digital','innovation'],url:'https://www.nist.gov/tpo/grants-and-funding'},
+    {name:'BroadbandUSA Infrastructure Grant',agency:'NTIA',category:'Technology',min:100000,max:10000000,deadline:'2026-06-30',keywords:['broadband','internet','connectivity','digital divide','fiber'],url:'https://broadbandusa.ntia.doc.gov'},
+    {name:'E-Rate Connectivity Program',agency:'FCC',category:'Technology',min:10000,max:5000000,deadline:'2026-02-28',keywords:['e-rate','school','library','internet','network','connectivity'],url:'https://www.usac.org/e-rate/'},
+    // Education & Workforce
+    {name:'Title I Education Supplement',agency:'Dept. of Education',category:'Education',min:50000,max:500000,deadline:'2026-09-01',keywords:['education','school','Title I','low income','students','literacy'],url:'https://www2.ed.gov/programs/titleiparta/index.html'},
+    {name:'21st Century Community Learning Centers',agency:'Dept. of Education',category:'Education',min:50000,max:500000,deadline:'2026-06-01',keywords:['after school','community learning','youth','academic','enrichment'],url:'https://www2.ed.gov/programs/21stcclc/index.html'},
+    {name:'Workforce Innovation & Opportunity Act',agency:'Dept. of Labor',category:'Workforce',min:100000,max:2000000,deadline:'2026-08-01',keywords:['workforce','job training','employment','skills','WIOA','career'],url:'https://www.dol.gov/agencies/eta/wioa'},
+    // Public Health
+    {name:'CDC Healthy Communities Program',agency:'CDC / HHS',category:'Public Health',min:100000,max:1000000,deadline:'2026-05-15',keywords:['public health','community health','disease','prevention','wellness'],url:'https://www.cdc.gov/nccdphp/dnpao/state-local-programs/index.html'},
+    {name:'HRSA Rural Health Grant',agency:'HHS / HRSA',category:'Public Health',min:50000,max:750000,deadline:'2026-07-01',keywords:['rural health','healthcare','clinic','health services','rural'],url:'https://www.hrsa.gov/grants/find-funding'},
+    // Historic Preservation & Arts
+    {name:'Historic Preservation Fund',agency:'Dept. of Interior',category:'Historic',min:50000,max:750000,deadline:'2026-05-01',keywords:['historic','preservation','heritage','building','restoration','landmark'],url:'https://www.nps.gov/subjects/historicpreservation/index.htm'},
+    {name:'National Endowment for the Arts',agency:'NEA',category:'Arts',min:10000,max:100000,deadline:'2026-02-12',keywords:['arts','culture','arts program','public art','music','theater'],url:'https://www.arts.gov/grants'},
+    // Emergency Management
+    {name:'HMGP Hazard Mitigation Grant',agency:'FEMA',category:'Public Safety',min:100000,max:3000000,deadline:'2026-06-30',keywords:['flood','hurricane','wildfire','disaster','mitigation','emergency management'],url:'https://www.fema.gov/grants/mitigation/hazard-mitigation'},
+];
+
+// Shorthand for auto-match suggestions (subset most applicable to common municipal gaps)
+const GRANT_TEMPLATES = GRANT_LIBRARY.slice(0, 8);
+
+// Client-side fuzzy search against the full library
+const searchGrantLibrary = (query) => {
+    if (!query || !query.trim()) return [];
+    const q = query.toLowerCase().trim();
+    const tokens = q.split(/\s+/);
+    const scored = GRANT_LIBRARY.map(g => {
+        const text = [g.name, g.agency, g.category, ...(g.keywords||[])].join(' ').toLowerCase();
+        let score = 0;
+        tokens.forEach(t => {
+            if (g.name.toLowerCase().includes(t)) score += 10;
+            else if (g.agency.toLowerCase().includes(t)) score += 5;
+            else if (g.category.toLowerCase().includes(t)) score += 7;
+            else if ((g.keywords||[]).some(k => k.includes(t))) score += 6;
+            else if (text.includes(t)) score += 1;
+        });
+        return { ...g, _score: score };
+    });
+    return scored.filter(g => g._score > 0).sort((a, b) => b._score - a._score);
+};
+
+// ── Sample department budget data ─────────────────────────────────────────────
+const SAMPLE_DEPTS = [
+    {id:'d1',name:'Public Works',budget:4200000,actual:3650000},
+    {id:'d2',name:'Police Department',budget:8100000,actual:8050000},
+    {id:'d3',name:'Fire & Rescue',budget:5500000,actual:5100000},
+    {id:'d4',name:'Parks & Recreation',budget:1800000,actual:1320000},
+    {id:'d5',name:'Administration',budget:2400000,actual:2100000},
+    {id:'d6',name:'Information Technology',budget:950000,actual:720000},
+    {id:'d7',name:'Library Services',budget:680000,actual:660000},
+    {id:'d8',name:'Community Development',budget:1100000,actual:930000},
+];
+
+const CATS = ['Infrastructure','Staffing','Maintenance','Technology','Other'];
+const CAT_COLORS = {Infrastructure:'#1976d2',Staffing:'#4caf50',Maintenance:'#ff9800',Technology:'#9c27b0',Other:'#607d8b'};
+
+// ════════════════════════════════════════════════════════════════════════════
+// COLLABORATION SIDEBAR
+// ════════════════════════════════════════════════════════════════════════════
+// Author identity is resolved from window.GOVSIGHT_USER, injected server-side
+// from the authenticated Streamlit session. No manual name entry required.
+function CollabSidebar({ annotations, setAnnotations, currentTab, scenarioName }) {
+    const [open, setOpen] = useState(false);
+    const [text, setText] = useState('');
+
+    // Resolve the logged-in user's display name from the server-injected global.
+    // Falls back gracefully if the planner is ever opened outside Streamlit.
+    const gsUser = (typeof window !== 'undefined' && window.GOVSIGHT_USER) || {};
+    const authorName = gsUser.name || 'Anonymous';
+    const authorRole = gsUser.role || '';
+
+    const add = () => {
+        if (!text.trim()) return;
+        const ann = {
+            id: genId(),
+            target: currentTab,
+            authorName,
+            authorRole,
+            text: text.trim(),
+            timestamp: new Date().toISOString(),
+        };
+        setAnnotations(prev => [...prev, ann]);
+        setText('');
+    };
+
+    const remove = (id) => setAnnotations(prev => prev.filter(a => a.id !== id));
+
+    const TAB_LABELS = {scenario:'Scenario',revenue:'Revenue',expenses:'Expenses & Analytics',comparison:'Comparison',whatif:'What-If',legislative:'Legislative',montecarlo:'Monte Carlo'};
+
+    // Capitalise first letter of role for display (e.g. "admin" → "Admin")
+    const fmtRole = (r) => r ? r.charAt(0).toUpperCase() + r.slice(1) : '';
+
+    return (
+        <>
+            <button className="collab-toggle" onClick={() => setOpen(o => !o)}>
+                Notes {annotations.length > 0 ? `[${annotations.length}]` : ''}
+            </button>
+            <div className={`collab-sidebar ${open ? 'open' : ''}`}>
+                <div className="collab-header">
+                    <span>Collaboration Notes</span>
+                    <button className="collab-close" onClick={() => setOpen(false)}>Close</button>
+                </div>
+                {scenarioName && (
+                    <div style={{padding:'6px 14px',background:'#f0f4f8',borderBottom:'1px solid #e0e4e8',fontSize:11,color:'#555'}}>
+                        Scenario: <strong>{scenarioName}</strong>
+                    </div>
+                )}
+                <div className="collab-body">
+                    {annotations.length === 0 && (
+                        <p style={{color:'#aaa',fontSize:13,textAlign:'center',marginTop:20}}>No notes yet. Add the first one below.</p>
+                    )}
+                    {annotations.slice().reverse().map(a => (
+                        <div key={a.id} className="ann-item">
+                            <div className="ann-meta">
+                                <span>
+                                    <strong>{a.authorName}</strong>
+                                    {a.authorRole && <span style={{marginLeft:5,fontSize:10,background:'#e8eaf6',color:'#3949ab',padding:'1px 5px',borderRadius:3,verticalAlign:'middle'}}>{fmtRole(a.authorRole)}</span>}
+                                    {' '}&bull;{' '}{timeAgo(a.timestamp)}
+                                </span>
+                                <button className="ann-remove" onClick={() => remove(a.id)}>remove</button>
+                            </div>
+                            {TAB_LABELS[a.target] && (
+                                <div style={{marginBottom:4}}><span className="ann-target">{TAB_LABELS[a.target]}</span></div>
+                            )}
+                            <div style={{fontSize:13}}>{a.text}</div>
+                        </div>
+                    ))}
+                </div>
+                <div className="collab-add">
+                    {/* Identity badge — shows the server-authenticated user, not a free-text field */}
+                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,padding:'6px 8px',background:'#f5f5f5',borderRadius:4,border:'1px solid #e0e0e0'}}>
+                        <div style={{width:28,height:28,borderRadius:'50%',background:'#1565c0',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,flexShrink:0}}>
+                            {authorName.charAt(0)}
+                        </div>
+                        <div style={{lineHeight:1.3}}>
+                            <div style={{fontSize:12,fontWeight:600,color:'#222'}}>{authorName}</div>
+                            {authorRole && <div style={{fontSize:10,color:'#888'}}>{fmtRole(authorRole)}</div>}
+                        </div>
+                    </div>
+                    <div style={{marginBottom:6}}>
+                        <textarea value={text} onChange={e => setText(e.target.value)}
+                            placeholder={`Add a note about ${TAB_LABELS[currentTab] || 'this section'}...`}
+                            rows={3} style={{width:'100%',padding:'5px 8px',border:'1px solid #ddd',borderRadius:4,fontSize:12,resize:'vertical'}} />
+                    </div>
+                    <button className="btn btn-primary" onClick={add} style={{width:'100%',fontSize:12}}>Add Note</button>
+                </div>
+            </div>
+        </>
+    );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TAB 1 — SCENARIO (project setup + funding sources)
+// ════════════════════════════════════════════════════════════════════════════
+function ScenarioTab({ scenario, setScenario, fundingSources, setFundingSources, expenses, setExpenses, onSave, onLoad, onDelete, onNew, savedScenarios, saveMsg, adjExpenseTotal=0, adjContingencyPct=10 }) {
+    const chartRef = useRef(null);
+    const chartInst = useRef(null);
+
+    useEffect(() => { drawChart(); }, [fundingSources]);
+
+    const addSrc = () => setFundingSources(p => [...p, {id:genId(),type:'tax',description:'',amount:0}]);
+    const updateSrc = (id,f,v) => setFundingSources(p => p.map(s => s.id===id ? {...s,[f]:f==='amount'?(parseFloat(v)||0):v} : s));
+    const removeSrc = (id) => setFundingSources(p => p.filter(s => s.id!==id));
+
+    const drawChart = () => {
+        if (!chartRef.current) return;
+        const ctx = chartRef.current.getContext('2d');
+        if (chartInst.current) chartInst.current.destroy();
+        const grouped = fundingSources.reduce((acc,s) => { acc[s.type]=(acc[s.type]||0)+s.amount; return acc; }, {});
+        if (!Object.keys(grouped).length) return;
+        const TYPE_COLORS = {tax:'#1976d2',grant:'#2e7d32',bond:'#ff9800',private:'#9c27b0',reallocation:'#0097a7',other:'#607d8b'};
+        chartInst.current = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(grouped).map(t => ({tax:'Tax Revenue',grant:'Grant',bond:'Bond',private:'Private',reallocation:'Dept. Reallocation',other:'Other'})[t]||t),
+                datasets: [{data:Object.values(grouped), backgroundColor:Object.keys(grouped).map(t=>TYPE_COLORS[t]||'#90a4ae')}]
+            },
+            options: { responsive:true, maintainAspectRatio:false, plugins: { legend:{position:'right'}, tooltip:{callbacks:{label:c=>`${c.label}: ${fc(c.parsed)}`}} } }
+        });
+    };
+
+    const [showSaved, setShowSaved] = useState(false);
+
+    const totalRevenue = fundingSources.reduce((s,f) => s+(f.amount||0), 0);
+    const totalExpenses = (expenses||[]).reduce((s,e) => s+(parseFloat(e.amount)||0), 0);
+    // Use the contingency-adjusted total from the Expenses & Analytics tab when available.
+    // adjExpenseTotal is 0 until the user visits that tab for the first time.
+    const hasContingency = adjExpenseTotal > 0 && adjExpenseTotal > totalExpenses;
+    const contingencyAmt = hasContingency ? adjExpenseTotal - totalExpenses : 0;
+    const effectiveCost  = hasContingency ? adjExpenseTotal : totalExpenses;
+    const netPosition    = totalRevenue - effectiveCost;
+
+    return (
+        <div>
+            <h2>Scenario Setup</h2>
+            <p className="page-desc">Define your project and configure funding sources. Grants and reallocations added from the Revenue tab appear here automatically. This page is your scenario summary.</p>
+
+            <div className="grid-2" style={{marginBottom:18}}>
+                <div className="card">
+                    <div className="card-header">Project Information</div>
+                    <div className="card-body">
+                        <div className="form-group"><label>Project Name</label><input type="text" value={scenario.name} placeholder="e.g., Water Treatment Facility Upgrade" onChange={e=>setScenario({...scenario,name:e.target.value})} /></div>
+                        <div className="form-group"><label>Description</label><textarea value={scenario.description} placeholder="Describe the project objectives..." rows={3} onChange={e=>setScenario({...scenario,description:e.target.value})} /></div>
+                        <div className="form-group"><label>Project Duration (Years)</label><input type="number" min={1} max={10} value={scenario.years} onChange={e=>setScenario({...scenario,years:parseInt(e.target.value)||5})} /></div>
+
+                        {/* Summary totals — live-synced from Revenue and Expenses tabs */}
+                        <div style={{borderTop:'1px solid #eee',paddingTop:14,marginTop:6}}>
+                            <div style={{display:'flex',gap:10}}>
+                                <div style={{flex:1,padding:'10px 12px',background:'#e8f5e9',borderRadius:6,border:'1px solid #c8e6c9'}}>
+                                    <div style={{fontSize:11,color:'#555',marginBottom:2}}>Total Revenue</div>
+                                    <div style={{fontWeight:700,fontSize:17,color:'#2e7d32'}}>{fc(totalRevenue)}</div>
+                                    <div style={{fontSize:10,color:'#888'}}>{fundingSources.length} source{fundingSources.length!==1?'s':''}</div>
+                                </div>
+                                <div style={{flex:1,padding:'10px 12px',background:'#fce4ec',borderRadius:6,border:'1px solid #f8bbd0'}}>
+                                    <div style={{fontSize:11,color:'#555',marginBottom:2}}>
+                                        {hasContingency ? 'Total Required' : 'Total Expenses'}
+                                    </div>
+                                    <div style={{fontWeight:700,fontSize:17,color:'#c62828'}}>{fc(effectiveCost)}</div>
+                                    {hasContingency ? (
+                                        <div style={{fontSize:10,color:'#888',lineHeight:1.5}}>
+                                            Base: {fc(totalExpenses)}<br/>
+                                            + {adjContingencyPct}% contingency: {fc(contingencyAmt)}
+                                        </div>
+                                    ) : (
+                                        <div style={{fontSize:10,color:'#888'}}>
+                                            {(expenses||[]).length} line item{(expenses||[]).length!==1?'s':''}
+                                            {(expenses||[]).length > 0 && <span style={{display:'block',color:'#aaa',fontStyle:'italic'}}>Visit Expenses tab to include contingency</span>}
+                                        </div>
+                                    )}
+                                </div>
+                                <div style={{flex:1,padding:'10px 12px',background:netPosition>=0?'#e3f2fd':'#fff3e0',borderRadius:6,border:`1px solid ${netPosition>=0?'#bbdefb':'#ffe0b2'}`}}>
+                                    <div style={{fontSize:11,color:'#555',marginBottom:2}}>Net Position</div>
+                                    <div style={{fontWeight:700,fontSize:17,color:netPosition>=0?'#1565c0':'#e65100'}}>{netPosition>=0?'+':''}{fc(netPosition)}</div>
+                                    <div style={{fontSize:10,color:netPosition>=0?'#888':'#bf360c',fontWeight:netPosition<0?600:400}}>
+                                        {netPosition>=0?'Surplus':'Funding Gap'}
+                                        {hasContingency && <span style={{display:'block',fontWeight:400,color:'#aaa',fontStyle:'italic'}}>incl. {adjContingencyPct}% contingency</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="card">
+                    <div className="card-header">Funding Mix</div>
+                    <div className="card-body">
+                        <div className="chart-box"><canvas ref={chartRef}></canvas></div>
+                        {fundingSources.length > 0 && <div style={{textAlign:'center',marginTop:10,fontWeight:700,fontSize:18,color:'var(--primary)'}}>{fc(totalRevenue)} <span style={{fontSize:13,fontWeight:400,color:'#777'}}>total funding</span></div>}
+                    </div>
+                </div>
+            </div>
+
+            <div className="card">
+                <div className="card-header">
+                    Funding Sources
+                    <button className="btn btn-primary btn-sm no-print" onClick={addSrc}>Add Source</button>
+                </div>
+                <div className="card-body">
+                    {fundingSources.length === 0 && <div className="alert alert-info">No funding sources yet. Click "Add Source" to add manually, or use the "+" buttons in the Revenue tab to pull in grants and reallocations.</div>}
+                    {fundingSources.map(s => (
+                        <div key={s.id} className="funding-row">
+                            <select value={s.type} onChange={e=>updateSrc(s.id,'type',e.target.value)}>
+                                <option value="tax">Tax Revenue</option>
+                                <option value="grant">Grant</option>
+                                <option value="bond">Bond</option>
+                                <option value="private">Private</option>
+                                <option value="reallocation">Dept. Reallocation</option>
+                                <option value="other">Other</option>
+                            </select>
+                            <input type="text" placeholder="Description" value={s.description} onChange={e=>updateSrc(s.id,'description',e.target.value)} />
+                            <input type="number" placeholder="Amount" value={s.amount} onChange={e=>updateSrc(s.id,'amount',e.target.value)} />
+                            <button className="btn btn-danger btn-sm" onClick={()=>removeSrc(s.id)}>Remove</button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* ── Save / Load / New ── */}
+            <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',marginTop:4}}>
+                <button className="btn btn-primary" onClick={onSave}>Save Scenario</button>
+                <button className="btn btn-secondary" onClick={()=>setShowSaved(s=>!s)}>
+                    {showSaved?'Hide':'Load'} Saved ({savedScenarios.length})
+                </button>
+                <button className="btn btn-secondary" onClick={()=>{
+                    if((scenario.name||'').trim() || fundingSources.length > 1 || expenses.length > 0) {
+                        if(!window.confirm('Start a new scenario? Any unsaved changes will be lost.')) return;
+                    }
+                    onNew();
+                }}>New Scenario</button>
+                {saveMsg && <span style={{fontSize:13,color:'#2e7d32',fontWeight:600}}>{saveMsg}</span>}
+            </div>
+
+            {showSaved && (
+                <div className="card" style={{marginTop:16}}>
+                    <div className="card-header">Saved Scenarios</div>
+                    <div className="card-body">
+                        {savedScenarios.length === 0 && <div className="alert alert-info" style={{marginBottom:0}}>No saved scenarios yet. Click "Save Scenario" to save your current work.</div>}
+                        {savedScenarios.map(s => (
+                            <div key={s.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',background:'#f9f9f9',borderRadius:6,border:'1px solid #e0e0e0',marginBottom:8}}>
+                                <div style={{flex:1,minWidth:0}}>
+                                    <div style={{fontWeight:600,fontSize:14}}>{s.name}</div>
+                                    <div style={{fontSize:11,color:'#888'}}>
+                                        Saved {new Date(s.savedAt).toLocaleString()} &bull;{' '}
+                                        {fc((s.fundingSources||[]).reduce((t,f)=>t+(f.amount||0),0))} funding &bull;{' '}
+                                        {(s.expenses||[]).length} expense item{(s.expenses||[]).length!==1?'s':''}
+                                    </div>
+                                </div>
+                                <button className="btn btn-primary btn-sm" onClick={()=>{onLoad(s);setShowSaved(false);}}>Load</button>
+                                <button className="btn btn-danger btn-sm" onClick={()=>onDelete(s.id)}>Delete</button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TAB 2 — REVENUE: Grant Pipeline + Department Reallocation
+// ════════════════════════════════════════════════════════════════════════════
+function RevenueTab({ fundingGap, gapDetails, expenses, fundingSources, setFundingSources }) {
+    const [sub, setSub] = useState('grants');
+    return (
+        <div>
+            <h2>Revenue Analysis</h2>
+            <p className="page-desc">Identify and track grants to close funding gaps, and find reallocation opportunities within existing department budgets. Use the "+" buttons to add any source directly to your Scenario funding mix.</p>
+            <div className="sub-nav">
+                <button className={sub==='grants'?'active':''} onClick={()=>setSub('grants')}>Grant Pipeline</button>
+                <button className={sub==='realloc'?'active':''} onClick={()=>setSub('realloc')}>Department Reallocation</button>
+            </div>
+            {sub==='grants' && <GrantPipeline fundingGap={fundingGap} gapDetails={gapDetails} expenses={expenses} fundingSources={fundingSources} setFundingSources={setFundingSources} />}
+            {sub==='realloc' && <DeptReallocation fundingGap={fundingGap} fundingSources={fundingSources} setFundingSources={setFundingSources} />}
+        </div>
+    );
+}
+
+// Federal grant portal links
+const FEDERAL_PORTALS = [
+    {name:'Grants.gov',desc:'Primary federal grant portal — all agencies',url:'https://www.grants.gov/search-grants',category:'All Agencies'},
+    {name:'SAM.gov',desc:'System for Award Management — federal awards & contracts',url:'https://sam.gov/content/grants',category:'All Agencies'},
+    {name:'USASpending.gov',desc:'Track federal spending, awards, and grant history',url:'https://www.usaspending.gov/search/?award_type_codes=02,03,04,05',category:'All Agencies'},
+    {name:'GrantWatch',desc:'Comprehensive grant database including state & local',url:'https://www.grantwatch.com',category:'All Agencies'},
+    {name:'FHWA — Transportation',desc:'Federal Highway Administration infrastructure grants',url:'https://www.fhwa.dot.gov/federal-aidprogram/',category:'Infrastructure'},
+    {name:'FTA — Transit',desc:'Federal Transit Administration capital & formula grants',url:'https://www.transit.dot.gov/funding/grants',category:'Infrastructure'},
+    {name:'EPA Water Grants',desc:'Clean Water and Safe Drinking Water State Revolving Funds',url:'https://www.epa.gov/cwsrf',category:'Infrastructure'},
+    {name:'HUD Community Development',desc:'CDBG, HOME, and Choice Neighborhoods grants',url:'https://www.hud.gov/program_offices/comm_planning/cdbg',category:'Housing'},
+    {name:'FEMA Hazard Mitigation',desc:'BRIC, HMGP, and public assistance grants',url:'https://www.fema.gov/grants',category:'Public Safety'},
+    {name:'DOJ — COPS',desc:'Community Oriented Policing Services hiring grants',url:'https://cops.usdoj.gov/grants',category:'Public Safety'},
+    {name:'USDA Community Programs',desc:'Rural development, water, wastewater, and community facilities',url:'https://www.rd.usda.gov/programs-services/all-programs/community-facilities-programs',category:'Infrastructure'},
+    {name:'Dept. of Education',desc:'Title I, IDEA, and special programs for municipalities with schools',url:'https://www2.ed.gov/fund/grants-apply.html',category:'Education'},
+];
+
+// State grant portal links
+const STATE_PORTALS = {
+    'Alabama':'https://grantspb.alabama.gov',
+    'Alaska':'https://omb.alaska.gov/federal-grants',
+    'Arizona':'https://azgrants.az.gov',
+    'Arkansas':'https://www.dfa.arkansas.gov/offices/grant-management',
+    'California':'https://www.grants.ca.gov',
+    'Colorado':'https://www.colorado.gov/governor/grants',
+    'Connecticut':'https://biznet.ct.gov/grantsfinder',
+    'Florida':'https://floridajobs.org/grants',
+    'Georgia':'https://georgia.gov/grants',
+    'Hawaii':'https://sfca.hawaii.gov',
+    'Idaho':'https://legislature.idaho.gov',
+    'Illinois':'https://www.illinois.gov/topics/topic.grants.html',
+    'Indiana':'https://www.in.gov/inaccessibility/grants',
+    'Iowa':'https://www.iowa.gov/business/grants-and-loans',
+    'Kansas':'https://grants.ks.gov',
+    'Kentucky':'https://ky.gov/grants',
+    'Louisiana':'https://www.doa.la.gov/doa/opb/grants',
+    'Maine':'https://www.maine.gov/dafs/bbm/grants',
+    'Maryland':'https://msa.maryland.gov/msa/mdmanual/26exagn',
+    'Massachusetts':'https://www.mass.gov/grants',
+    'Michigan':'https://www.michigan.gov/grants',
+    'Minnesota':'https://mn.gov/admin/grants',
+    'Mississippi':'https://www.dfa.ms.gov',
+    'Missouri':'https://oa.mo.gov/financial-reporting/state-grants-management',
+    'Montana':'https://budget.mt.gov',
+    'Nebraska':'https://www.nebraska.gov/nebraskaonline/search/grant',
+    'Nevada':'https://budget.nv.gov',
+    'New Hampshire':'https://www.nh.gov/financial',
+    'New Jersey':'https://www.nj.gov/treasury/omb/grants',
+    'New Mexico':'https://www.generalservices.state.nm.us',
+    'New York':'https://grantsgateway.ny.gov',
+    'North Carolina':'https://grantsmanagement.nc.gov',
+    'North Dakota':'https://www.nd.gov/omb',
+    'Ohio':'https://grants.ohio.gov',
+    'Oklahoma':'https://omes.ok.gov/services/grants',
+    'Oregon':'https://www.oregon.gov/das/budget/pages/grants.aspx',
+    'Pennsylvania':'https://www.dgs.pa.gov/Materials-Services-Procurement/Grants',
+    'Rhode Island':'https://www.budget.ri.gov',
+    'South Carolina':'https://www.scstatehouse.gov',
+    'South Dakota':'https://bfm.sd.gov',
+    'Tennessee':'https://www.tn.gov/grants.html',
+    'Texas':'https://comptroller.texas.gov/programs/grants',
+    'Utah':'https://gomb.utah.gov',
+    'Vermont':'https://finance.vermont.gov',
+    'Virginia':'https://www.dhrm.virginia.gov/grants',
+    'Washington':'https://des.wa.gov/services/contracting-purchasing/grants',
+    'West Virginia':'https://www.wvcommerce.org/grants',
+    'Wisconsin':'https://doa.wi.gov/Pages/DoingBusiness/Grants.aspx',
+    'Wyoming':'https://wyoming.gov/grants',
+};
+
+function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFundingSources }) {
+    const [pipeline, setPipeline] = useState(() => lsGet('gs_grants',[]));
+    const [mappings, setMappings] = useState(() => lsGet('gs_grant_maps',{}));
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [searching, setSearching] = useState(false);
+    const [searchError, setSearchError] = useState('');
+    const [portalFilter, setPortalFilter] = useState('All Agencies');
+    const [selectedState, setSelectedState] = useState('');
+    const [showPortals, setShowPortals] = useState(false);
+
+    // Add a grant directly to the Scenario tab's funding sources.
+    // Checks by description to prevent duplicates.
+    const addGrantToScenario = (name, agency, amount) => {
+        const desc = `${name}${agency ? ' — ' + agency : ''}`;
+        const alreadyAdded = (fundingSources||[]).some(s => s.description === desc && s.type === 'grant');
+        if (alreadyAdded) return;
+        setFundingSources(prev => [...prev, {id:genId(), type:'grant', description:desc, amount: parseFloat(amount)||0}]);
+    };
+    const grantInScenario = (name, agency) => {
+        const desc = `${name}${agency ? ' — ' + agency : ''}`;
+        return (fundingSources||[]).some(s => s.description === desc && s.type === 'grant');
+    };
+
+    useEffect(() => { lsSet('gs_grants', pipeline); }, [pipeline]);
+    useEffect(() => { lsSet('gs_grant_maps', mappings); }, [mappings]);
+
+    const STATUS = ['Researching','Applied','Awarded','Denied'];
+    const S_BADGE = {Researching:'badge-gray',Applied:'badge-blue',Awarded:'badge-green',Denied:'badge-red'};
+
+    const track = (g) => {
+        const already = pipeline.some(p => p.name === g.name);
+        if (already) return;
+        setPipeline(p => [...p, {
+            id:genId(), name:g.name, agency:g.agency||'', category:g.category||'Other',
+            amount:g.min||g.amount||0, deadline:g.deadline||'', status:'Researching',
+            addedAt:new Date().toISOString(), url:g.url||''
+        }]);
+    };
+
+    const trackSearchResult = (r) => {
+        const already = pipeline.some(p => p.name === r.name);
+        if (already) return;
+        setPipeline(p => [...p, {
+            id:genId(), name:r.name, agency:r.agency||r.funder||'', category:r.category||'Other',
+            amount:r.amount||r.max_amount||0, deadline:r.deadline||r.close_date||'',
+            status:'Researching', addedAt:new Date().toISOString(), url:r.url||r.link||''
+        }]);
+    };
+
+    const advance = (id) => setPipeline(p => p.map(g => g.id!==id?g : {...g, status: STATUS[Math.min(STATUS.indexOf(g.status)+1, STATUS.length-1)]}));
+    const updateG = (id,f,v) => setPipeline(p => p.map(g => g.id!==id?g : {...g,[f]:f==='amount'?(parseFloat(v)||0):v}));
+    const removeG = (id) => { setPipeline(p=>p.filter(g=>g.id!==id)); setMappings(m=>{const n={...m};delete n[id];return n;}); };
+
+    const alerts = pipeline.filter(g => { const d=daysUntil(g.deadline); return d!==null&&d<=30; });
+    const awarded = pipeline.filter(g => g.status==='Awarded');
+
+    const runSearch = async () => {
+        if (!searchQuery.trim()) return;
+        setSearching(true); setSearchError(''); setSearchResults([]);
+
+        // Step 1: immediate client-side search against built-in library (always works)
+        const localResults = searchGrantLibrary(searchQuery);
+        setSearchResults(localResults);
+
+        // Step 2: try API in background, merge any additional results
+        try {
+            const r = await Promise.race([
+                api.searchGrants(searchQuery),
+                new Promise((_,rej) => setTimeout(()=>rej(new Error('timeout')),4000))
+            ]);
+            const apiGrants = (r.grants||r.results||[]).map(g => ({
+                ...g, name:g.name||g.title, _fromApi:true
+            }));
+            // Merge: add API results not already present in local results
+            const localNames = new Set(localResults.map(g=>g.name.toLowerCase()));
+            const newFromApi = apiGrants.filter(g => !localNames.has((g.name||'').toLowerCase()));
+            if (newFromApi.length) setSearchResults(prev => [...prev, ...newFromApi]);
+        } catch {
+            // API unavailable — local results already shown, no error needed
+        }
+
+        setSearching(false);
+    };
+
+    const filteredPortals = portalFilter==='All Agencies' ? FEDERAL_PORTALS : FEDERAL_PORTALS.filter(p=>p.category===portalFilter);
+    const portalCategories = ['All Agencies',...Array.from(new Set(FEDERAL_PORTALS.map(p=>p.category)))];
+
+    return (
+        <div>
+            {alerts.length > 0 && alerts.map(g => {
+                const d = daysUntil(g.deadline);
+                return <div key={g.id} className={`alert ${d<0?'alert-danger':'alert-warning'}`}>
+                    <strong>{d<0?'OVERDUE':'Deadline soon'}</strong> — {g.name}: {new Date(g.deadline).toLocaleDateString()} {d>=0&&`(${d} days)`}
+                </div>;
+            })}
+
+            {/* ── Grant Search ── */}
+            <div className="card" style={{marginBottom:18}}>
+                <div className="card-header">
+                    Grant Search
+                    <button className="btn btn-secondary btn-sm" onClick={()=>setShowPortals(p=>!p)}>{showPortals?'Hide':'Show'} External Portals</button>
+                </div>
+                <div className="card-body">
+                    <div style={{display:'flex',gap:10,marginBottom:10}}>
+                        <input type="text" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}
+                            onKeyDown={e=>e.key==='Enter'&&runSearch()}
+                            placeholder="Search by keyword, agency, or category — e.g. infrastructure, public safety, water..."
+                            style={{flex:1}} />
+                        <button className="btn btn-primary" onClick={runSearch} disabled={searching||!searchQuery.trim()}>
+                            {searching?'Searching...':'Search'}{searching&&<span className="loading"></span>}
+                        </button>
+                        {searchQuery.trim()&&<a href={`https://www.grants.gov/search-grants?keywords=${encodeURIComponent(searchQuery)}`} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" title="Search this query directly on Grants.gov">Search Grants.gov</a>}
+                    </div>
+
+                    {searchResults.length > 0 && (
+                        <div style={{marginBottom:14}}>
+                            <div style={{fontSize:13,fontWeight:600,color:'#555',marginBottom:8}}>
+                                {searchResults.length} result{searchResults.length!==1?'s':''} found
+                                {searching&&<span style={{fontWeight:400,color:'#888',marginLeft:8}}>— checking API for more...</span>}
+                            </div>
+                            {searchResults.map((r,i) => {
+                                const already = pipeline.some(p=>p.name===r.name);
+                                const amountDisplay = r.max ? `${fc(r.min||0)} – ${fc(r.max)}` : r.amount ? `Up to ${fc(r.amount)}` : null;
+                                return (
+                                    <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 12px',border:'1px solid #e3f2fd',borderRadius:6,marginBottom:7,background:'#fafeff'}}>
+                                        <div style={{flex:1,minWidth:0}}>
+                                            <div style={{fontWeight:600,fontSize:13}}>{r.name||r.title}</div>
+                                            <div style={{fontSize:11,color:'#777',marginTop:1}}>{r.agency||r.funder} {r.category&&<span className="badge badge-blue" style={{marginLeft:4}}>{r.category}</span>}</div>
+                                            {amountDisplay&&<div style={{fontSize:11,color:'#2e7d32',marginTop:2}}>{amountDisplay}</div>}
+                                            {(r.deadline||r.close_date)&&<div style={{fontSize:11,color:'#888'}}>Deadline: {r.deadline||r.close_date}</div>}
+                                        </div>
+                                        <div style={{display:'flex',gap:6,flexShrink:0}}>
+                                            {(r.url||r.link)&&<a href={r.url||r.link} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">View</a>}
+                                            <button className={`btn btn-sm ${already?'btn-secondary':'btn-primary'}`} disabled={already} onClick={()=>trackSearchResult(r)}>{already?'Tracking':'Track Grant'}</button>
+                                            {(() => { const inScenario = grantInScenario(r.name||r.title, r.agency||r.funder); return (
+                                                <button className={`btn btn-sm ${inScenario?'btn-secondary':'btn-success'}`} disabled={inScenario} title="Add to Scenario funding sources" onClick={()=>addGrantToScenario(r.name||r.title, r.agency||r.funder, r.max||r.amount||0)} style={{minWidth:28,fontWeight:700}}>
+                                                    {inScenario ? 'Added' : '+'}
+                                                </button>
+                                            ); })()}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                    {!searching && searchQuery.trim() && searchResults.length===0 && (
+                        <div className="alert alert-info">No matches found in the built-in library for "{searchQuery}". Try broader terms, or use the <a href={`https://www.grants.gov/search-grants?keywords=${encodeURIComponent(searchQuery)}`} target="_blank" rel="noopener noreferrer">Grants.gov search</a> to find additional programs.
+                        </div>
+                    )}
+
+                    {showPortals && (
+                        <div style={{borderTop:'1px solid #eee',paddingTop:16}}>
+                            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+                                <strong style={{fontSize:14}}>Federal Grant Portals</strong>
+                                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                                    {portalCategories.map(cat=>(
+                                        <button key={cat} className={`btn btn-sm ${portalFilter===cat?'btn-primary':'btn-secondary'}`} onClick={()=>setPortalFilter(cat)}>{cat}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:10,marginBottom:18}}>
+                                {filteredPortals.map((p,i) => (
+                                    <div key={i} style={{border:'1px solid #e0e0e0',borderRadius:6,padding:'10px 12px',background:'#fafafa',display:'flex',flexDirection:'column',gap:5}}>
+                                        <div style={{fontWeight:600,fontSize:13}}>{p.name}</div>
+                                        <div style={{fontSize:11,color:'#777',flex:1}}>{p.desc}</div>
+                                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                                            <span className="badge badge-blue">{p.category}</span>
+                                            <a href={p.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">Open Portal</a>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div style={{borderTop:'1px solid #eee',paddingTop:14}}>
+                                <strong style={{fontSize:14}}>State Grant Portals</strong>
+                                <p style={{fontSize:12,color:'#888',margin:'6px 0 10px'}}>Select a state to open its official grant portal in a new tab.</p>
+                                <div style={{display:'flex',gap:10,alignItems:'center'}}>
+                                    <select value={selectedState} onChange={e=>setSelectedState(e.target.value)} style={{flex:1,padding:'7px 10px',border:'1px solid #ddd',borderRadius:4,fontSize:14}}>
+                                        <option value="">-- Select a state --</option>
+                                        {Object.keys(STATE_PORTALS).sort().map(s=><option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                    <button className="btn btn-primary" disabled={!selectedState} onClick={()=>{ if(selectedState&&STATE_PORTALS[selectedState]) window.open(STATE_PORTALS[selectedState],'_blank'); }}>
+                                        Open State Portal
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* ── Auto-suggested grants when gap detected ── */}
+            {fundingGap && (
+                <div className="card" style={{marginBottom:18}}>
+                    <div className="card-header">
+                        Auto-Matched Grants for Your Funding Gap
+                        <span style={{fontSize:12,fontWeight:400,color:'#777'}}>Shortfall: {gapDetails.map(d=>`Yr ${d.year}: ${fc(d.shortfall)}`).join(', ')}</span>
+                    </div>
+                    <div className="card-body">
+                        <p style={{fontSize:13,color:'#777',marginBottom:12}}>These grants were matched to your project's categories and funding gap. Click "Track Grant" to add any to your pipeline.</p>
+                        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:12}}>
+                            {GRANT_TEMPLATES.map((g,i) => {
+                                const tracked = pipeline.some(p=>p.name===g.name);
+                                const d = daysUntil(g.deadline);
+                                return (
+                                    <div key={i} style={{border:'1px solid #ddd',borderRadius:8,padding:12,background:'#fafafa'}}>
+                                        <div style={{fontWeight:600,fontSize:13,marginBottom:3}}>{g.name}</div>
+                                        <div style={{fontSize:11,color:'#777',marginBottom:6}}>{g.agency}</div>
+                                        <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:8}}>
+                                            <span className="badge badge-blue">{g.category}</span>
+                                            <span style={{fontSize:11,color:'#444'}}>{fc(g.min)}–{fc(g.max)}</span>
+                                            {d!==null&&<span style={{fontSize:11,color:d<30?'#e65100':'#888'}}>Due {new Date(g.deadline).toLocaleDateString()}</span>}
+                                        </div>
+                                        <div style={{display:'flex',gap:6}}>
+                                            <button className={`btn btn-sm ${tracked?'btn-secondary':'btn-primary'}`} disabled={tracked} onClick={()=>track(g)}>{tracked?'Tracking':'Track Grant'}</button>
+                                            {(() => { const inScenario = grantInScenario(g.name, g.agency); return (
+                                                <button className={`btn btn-sm ${inScenario?'btn-secondary':'btn-success'}`} disabled={inScenario} title="Add to Scenario funding sources" onClick={()=>addGrantToScenario(g.name, g.agency, g.max||g.min||0)} style={{minWidth:28,fontWeight:700}}>
+                                                    {inScenario ? 'Added' : '+'}
+                                                </button>
+                                            ); })()}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {!fundingGap && <div className="alert alert-success">Project is currently fully funded. Auto-matched grants appear here when a funding gap is detected in Expenses &amp; Analytics.</div>}
+
+            {/* ── Pipeline Tracker ── */}
+            <div className="card" style={{marginBottom:18}}>
+                <div className="card-header">
+                    Pipeline Tracker ({pipeline.length} grants)
+                    <button className="btn btn-secondary btn-sm" onClick={()=>track(GRANT_TEMPLATES[0])}>Add Sample</button>
+                </div>
+                {pipeline.length===0
+                    ? <div style={{padding:18,color:'#999',fontSize:13,textAlign:'center'}}>No grants tracked yet. Use the search above, open a portal, or accept an auto-matched suggestion.</div>
+                    : <div style={{padding:10}}>
+                        {pipeline.map(g => {
+                            const d = daysUntil(g.deadline);
+                            return (
+                                <div key={g.id} className="grant-row">
+                                    <div style={{flex:1,minWidth:0}}>
+                                        <div style={{fontWeight:600,fontSize:13}}>
+                                            {g.url ? <a href={g.url} target="_blank" rel="noopener noreferrer" style={{color:'inherit',textDecoration:'none'}} title="Open grant page">{g.name}</a> : g.name}
+                                        </div>
+                                        <div style={{fontSize:11,color:'#777'}}>{g.agency} &bull; {g.category}</div>
+                                        {g.deadline && <div style={{fontSize:11,color:d!==null&&d<0?'#c62828':d!==null&&d<30?'#e65100':'#888'}}>
+                                            Deadline: {new Date(g.deadline).toLocaleDateString()} {d!==null&&d>=0&&`(${d}d)`} {d!==null&&d<0&&'OVERDUE'}
+                                        </div>}
+                                    </div>
+                                    <input type="number" value={g.amount} onChange={e=>updateG(g.id,'amount',e.target.value)} style={{width:110,padding:'4px 8px',border:'1px solid #ddd',borderRadius:4,fontSize:12,textAlign:'right'}} />
+                                    <span className={`badge ${S_BADGE[g.status]}`}>{g.status}</span>
+                                    <button className="btn btn-secondary btn-sm" disabled={g.status==='Denied'||g.status==='Awarded'} onClick={()=>advance(g.id)}>Advance</button>
+                                    {(() => { const inScenario = grantInScenario(g.name, g.agency); return (
+                                        <button className={`btn btn-sm ${inScenario?'btn-secondary':'btn-success'}`} disabled={inScenario} title="Add to Scenario funding sources" onClick={()=>addGrantToScenario(g.name, g.agency, g.amount)} style={{minWidth:28,fontWeight:700}}>
+                                            {inScenario ? 'Added' : '+'}
+                                        </button>
+                                    ); })()}
+                                    <button className="btn btn-danger btn-sm" onClick={()=>removeG(g.id)}>Remove</button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                }
+            </div>
+
+            {/* ── Awarded grant → expense mapping ── */}
+            {awarded.length > 0 && (
+                <div className="card">
+                    <div className="card-header">Awarded Grant — Budget Mapping</div>
+                    <div className="card-body">
+                        <p style={{fontSize:13,color:'#777',marginBottom:12}}>Assign each awarded grant to a specific expense line item.</p>
+                        {awarded.map(g => (
+                            <div key={g.id} style={{display:'flex',alignItems:'center',gap:12,padding:10,background:'#f9f9f9',borderRadius:6,marginBottom:8,border:'1px solid #e8f5e9'}}>
+                                <div style={{flex:1}}>
+                                    <span className="badge badge-green" style={{marginRight:6}}>Awarded</span>
+                                    <strong style={{fontSize:13}}>{g.name}</strong>
+                                    <span style={{marginLeft:8,color:'#1565c0',fontWeight:600}}>{fc(g.amount)}</span>
+                                </div>
+                                <select value={mappings[g.id]||''} onChange={e=>setMappings(m=>({...m,[g.id]:e.target.value}))} style={{padding:'4px 8px',border:'1px solid #ddd',borderRadius:4,fontSize:12}}>
+                                    <option value="">-- Assign to expense --</option>
+                                    {expenses.map(exp => <option key={exp.id} value={exp.id}>Yr {exp.year}: {exp.label||exp.category} ({fc(exp.amount)})</option>)}
+                                </select>
+                                {mappings[g.id] && <span className="badge badge-green">Mapped</span>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function DeptReallocation({ fundingGap, fundingSources, setFundingSources }) {
+    const [depts, setDepts] = useState(SAMPLE_DEPTS);
+    const [safetyFloor, setSafetyFloor] = useState(85);
+    const [targetAmount, setTargetAmount] = useState(0);
+
+    // Add a dept reallocation amount to the Scenario funding sources.
+    const addReallocToScenario = (deptName, amount) => {
+        const desc = `${deptName} Budget Reallocation`;
+        const already = (fundingSources||[]).some(s => s.description === desc && s.type === 'reallocation');
+        if (already) return;
+        setFundingSources(prev => [...prev, {id:genId(), type:'reallocation', description:desc, amount}]);
+    };
+    const reallocInScenario = (deptName) => {
+        const desc = `${deptName} Budget Reallocation`;
+        return (fundingSources||[]).some(s => s.description === desc && s.type === 'reallocation');
+    };
+
+    const computeRealloc = (dept) => {
+        const variance = dept.budget - dept.actual;            // unspent budget (the pool to draw from)
+        const maxRealloc = dept.budget * (1 - safetyFloor / 100); // cap = (100-floor)% of total budget
+        return Math.max(0, Math.min(variance, maxRealloc));
+    };
+
+    const totalAvailable = depts.reduce((s,d) => s+computeRealloc(d), 0);
+    const recomDepts = depts.filter(d => computeRealloc(d) > 0).sort((a,b)=>computeRealloc(b)-computeRealloc(a));
+
+    return (
+        <div>
+            <div className="alert alert-info">
+                The reallocation scanner analyzes actual spend versus budgeted amounts across departments. It identifies where budget headroom exists and suggests safe reallocation amounts without starving any department below its operational floor.
+            </div>
+
+            <div className="grid-2" style={{marginBottom:18}}>
+                <div className="card">
+                    <div className="card-header">Reallocation Parameters</div>
+                    <div className="card-body">
+                        <div className="form-group">
+                            <label>Safety Floor — minimum % of budget a dept must retain: <strong>{safetyFloor}%</strong></label>
+                            <div className="slider-row">
+                                <input type="range" min={70} max={100} value={safetyFloor} onChange={e=>setSafetyFloor(+e.target.value)} />
+                                <span className="slider-val">{safetyFloor}%</span>
+                            </div>
+                            <div style={{fontSize:12,color:'#888',marginTop:4}}>At {safetyFloor}%, each department can contribute at most {100-safetyFloor}% of its total budget. Departments with more unspent budget are ranked first.</div>
+                        </div>
+                        {fundingGap && (
+                            <div className="form-group">
+                                <label>Funding gap to close</label>
+                                <input type="number" value={targetAmount} min={0} onChange={e=>setTargetAmount(parseFloat(e.target.value)||0)} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div>
+                    <div className="grid-2" style={{marginBottom:12}}>
+                        <div className="stat-card">
+                            <div className="stat-value" style={{color:'#2e7d32'}}>{fc(totalAvailable)}</div>
+                            <div className="stat-label">Total Realloc. Potential</div>
+                        </div>
+                        <div className="stat-card">
+                            <div className="stat-value">{recomDepts.length}</div>
+                            <div className="stat-label">Depts with Headroom</div>
+                        </div>
+                    </div>
+                    {fundingGap && targetAmount > 0 && (
+                        <div className={`alert ${totalAvailable >= targetAmount ? 'alert-success' : 'alert-warning'}`}>
+                            {totalAvailable >= targetAmount
+                                ? `Reallocation can fully cover the ${fc(targetAmount)} target. Surplus available: ${fc(totalAvailable-targetAmount)}.`
+                                : `Reallocation covers ${fc(totalAvailable)} of the ${fc(targetAmount)} target. Remaining gap: ${fc(targetAmount-totalAvailable)}.`}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="card" style={{marginBottom:18}}>
+                <div className="card-header">Budget vs. Actuals — All Departments</div>
+                <div style={{overflowX:'auto'}}>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Department</th>
+                                <th style={{textAlign:'right'}}>Approved Budget</th>
+                                <th style={{textAlign:'right'}}>Current Actual</th>
+                                <th style={{textAlign:'right'}}>Variance</th>
+                                <th style={{textAlign:'right'}}>% Utilized</th>
+                                <th>Utilization</th>
+                                <th style={{textAlign:'right'}} title={`Maximum each dept can give = ${100-safetyFloor}% of their budget`}>Max Contribution ({100-safetyFloor}%)</th>
+                                <th style={{textAlign:'right'}}>Realloc. Available</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {depts.map(dept => {
+                                const variance = dept.budget - dept.actual;
+                                const utilized = (dept.actual / dept.budget) * 100;
+                                const maxContrib = dept.budget * (1 - safetyFloor / 100);
+                                const avail = computeRealloc(dept);
+                                const barColor = utilized > 95 ? '#f44336' : utilized > 80 ? '#ff9800' : '#4caf50';
+                                return (
+                                    <tr key={dept.id}>
+                                        <td><strong>{dept.name}</strong></td>
+                                        <td style={{textAlign:'right'}}>{fc(dept.budget)}</td>
+                                        <td style={{textAlign:'right'}}>{fc(dept.actual)}</td>
+                                        <td style={{textAlign:'right',color:variance>0?'#2e7d32':'#c62828'}}>{variance>0?'+':''}{fc(variance)}</td>
+                                        <td style={{textAlign:'right'}}>{fp(utilized)}</td>
+                                        <td style={{minWidth:120}}>
+                                            <div className="realloc-bar-track">
+                                                <div className="realloc-bar-fill" style={{width:`${Math.min(utilized,100)}%`,background:barColor}} />
+                                            </div>
+                                        </td>
+                                        <td style={{textAlign:'right',color:'#999'}}>{fc(maxContrib)}</td>
+                                        <td style={{textAlign:'right',fontWeight:avail>0?700:400,color:avail>0?'#1565c0':'#999'}}>
+                                            {avail>0 ? fc(avail) : '—'}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {recomDepts.length > 0 && (
+                <div className="card">
+                    <div className="card-header">Reallocation Recommendations</div>
+                    <div className="card-body">
+                        <p style={{fontSize:13,color:'#777',marginBottom:14}}>These departments have budget headroom above the {safetyFloor}% safety floor. Listed from highest to lowest available capacity.</p>
+                        {recomDepts.map((dept,i) => {
+                            const avail = computeRealloc(dept);
+                            const pct = (avail / totalAvailable * 100).toFixed(0);
+                            const inScenario = reallocInScenario(dept.name);
+                            return (
+                                <div key={dept.id} style={{display:'flex',alignItems:'center',gap:14,marginBottom:12,padding:'10px 14px',background:'#f0f7ff',borderRadius:6,border:`1px solid ${inScenario?'#a5d6a7':'#bbdefb'}`}}>
+                                    <div style={{width:22,height:22,background:'#1976d2',borderRadius:'50%',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,flexShrink:0}}>{i+1}</div>
+                                    <div style={{flex:1}}>
+                                        <div style={{fontWeight:600,fontSize:13}}>{dept.name}</div>
+                                        <div style={{fontSize:11,color:'#777'}}>Actual {fc(dept.actual)} of {fc(dept.budget)} budget ({fp(dept.actual/dept.budget*100)} utilized)</div>
+                                    </div>
+                                    <div style={{textAlign:'right',marginRight:4}}>
+                                        <div style={{fontWeight:700,color:'#1565c0',fontSize:16}}>{fc(avail)}</div>
+                                        <div style={{fontSize:11,color:'#888'}}>{pct}% of potential</div>
+                                    </div>
+                                    <button
+                                        className={`btn btn-sm ${inScenario?'btn-secondary':'btn-success'}`}
+                                        disabled={inScenario}
+                                        title={inScenario ? 'Already in Scenario' : 'Add reallocation to Scenario funding sources'}
+                                        onClick={() => addReallocToScenario(dept.name, avail)}
+                                        style={{minWidth:36,fontWeight:700,flexShrink:0}}
+                                    >
+                                        {inScenario ? 'Added' : '+'}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TAB 3 — EXPENSES & ANALYTICS
+// ════════════════════════════════════════════════════════════════════════════
+function ExpensesTab({ expenses, setExpenses, fundingSources, onGapChange, annotations, setAnnotations, projectYears }) {
+    const [sub, setSub] = useState('planner');
+    return (
+        <div>
+            <h2>Expenses &amp; Analytics</h2>
+            <p className="page-desc">Plan projected expenses with inflation and contingency, then visualize cash flow, funding diversity, and return on investment.</p>
+            <div className="sub-nav">
+                <button className={sub==='planner'?'active':''} onClick={()=>setSub('planner')}>Expense Planner</button>
+                <button className={sub==='analytics'?'active':''} onClick={()=>setSub('analytics')}>Analytics</button>
+            </div>
+            {sub==='planner' && <ExpensePlanner expenses={expenses} setExpenses={setExpenses} fundingSources={fundingSources} onGapChange={onGapChange} annotations={annotations} setAnnotations={setAnnotations} projectYears={projectYears} />}
+            {sub==='analytics' && <Analytics expenses={expenses} fundingSources={fundingSources} projectYears={projectYears} />}
+        </div>
+    );
+}
+
+function ExpensePlanner({ expenses, setExpenses, fundingSources, onGapChange, annotations, setAnnotations, projectYears }) {
+    const [inflation, setInflation] = useState({Infrastructure:4,Staffing:3,Maintenance:2.5,Technology:1.5,Other:3});
+    const [contingency, setContingency] = useState(10);
+    const [applyInfl, setApplyInfl] = useState(false);
+    const [openRow, setOpenRow] = useState(null);
+    const [cmtText, setCmtText] = useState('');
+    // Use the server-injected user identity for inline expense notes
+    const gsUser = (typeof window !== 'undefined' && window.GOVSIGHT_USER) || {};
+    const cmtAuthor = gsUser.name || 'Anonymous';
+
+    // Duplicate-with-adjustment state. Holds the source expense id, the % change per year,
+    // and which target years the user wants to copy to (defaults: all other years).
+    const [dupState, setDupState] = useState(null);
+
+    const numYrs = parseInt(projectYears)||5;
+    const years = Array.from({length:numYrs},(_,i)=>i+1);
+    const totalFunding = fundingSources.reduce((s,f)=>s+(f.amount||0),0);
+    const fundPerYr = totalFunding/Math.max(numYrs,1);
+
+    const inflated = (exp) => {
+        if (!applyInfl||exp.year<=1) return exp.amount||0;
+        return (exp.amount||0)*Math.pow(1+(inflation[exp.category]||3)/100, exp.year-1);
+    };
+
+    const addExp = () => setExpenses(p=>[...p,{id:genId(),year:1,label:'',amount:0,category:'Infrastructure'}]);
+    const updExp = (id,f,v) => setExpenses(p=>p.map(e=>e.id===id?{...e,[f]:f==='amount'||f==='year'?(parseFloat(v)||0):v}:e));
+    const delExp = (id) => setExpenses(p=>p.filter(e=>e.id!==id));
+
+    // Open the duplicate panel for an expense row.
+    // Defaults to 3% annual increase applied to all other years in the project.
+    const openDup = (exp) => {
+        const sourceYear = parseInt(exp.year)||1;
+        const otherYears = years.filter(y => y !== sourceYear);
+        setDupState({id: exp.id, sourceYear, pct: 3, targetYears: otherYears});
+        setOpenRow(null); // close notes if open
+    };
+
+    // Apply the duplication: for each selected target year, create a new expense row
+    // with the amount compounded from the source year using the chosen % per year.
+    const applyDup = () => {
+        const source = expenses.find(e => e.id === dupState.id);
+        if (!source) { setDupState(null); return; }
+        const newRows = dupState.targetYears.map(yr => ({
+            ...source,
+            id: genId(),
+            year: yr,
+            amount: Math.round((parseFloat(source.amount)||0) * Math.pow(1 + dupState.pct/100, yr - dupState.sourceYear)),
+        }));
+        setExpenses(prev => [...prev, ...newRows].sort((a,b) => (parseInt(a.year)||0)-(parseInt(b.year)||0)));
+        setDupState(null);
+    };
+
+    const toggleDupYear = (yr) => {
+        setDupState(ds => ({...ds, targetYears: ds.targetYears.includes(yr) ? ds.targetYears.filter(y=>y!==yr) : [...ds.targetYears, yr].sort((a,b)=>a-b)}));
+    };
+
+    const yearData = years.map(yr => {
+        const exps = expenses.filter(e=>parseInt(e.year)===yr);
+        const raw = exps.reduce((s,e)=>s+inflated(e),0);
+        const cont = raw*(contingency/100);
+        const total = raw+cont;
+        const gap = fundPerYr-total;
+        return {yr,raw,cont,total,gap};
+    });
+    const totalGap = yearData.reduce((s,d)=>s+d.gap,0);
+
+    useEffect(()=>{
+        const gapDetails = yearData.filter(d=>d.gap<0).map(d=>({year:d.yr,shortfall:Math.abs(d.gap)}));
+        const adjTotal = yearData.reduce((s,d)=>s+d.total,0);
+        onGapChange(totalGap<0, gapDetails, adjTotal, contingency);
+    },[expenses,fundingSources,contingency,applyInfl,inflation]);
+
+    const addNote = (rowId) => {
+        if (!cmtText.trim()) return;
+        setAnnotations(p=>[...p,{id:genId(),target:`exp:${rowId}`,authorName:cmtAuthor||'Anonymous',text:cmtText,timestamp:new Date().toISOString()}]);
+        setCmtText(''); setOpenRow(null);
+    };
+
+    const rowNotes = (id) => annotations.filter(a=>a.target===`exp:${id}`);
+
+    return (
+        <div>
+            <div className="card" style={{marginBottom:16}}>
+                <div className="card-header">
+                    Inflation &amp; Contingency
+                    <label style={{display:'flex',alignItems:'center',gap:6,fontWeight:400,fontSize:13,cursor:'pointer'}}>
+                        <input type="checkbox" checked={applyInfl} onChange={e=>setApplyInfl(e.target.checked)} /> Apply compound inflation to future years
+                    </label>
+                </div>
+                <div className="card-body">
+                    {applyInfl && (
+                        <div className="grid-3" style={{marginBottom:14}}>
+                            {CATS.map(cat=>(
+                                <div key={cat} className="form-group" style={{marginBottom:0}}>
+                                    <label>{cat} Inflation (%)</label>
+                                    <input type="number" min={0} max={20} step={0.5} value={inflation[cat]} onChange={e=>setInflation(r=>({...r,[cat]:parseFloat(e.target.value)||0}))} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <div className="form-group" style={{marginBottom:0}}>
+                        <label>Contingency Buffer: <strong>{contingency}%</strong></label>
+                        <div className="slider-row">
+                            <input type="range" min={0} max={30} value={contingency} onChange={e=>setContingency(+e.target.value)} />
+                            <span className="slider-val">{contingency}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="card" style={{marginBottom:16}}>
+                <div className="card-header">
+                    Expense Line Items
+                    <button className="btn btn-primary btn-sm" onClick={addExp}>Add Expense</button>
+                </div>
+                {expenses.length===0
+                    ? <div style={{padding:16}}><div className="alert alert-info" style={{marginBottom:0}}>No expenses added. Click "Add Expense" to build your timeline.</div></div>
+                    : <div style={{overflowX:'auto'}}>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th style={{width:70}}>Year</th>
+                                    <th>Label</th>
+                                    <th>Category</th>
+                                    <th style={{textAlign:'right'}}>Amount</th>
+                                    {applyInfl&&<th style={{textAlign:'right'}}>Adj. Amount</th>}
+                                    <th style={{width:80}}>Notes</th>
+                                    <th style={{width:110}}></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {expenses.map(exp=>(
+                                    <React.Fragment key={exp.id}>
+                                        <tr style={{background: dupState&&dupState.id===exp.id ? '#fff8e1' : undefined}}>
+                                            <td><input type="number" min={1} max={numYrs} value={exp.year} onChange={e=>updExp(exp.id,'year',e.target.value)} style={{width:55,padding:'3px 6px',border:'1px solid #ddd',borderRadius:4}} /></td>
+                                            <td><input type="text" value={exp.label} placeholder="Description" onChange={e=>updExp(exp.id,'label',e.target.value)} style={{width:'100%',padding:'3px 8px',border:'1px solid #ddd',borderRadius:4}} /></td>
+                                            <td>
+                                                <select value={exp.category} onChange={e=>updExp(exp.id,'category',e.target.value)} style={{padding:'3px 6px',border:'1px solid #ddd',borderRadius:4}}>
+                                                    {CATS.map(c=><option key={c}>{c}</option>)}
+                                                </select>
+                                            </td>
+                                            <td style={{textAlign:'right'}}><input type="number" min={0} value={exp.amount} onChange={e=>updExp(exp.id,'amount',e.target.value)} style={{width:110,padding:'3px 8px',border:'1px solid #ddd',borderRadius:4,textAlign:'right'}} /></td>
+                                            {applyInfl&&<td style={{textAlign:'right',color:'#1565c0',fontWeight:500}}>{fc(inflated(exp))}</td>}
+                                            <td>
+                                                <span className="comment-link" onClick={()=>{setOpenRow(openRow===exp.id?null:exp.id);setDupState(null);}}>
+                                                    [{rowNotes(exp.id).length}] notes
+                                                </span>
+                                            </td>
+                                            <td style={{whiteSpace:'nowrap'}}>
+                                                <button className={`btn btn-sm ${dupState&&dupState.id===exp.id?'btn-secondary':'btn-primary'}`} style={{marginRight:4}} title="Copy to other years with % adjustment" onClick={()=>dupState&&dupState.id===exp.id?setDupState(null):openDup(exp)}>
+                                                    {dupState&&dupState.id===exp.id?'Cancel':'Copy'}
+                                                </button>
+                                                <button className="btn btn-danger btn-sm" onClick={()=>delExp(exp.id)}>Del</button>
+                                            </td>
+                                        </tr>
+
+                                        {/* Inline duplicate panel — year selector + % adjustment */}
+                                        {dupState&&dupState.id===exp.id&&(
+                                            <tr>
+                                                <td colSpan={applyInfl?7:6} style={{padding:0}}>
+                                                    <div style={{padding:'12px 16px',background:'#fffde7',borderBottom:'2px solid #ffe57f'}}>
+                                                        <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:'#555'}}>
+                                                            Copy "{exp.label||'this expense'}" ({fc(exp.amount)}) to other years
+                                                        </div>
+                                                        <div style={{display:'flex',flexWrap:'wrap',gap:16,alignItems:'flex-start'}}>
+                                                            <div>
+                                                                <div style={{fontSize:12,fontWeight:600,marginBottom:6,color:'#555'}}>Annual adjustment %</div>
+                                                                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                                                                    <input type="number" step={0.1} value={dupState.pct}
+                                                                        onChange={e=>setDupState(ds=>({...ds,pct:parseFloat(e.target.value)||0}))}
+                                                                        style={{width:80,padding:'5px 8px',border:'1px solid #ddd',borderRadius:4,fontSize:13,textAlign:'center'}} />
+                                                                    <span style={{fontSize:12,color:'#888'}}>% per year<br/>(0 = exact copy, 3 = +3%/yr)</span>
+                                                                </div>
+                                                            </div>
+                                                            <div style={{flex:1}}>
+                                                                <div style={{fontSize:12,fontWeight:600,marginBottom:6,color:'#555'}}>
+                                                                    Copy to years
+                                                                    <button style={{marginLeft:8,fontSize:11,padding:'2px 7px',border:'1px solid #bbb',borderRadius:3,cursor:'pointer',background:'#fff'}} onClick={()=>setDupState(ds=>({...ds,targetYears:years.filter(y=>y!==ds.sourceYear)}))}>All</button>
+                                                                    <button style={{marginLeft:4,fontSize:11,padding:'2px 7px',border:'1px solid #bbb',borderRadius:3,cursor:'pointer',background:'#fff'}} onClick={()=>setDupState(ds=>({...ds,targetYears:[]}))}>None</button>
+                                                                </div>
+                                                                <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                                                                    {years.filter(y=>y!==dupState.sourceYear).map(yr=>{
+                                                                        const checked = dupState.targetYears.includes(yr);
+                                                                        const previewAmt = Math.round((parseFloat(exp.amount)||0)*Math.pow(1+dupState.pct/100,yr-dupState.sourceYear));
+                                                                        return (
+                                                                            <label key={yr} style={{display:'flex',alignItems:'center',gap:4,padding:'4px 8px',border:`1px solid ${checked?'#1976d2':'#ddd'}`,borderRadius:4,cursor:'pointer',background:checked?'#e3f2fd':'#fafafa',fontSize:12}}>
+                                                                                <input type="checkbox" checked={checked} onChange={()=>toggleDupYear(yr)} style={{margin:0}} />
+                                                                                <span>Yr {yr}</span>
+                                                                                {dupState.pct!==0&&<span style={{color:'#1565c0',fontWeight:600,fontSize:11}}>{fc(previewAmt)}</span>}
+                                                                            </label>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{marginTop:12,display:'flex',gap:8}}>
+                                                            <button className="btn btn-primary" disabled={dupState.targetYears.length===0} onClick={applyDup}>
+                                                                Copy to {dupState.targetYears.length} year{dupState.targetYears.length!==1?'s':''}
+                                                            </button>
+                                                            <button className="btn btn-secondary" onClick={()=>setDupState(null)}>Cancel</button>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {openRow===exp.id&&(
+                                            <tr>
+                                                <td colSpan={applyInfl?7:6} style={{padding:0}}>
+                                                    <div className="inline-note">
+                                                        {rowNotes(exp.id).map(n=>(
+                                                            <div key={n.id} style={{marginBottom:6}}>
+                                                                <div style={{fontSize:11,color:'#888'}}><strong>{n.authorName}</strong> &bull; {timeAgo(n.timestamp)}</div>
+                                                                <div style={{fontSize:13}}>{n.text}</div>
+                                                            </div>
+                                                        ))}
+                                                        <div style={{display:'flex',gap:6,marginTop:6,alignItems:'center'}}>
+                                                            <span style={{fontSize:12,color:'#555',fontWeight:600,flexShrink:0}}>{cmtAuthor}</span>
+                                                            <input type="text" placeholder="Add note..." value={cmtText} onChange={e=>setCmtText(e.target.value)} style={{flex:1,padding:'4px 7px',border:'1px solid #ddd',borderRadius:4,fontSize:12}} />
+                                                            <button className="btn btn-primary btn-sm" onClick={()=>addNote(exp.id)}>Add</button>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+
+            {expenses.length>0&&(
+                <div className="card">
+                    <div className="card-header">Funding Gap Analysis — Year by Year</div>
+                    <div style={{overflowX:'auto'}}>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Year</th>
+                                    <th style={{textAlign:'right'}}>Expenses</th>
+                                    <th style={{textAlign:'right'}}>Contingency ({contingency}%)</th>
+                                    <th style={{textAlign:'right'}}>Total Cost</th>
+                                    <th style={{textAlign:'right'}}>Funding</th>
+                                    <th style={{textAlign:'right'}}>Gap / Surplus</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {yearData.map(d=>(
+                                    <tr key={d.yr} className={d.gap>=0?'row-surplus':'row-gap'}>
+                                        <td><strong>Year {d.yr}</strong></td>
+                                        <td style={{textAlign:'right'}}>{fc(d.raw)}</td>
+                                        <td style={{textAlign:'right',color:'#e65100'}}>{fc(d.cont)}</td>
+                                        <td style={{textAlign:'right',fontWeight:600}}>{fc(d.total)}</td>
+                                        <td style={{textAlign:'right'}}>{fc(fundPerYr)}</td>
+                                        <td style={{textAlign:'right',fontWeight:700,color:d.gap>=0?'#2e7d32':'#c62828'}}>{d.gap>=0?'+':''}{fc(d.gap)}</td>
+                                        <td>{d.gap>=0?<span className="badge badge-green">Funded</span>:<span className="badge badge-red">Gap</span>}</td>
+                                    </tr>
+                                ))}
+                                <tr style={{fontWeight:700,background:'#f5f5f5'}}>
+                                    <td>Total</td>
+                                    <td style={{textAlign:'right'}}>{fc(yearData.reduce((s,d)=>s+d.raw,0))}</td>
+                                    <td style={{textAlign:'right',color:'#e65100'}}>{fc(yearData.reduce((s,d)=>s+d.cont,0))}</td>
+                                    <td style={{textAlign:'right'}}>{fc(yearData.reduce((s,d)=>s+d.total,0))}</td>
+                                    <td style={{textAlign:'right'}}>{fc(totalFunding)}</td>
+                                    <td style={{textAlign:'right',color:totalGap>=0?'#2e7d32':'#c62828'}}>{totalGap>=0?'+':''}{fc(totalGap)}</td>
+                                    <td>{totalGap>=0?<span className="badge badge-green">Fully Funded</span>:<span className="badge badge-red">Gap</span>}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    {totalGap<0&&<div style={{padding:'10px 16px'}}><div className="alert alert-warning" style={{marginBottom:0}}>Total shortfall of {fc(Math.abs(totalGap))}. Visit the <strong>Revenue</strong> tab to find grants and reallocation opportunities.</div></div>}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function Analytics({ expenses, fundingSources, projectYears }) {
+    const cashRef = useRef(null); const cashChart = useRef(null);
+    const divRef = useRef(null); const divChart = useRef(null);
+    const [roi, setRoi] = useState({cost:5000000,benefit:750000,duration:10,rate:5});
+    const [roiRes, setRoiRes] = useState(null);
+
+    const numYrs = parseInt(projectYears)||5;
+    const years = Array.from({length:numYrs},(_,i)=>i+1);
+    const totalFunding = fundingSources.reduce((s,f)=>s+(f.amount||0),0);
+    const fpY = totalFunding/Math.max(numYrs,1);
+
+    useEffect(()=>{
+        if (!cashRef.current) return;
+        if (cashChart.current) cashChart.current.destroy();
+        const ctx = cashRef.current.getContext('2d');
+        const datasets = CATS.map(cat=>({
+            label:cat, stack:'e',
+            data:years.map(yr=>expenses.filter(e=>parseInt(e.year)===yr&&e.category===cat).reduce((s,e)=>s+(e.amount||0),0)),
+            backgroundColor:CAT_COLORS[cat]
+        }));
+        let cum=0;
+        datasets.push({label:'Cumulative Funding',type:'line',borderColor:'#000',borderWidth:2,borderDash:[5,3],pointRadius:4,fill:false,data:years.map(()=>{cum+=fpY;return cum;})});
+        cashChart.current = new Chart(ctx,{
+            type:'bar',
+            data:{labels:years.map(y=>`Year ${y}`),datasets},
+            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},title:{display:true,text:'Year-by-Year Cash Flow'}},scales:{y:{stacked:true,ticks:{callback:v=>fc(v)},beginAtZero:true},x:{stacked:true}}}
+        });
+    },[expenses,fundingSources,projectYears]);
+
+    const typeGroups = fundingSources.reduce((acc,f)=>{const l=f.type.charAt(0).toUpperCase()+f.type.slice(1);acc[l]=(acc[l]||0)+(f.amount||0);return acc;},{});
+    const totalFund = fundingSources.reduce((s,f)=>s+(f.amount||0),0);
+    const maxShare = totalFund>0 ? Math.max(...Object.values(typeGroups))/totalFund*100 : 0;
+    const score = Math.max(0,Math.round(100-Math.max(0,(maxShare-40)/60*50)));
+    const scoreCls = score>=85?'score-excellent':score>=70?'score-good':score>=50?'score-risk':'score-critical';
+    const scoreLbl = score>=85?'Excellent':score>=70?'Good':score>=50?'At Risk':'Critical';
+
+    useEffect(()=>{
+        if (!divRef.current||!Object.keys(typeGroups).length) return;
+        if (divChart.current) divChart.current.destroy();
+        const ctx = divRef.current.getContext('2d');
+        divChart.current = new Chart(ctx,{type:'bar',data:{labels:Object.keys(typeGroups),datasets:[{label:'Funding ($)',data:Object.values(typeGroups),backgroundColor:['#1976d2','#4caf50','#ff9800','#9c27b0','#607d8b']}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fc(v)}}}}});
+    },[fundingSources]);
+
+    const calcROI = () => {
+        const {cost,benefit,duration,rate} = roi;
+        const r = rate/100;
+        let npv = -cost;
+        for (let t=1;t<=duration;t++) npv += benefit/Math.pow(1+r,t);
+        const bcr = (npv+cost)/cost;
+        const payback = cost/benefit;
+        let lo=-0.99,hi=10,irr=0;
+        for (let i=0;i<50;i++) { irr=(lo+hi)/2; let n=-cost; for(let t=1;t<=duration;t++) n+=benefit/Math.pow(1+irr,t); if(n>0) lo=irr; else hi=irr; }
+        setRoiRes({npv,bcr,payback,irr:irr*100});
+    };
+
+    return (
+        <div>
+            <div className="card" style={{marginBottom:16}}>
+                <div className="card-header">Year-by-Year Cash Flow</div>
+                <div className="card-body"><div className="chart-box" style={{height:300}}><canvas ref={cashRef}></canvas></div></div>
+            </div>
+            <div className="grid-2">
+                <div className="card">
+                    <div className="card-header">Funding Diversity Score</div>
+                    <div className="card-body">
+                        {!fundingSources.length
+                            ? <div className="alert alert-info">Add funding sources in the Scenario tab to see diversity analysis.</div>
+                            : <>
+                                <div className={`score-ring ${scoreCls}`}>{score}<small>{scoreLbl}</small></div>
+                                {maxShare>90&&<div className="alert alert-danger" style={{marginTop:12}}>{fp(maxShare,0)} of funding from a single source — critical over-reliance.</div>}
+                                {maxShare>70&&maxShare<=90&&<div className="alert alert-warning" style={{marginTop:12}}>{fp(maxShare,0)} from one source — consider diversifying.</div>}
+                                <div style={{marginTop:12}}>
+                                    {Object.entries(typeGroups).map(([t,a])=>{
+                                        const pct = totalFund>0?a/totalFund*100:0;
+                                        return <div key={t} className="diversity-bar-wrap">
+                                            <div className="diversity-bar-lbl"><span>{t}</span><span>{fp(pct,0)} — {fc(a)}</span></div>
+                                            <div className="diversity-bar-track"><div className="diversity-bar-fill" style={{width:`${pct}%`,background:pct>70?'#e65100':'#1976d2'}} /></div>
+                                        </div>;
+                                    })}
+                                </div>
+                                <div className="chart-box" style={{height:150,marginTop:12}}><canvas ref={divRef}></canvas></div>
+                            </>
+                        }
+                    </div>
+                </div>
+                <div className="card">
+                    <div className="card-header">ROI / Cost-Benefit Calculator</div>
+                    <div className="card-body">
+                        <div className="form-group"><label>Total Project Cost ($)</label><input type="number" value={roi.cost} min={0} onChange={e=>setRoi(r=>({...r,cost:+e.target.value||0}))} /></div>
+                        <div className="form-group"><label>Expected Annual Benefit ($)</label><input type="number" value={roi.benefit} min={0} onChange={e=>setRoi(r=>({...r,benefit:+e.target.value||0}))} /></div>
+                        <div className="grid-2">
+                            <div className="form-group"><label>Duration (years)</label><input type="number" value={roi.duration} min={1} max={30} onChange={e=>setRoi(r=>({...r,duration:+e.target.value||10}))} /></div>
+                            <div className="form-group"><label>Discount Rate (%)</label><input type="number" value={roi.rate} min={0} max={20} step={0.5} onChange={e=>setRoi(r=>({...r,rate:+e.target.value||0}))} /></div>
+                        </div>
+                        <button className="btn btn-primary" onClick={calcROI} style={{width:'100%'}}>Calculate ROI</button>
+                        {roiRes&&(
+                            <div style={{marginTop:14}}>
+                                {roiRes.bcr<1&&<div className="alert alert-danger">BCR below 1.0 — project does not generate positive returns at these inputs.</div>}
+                                <div className="grid-2" style={{gap:10}}>
+                                    <div className="roi-box"><div className="roi-val" style={{color:roiRes.npv>=0?'#1976d2':'#c62828'}}>{fc(roiRes.npv)}</div><div className="roi-lbl">Net Present Value</div></div>
+                                    <div className="roi-box"><div className="roi-val" style={{color:roiRes.bcr>=1?'#2e7d32':'#c62828'}}>{roiRes.bcr.toFixed(2)}x</div><div className="roi-lbl">Benefit-Cost Ratio</div></div>
+                                    <div className="roi-box"><div className="roi-val">{roiRes.payback.toFixed(1)} yrs</div><div className="roi-lbl">Payback Period</div></div>
+                                    <div className="roi-box"><div className="roi-val">{roiRes.irr.toFixed(1)}%</div><div className="roi-lbl">Estimated IRR</div></div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TAB 4 — SCENARIO COMPARISON
+// ════════════════════════════════════════════════════════════════════════════
+function ComparisonTab({ fundingSources, expenses, scenario, savedScenarios }) {
+    // Derive totals from the live working scenario passed from App.
+    const liveCost = (expenses||[]).reduce((s,e) => s+(parseFloat(e.amount)||0), 0);
+    const liveFunding = (fundingSources||[]).reduce((s,f) => s+(f.amount||0), 0);
+    const liveName = (scenario||{}).name || 'Current Scenario';
+
+    // Build the list of all loadable scenarios (live + saved snapshots)
+    const allScenarioOptions = [
+        {id:'__live__', name: liveName || 'Current Scenario', cost: liveCost, funding: liveFunding},
+        ...(savedScenarios||[]).map(s => ({
+            id: s.id,
+            name: s.name,
+            cost: (s.expenses||[]).reduce((t,e) => t+(parseFloat(e.amount)||0), 0),
+            funding: (s.fundingSources||[]).reduce((t,f) => t+(f.amount||0), 0),
+        })),
+    ];
+
+    const defaults = [
+        {key:'opt', label:'Optimistic', cost: liveCost||5000000, funding: liveFunding||6000000, contingency:5, inflation:2, baseCost: liveCost||5000000, baseFunding: liveFunding||6000000},
+        {key:'base', label:'Baseline',  cost: liveCost||7500000, funding: liveFunding||7500000, contingency:10, inflation:3, baseCost: liveCost||7500000, baseFunding: liveFunding||7500000},
+        {key:'worst', label:'Worst Case', cost: liveCost||10000000, funding: liveFunding||6000000, contingency:20, inflation:6, baseCost: liveCost||10000000, baseFunding: liveFunding||6000000},
+    ];
+    const [scenarios, setScenarios] = useState(defaults);
+    const [openLoader, setOpenLoader] = useState(null); // key of the panel showing load dropdown
+    const COLORS = {opt:'#2e7d32',base:'#1565c0',worst:'#e65100'};
+
+    const upd = (key,f,v) => setScenarios(p=>p.map(s=>s.key===key?{...s,[f]:parseFloat(v)||0}:s));
+    const updLabel = (key,label) => setScenarios(p=>p.map(s=>s.key===key?{...s,label}:s));
+
+    // Seed a comparison panel from a saved or live scenario.
+    const seedPanel = (panelKey, opt) => {
+        setScenarios(p => p.map(s => s.key===panelKey ? {
+            ...s,
+            cost: opt.cost,
+            funding: opt.funding,
+            baseCost: opt.cost,
+            baseFunding: opt.funding,
+            label: opt.id==='__live__' ? (liveName||s.label) : opt.name,
+        } : s));
+        setOpenLoader(null);
+    };
+
+    const calc = (s) => {
+        const yrs = parseInt((scenario||{}).years)||5;
+        const infl = s.cost * Math.pow(1+s.inflation/100, yrs);
+        const cont = infl * (s.contingency/100);
+        const total = infl + cont;
+        return {infl, cont, total, gap: s.funding - total};
+    };
+
+    const metrics = [
+        {label:'Project Cost',fn:s=>fc(s.cost)},
+        {label:'Total Funding',fn:s=>fc(s.funding)},
+        {label:'Inflation Rate',fn:s=>`${s.inflation}%`},
+        {label:'Contingency %',fn:s=>`${s.contingency}%`},
+        {label:'Contingency $',fn:s=>fc(calc(s).cont)},
+        {label:'Infl.-Adjusted Cost',fn:s=>fc(calc(s).infl)},
+        {label:'Total Cost (w/ contingency)',fn:s=>fc(calc(s).total)},
+        {label:'Net Position',fn:(s)=>{const g=calc(s).gap;return <span style={{color:g>=0?'#2e7d32':'#c62828',fontWeight:700}}>{g>=0?'+':''}{fc(g)}</span>;}},
+    ];
+
+    return (
+        <div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                <div>
+                    <h2>Scenario Comparison</h2>
+                    <p className="page-desc">Load your built scenarios into each panel to compare them side by side. Adjust sliders to model optimistic, baseline, and worst-case variations.</p>
+                </div>
+                <button className="btn btn-primary no-print" onClick={()=>window.print()}>Export PDF</button>
+            </div>
+
+            {/* Quick-seed strip — one button loads the current scenario into Baseline */}
+            {(liveCost > 0 || liveFunding > 0) && (
+                <div className="alert alert-info" style={{marginBottom:18,display:'flex',alignItems:'center',gap:12}}>
+                    <div style={{flex:1}}>
+                        <strong>{liveName||'Current Scenario'}</strong> — {fc(liveFunding)} revenue, {fc(liveCost)} expenses, net {fc(liveFunding-liveCost)}
+                    </div>
+                    <button className="btn btn-primary btn-sm" onClick={()=>seedPanel('base', allScenarioOptions[0])}>
+                        Load as Baseline
+                    </button>
+                </div>
+            )}
+
+            <div className="grid-3" style={{marginBottom:22}}>
+                {scenarios.map(s=>{
+                    const c=calc(s);
+                    const bCost = s.baseCost || s.cost;
+                    const bFund = s.baseFunding || s.funding;
+                    return (
+                        <div key={s.key} className={`scenario-panel ${s.key}`}>
+                            <input type="text" value={s.label} onChange={e=>updLabel(s.key,e.target.value)}
+                                style={{width:'100%',fontSize:17,fontWeight:700,border:'none',borderBottom:`2px solid ${COLORS[s.key]}`,marginBottom:10,padding:'3px 0',color:COLORS[s.key],background:'transparent'}} />
+
+                            {/* Load from scenario dropdown */}
+                            <div style={{position:'relative',marginBottom:14}}>
+                                <button className="btn btn-secondary btn-sm" style={{width:'100%',textAlign:'left'}} onClick={()=>setOpenLoader(openLoader===s.key?null:s.key)}>
+                                    Load from saved scenario...
+                                </button>
+                                {openLoader===s.key && (
+                                    <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:100,background:'#fff',border:'1px solid #ddd',borderRadius:4,boxShadow:'0 4px 12px rgba(0,0,0,.12)',maxHeight:220,overflowY:'auto'}}>
+                                        {allScenarioOptions.map(opt=>(
+                                            <div key={opt.id} onClick={()=>seedPanel(s.key,opt)}
+                                                style={{padding:'9px 12px',cursor:'pointer',borderBottom:'1px solid #f0f0f0'}}
+                                                onMouseEnter={e=>e.currentTarget.style.background='#f0f7ff'}
+                                                onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                                                <div style={{fontWeight:600,fontSize:13}}>{opt.id==='__live__'?'Current working scenario':opt.name}</div>
+                                                <div style={{fontSize:11,color:'#888'}}>{fc(opt.funding)} funding / {fc(opt.cost)} expenses</div>
+                                            </div>
+                                        ))}
+                                        {allScenarioOptions.length === 1 && (
+                                            <div style={{padding:'9px 12px',color:'#aaa',fontSize:12}}>No saved scenarios yet — save one from the Scenario tab.</div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="form-group"><label>Total Cost</label><input type="number" value={s.cost} step={10000} onChange={e=>upd(s.key,'cost',e.target.value)} /></div>
+                            <div className="form-group"><label>Total Funding</label><input type="number" value={s.funding} step={10000} onChange={e=>upd(s.key,'funding',e.target.value)} /></div>
+                            <div className="form-group">
+                                <label>Cost ±50% <span style={{color:COLORS[s.key],fontWeight:600}}>{fc(s.cost)}</span></label>
+                                <input type="range" min={Math.max(0,bCost*.5)} max={bCost*1.5||1000000} step={Math.max(1,Math.round(bCost*.01))} value={s.cost} onChange={e=>upd(s.key,'cost',e.target.value)} style={{width:'100%'}} />
+                            </div>
+                            <div className="form-group">
+                                <label>Funding ±50% <span style={{color:COLORS[s.key],fontWeight:600}}>{fc(s.funding)}</span></label>
+                                <input type="range" min={Math.max(0,bFund*.5)} max={bFund*1.5||1000000} step={Math.max(1,Math.round(bFund*.01))} value={s.funding} onChange={e=>upd(s.key,'funding',e.target.value)} style={{width:'100%'}} />
+                            </div>
+                            <div className="form-group"><label>Contingency: <strong>{s.contingency}%</strong></label>
+                                <input type="range" min={0} max={30} value={s.contingency} onChange={e=>upd(s.key,'contingency',e.target.value)} style={{width:'100%'}} /></div>
+                            <div className="form-group"><label>Inflation: <strong>{s.inflation}%</strong></label>
+                                <input type="range" min={0} max={10} step={.5} value={s.inflation} onChange={e=>upd(s.key,'inflation',e.target.value)} style={{width:'100%'}} /></div>
+                            <div className="net-box" style={{background:c.gap>=0?'#e8f5e9':'#ffebee'}}>
+                                <div className="net-label">Net Position</div>
+                                <div className="net-val" style={{color:c.gap>=0?'#2e7d32':'#c62828'}}>{c.gap>=0?'+':''}{fc(c.gap)}</div>
+                                <div style={{fontSize:11,color:'#777'}}>{c.gap>=0?'Surplus':'Funding Gap'}</div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="card">
+                <div className="card-header">Comparison Summary</div>
+                <div style={{overflowX:'auto'}}>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                {scenarios.map(s=><th key={s.key} style={{textAlign:'right',color:COLORS[s.key]}}>{s.label}</th>)}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {metrics.map((m,i)=>{
+                                const vals = scenarios.map(s=>{
+                                    const c=calc(s);
+                                    if(m.label==='Net Position') return c.gap;
+                                    if(m.label==='Project Cost') return s.cost;
+                                    if(m.label==='Total Funding') return s.funding;
+                                    if(m.label==='Contingency $') return c.cont;
+                                    if(m.label==='Infl.-Adjusted Cost') return c.infl;
+                                    if(m.label==='Total Cost (w/ contingency)') return c.total;
+                                    return null;
+                                });
+                                const nums = vals.every(v=>v!==null);
+                                const maxV=nums?Math.max(...vals):null;
+                                const minV=nums?Math.min(...vals):null;
+                                return (
+                                    <tr key={i}>
+                                        <td><strong>{m.label}</strong></td>
+                                        {scenarios.map((s,si)=>{
+                                            const v=nums?vals[si]:null;
+                                            const isNet=m.label==='Net Position';
+                                            let bg='';
+                                            if(nums&&v!==null){bg=isNet?(v>=0&&v===maxV?'#e8f5e9':v<0&&v===minV?'#ffebee':''):(v===minV?'#e8f5e9':v===maxV?'#ffebee':'');}
+                                            return <td key={s.key} style={{textAlign:'right',background:bg}}>{m.fn(s)}</td>;
+                                        })}
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TAB 5 — WHAT-IF SIMULATOR
+// ════════════════════════════════════════════════════════════════════════════
+// Helper: currency formatter (reused from outer scope)
+const FACTOR_COLORS = {
+    revenue_loss:    '#c62828',
+    revenue_gain:    '#2e7d32',
+    expense_removed: '#1565c0',
+    expense_added:   '#e65100',
+    onetime_cost:    '#6a1b9a',
+    budget_change:   '#0277bd',
+    unknown:         '#757575',
+};
+const FACTOR_LABELS = {
+    revenue_loss:    'Revenue Loss',
+    revenue_gain:    'Revenue Gain',
+    expense_removed: 'Expense Saved',
+    expense_added:   'New Expense',
+    onetime_cost:    'One-Time Cost',
+    budget_change:   'Budget Change',
+    unknown:         'Unclassified',
+};
+
+function WhatIfTab({ fundingSources, expenses, scenario }) {
+    const [query, setQuery]   = useState('');
+    const [results, setResults] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [showAccounts, setShowAccounts] = useState(false);
+    const chartRef  = useRef(null);
+    const chartInst = useRef(null);
+
+    // Real GL accounts injected server-side. Falls back to an empty set.
+    const GL = (typeof window !== 'undefined' && window.GOVSIGHT_GL_ACCOUNTS) || {revenue:[], expense:[], asset:[]};
+    const totalGLRevenue = GL.revenue.reduce((s,a)=>s+(a.budget||0), 0) || 12800000;
+    const totalGLExpense = GL.expense.reduce((s,a)=>s+(a.budget||0), 0) || 11000000;
+
+    const samples = [
+        'What if our data center accounting for 8% of utility revenue burns down, but saves $100K/yr in expenses and causes cleanup costs?',
+        'What if a flood destroys our parking garage that generates 12% of fee revenue?',
+        'What if we lose a major employer that contributes 15% of sales tax revenue?',
+        'What if we increase the police department budget by 15%?',
+        'What happens if we cut all department budgets by 10%?',
+        'Show impact of adding 5% COLA to all salaries',
+        'Impact of hiring 10 new firefighters',
+    ];
+
+    // ── Multi-factor GL-aware parser ─────────────────────────────────────────
+    // Extracts an ARRAY of financial factors from a free-form question, matching
+    // each factor against real GL accounts injected by the server.
+    // Direction is classified by disaster/removal/cleanup CONTEXT, not a generic
+    // increase/decrease word search — which is what caused "accounting for 8%"
+    // to previously return a positive result.
+    const parseMultiFactor = (q) => {
+        const ql = q.toLowerCase();
+
+        // ── Magnitude extraction ───────────────────────────────────────────────
+        const pcts    = [...ql.matchAll(/(\d+\.?\d*)\s*%/g)].map(m => parseFloat(m[1]));
+        const dolarMs = [...ql.matchAll(/\$\s*([\d,]+\.?\d*)\s*(k|m|million|thousand)?/gi)];
+        const parseDollar = (m) => {
+            let v = parseFloat(m[1].replace(/,/g,''));
+            const u = (m[2]||'').toLowerCase();
+            if (u==='k'||u==='thousand') v*=1000;
+            if (u==='m'||u==='million')  v*=1000000;
+            return v;
+        };
+        const dollars = dolarMs.map(parseDollar);
+
+        // ── Semantic context flags ─────────────────────────────────────────────
+        // "accounting for 8%" → has_pct_context but NOT isDecrease/isIncrease
+        const isDisaster   = /burns?\s*down|destroy|fire\s+(destroys?|burns?|damage)|flood|disaster|collapse|explosion|catastroph/.test(ql);
+        const isRemoveExp  = /won'?t\s+need|no\s+longer|eliminat|save\s+(us\s+)?on|discontinu|shut\s+down/.test(ql);
+        const isCleanup    = /cleanup|clean.up|remediat|demolit|rebuild|debris|decontaminat|haul\s+away|repair\s+cost/.test(ql);
+        const isHire       = /\bhire\b|hiring\b|new\s+(firefighter|officer|employee|staff|worker)/.test(ql);
+        const isCOLA       = /\bcola\b|cost.of.living|salary increase|pay raise/.test(ql);
+        const isReallocate = /reallocat|transfer|move.*from|shift.*from/.test(ql);
+        const isIncrease   = /\b(increase|raise|add|boost|grow)\b/.test(ql) && !isDisaster;
+        const isDecrease   = /\b(cut|reduc|decreas|slash|lower|trim)\b/.test(ql) && !isDisaster;
+        const isAll        = /all department|every department|across.the.board/.test(ql);
+        const hasRevKw     = /revenue|income|fund|tax|utilit|earn|generat|contribut|account.+for/.test(ql);
+        const hasExpKw     = /expense|cost|maintain|mainten|server|operat|staff|employ|utilities/.test(ql);
+
+        // ── GL account keyword matching ────────────────────────────────────────
+        const queryWords = ql.match(/[a-z]{4,}/g) || [];
+        const matchAccts = (list) => list.filter(a =>
+            queryWords.some(w => (a.name||'').toLowerCase().includes(w) || (a.department||'').toLowerCase().includes(w))
+        ).slice(0, 5);
+
+        const matchedRev = matchAccts(GL.revenue);
+        const matchedExp = matchAccts(GL.expense);
+
+        // Derive totals from matched accounts if found, else use GL totals
+        const revBase = matchedRev.length > 0
+            ? matchedRev.reduce((s,a)=>s+(a.budget||0),0)
+            : totalGLRevenue;
+
+        // ── Factor extraction ──────────────────────────────────────────────────
+        const factors = [];
+
+        // Factor A — revenue loss (disaster / event destroys revenue source)
+        if (isDisaster && hasRevKw && pcts.length > 0) {
+            const pct = pcts[0];
+            const loss = totalGLRevenue * (pct / 100);
+            factors.push({
+                type: 'revenue_loss',
+                label: `Revenue loss — ${pct.toFixed(1)}% of total revenue`,
+                annualImpact: -loss,
+                pct,
+                matchedAccounts: matchedRev,
+            });
+        }
+
+        // Factor B — ongoing expense elimination
+        if ((isRemoveExp || isDisaster) && hasExpKw) {
+            let saved = 0;
+            if (dollars.length > 0) {
+                saved = dollars[0];
+            } else if (matchedExp.length > 0) {
+                saved = matchedExp.reduce((s,a)=>s+(a.budget||0),0) * 0.8;
+            } else {
+                saved = totalGLExpense * 0.015; // 1.5% default when nothing matched
+            }
+            factors.push({
+                type: 'expense_removed',
+                label: `Ongoing expense savings (asset no longer operating)`,
+                annualImpact: +saved,
+                dollar: saved,
+                matchedAccounts: matchedExp,
+            });
+        }
+
+        // Factor C — one-time cleanup / remediation cost
+        if (isCleanup || isDisaster) {
+            let cleanup = 0;
+            if (dollars.length >= 2) {
+                cleanup = dollars[1];
+            } else if (dollars.length === 1 && factors.length === 0) {
+                cleanup = dollars[0];
+            } else if (factors.length > 0) {
+                // Estimate: 2–3× the annual revenue loss
+                const revFactor = factors.find(f=>f.type==='revenue_loss');
+                cleanup = revFactor ? Math.abs(revFactor.annualImpact) * 2.5 : 300000;
+            } else {
+                cleanup = 300000;
+            }
+            factors.push({
+                type: 'onetime_cost',
+                label: `One-time cleanup / remediation (not annualised)`,
+                annualImpact: 0,
+                onetimeCost: cleanup,
+                matchedAccounts: [],
+            });
+        }
+
+        // Factor D — new hire cost
+        if (isHire) {
+            const hm = ql.match(/(\d+)\s+new\s+\w+/);
+            const count = hm ? parseInt(hm[1]) : 1;
+            const AVG_COMP = 72000;
+            const cost = count * AVG_COMP;
+            factors.push({
+                type: 'expense_added',
+                label: `New hire cost (${count} position${count!==1?'s':''} × $72K avg total comp)`,
+                annualImpact: -cost,
+                dollar: cost,
+                matchedAccounts: matchedExp,
+            });
+        }
+
+        // Factor E — COLA
+        if (isCOLA && pcts.length > 0) {
+            const pct = pcts[0];
+            const cola = totalGLExpense * 0.65 * (pct / 100);
+            factors.push({
+                type: 'expense_added',
+                label: `${pct.toFixed(1)}% COLA applied to estimated personnel costs (65% of total expenses)`,
+                annualImpact: -cola,
+                dollar: cola,
+                matchedAccounts: [],
+            });
+        }
+
+        // Factor F — reallocation (revenue-neutral)
+        if (isReallocate && pcts.length > 0) {
+            const fromM = ql.match(/from\s+([a-z\s&]+?)\s+to\s+/);
+            const toM   = ql.match(/\bto\s+([a-z\s&]+?)(?:\s*[?.]|$)/);
+            factors.push({
+                type: 'budget_change',
+                label: `Reallocation of ${pcts[0].toFixed(1)}%${fromM?` from ${fromM[1].trim()}`:''}${toM?` to ${toM[1].trim()}`:''}`,
+                annualImpact: 0,
+                matchedAccounts: [...matchedRev, ...matchedExp].slice(0,4),
+            });
+        }
+
+        // Factor G — simple % increase / decrease
+        if (!factors.length && pcts.length > 0) {
+            const pct = pcts[0];
+            const base = isAll ? totalGLExpense : (matchedExp.length ? matchedExp.reduce((s,a)=>s+(a.budget||0),0) : totalGLExpense * 0.15);
+            const impact = base * (pct/100) * (isDecrease ? -1 : 1);
+            factors.push({
+                type: isDecrease ? 'budget_change' : 'budget_change',
+                label: `${pct.toFixed(1)}% ${isDecrease?'reduction':'increase'} in ${isAll?'all departments':matchedExp.length?matchedExp.map(a=>a.department).join(', '):'selected departments'}`,
+                annualImpact: impact,
+                matchedAccounts: matchedExp,
+            });
+        }
+
+        // Factor H — dollar-only scenario
+        if (!factors.length && dollars.length > 0) {
+            const impact = dollars[0] * (isDecrease ? -1 : 1);
+            factors.push({
+                type: 'budget_change',
+                label: `${isDecrease?'Remove':'Add'} ${fc(dollars[0])} ${isDecrease?'from':'to'} ${matchedExp.length?matchedExp[0].department:'budget'}`,
+                annualImpact: impact,
+                matchedAccounts: [...matchedRev,...matchedExp].slice(0,3),
+            });
+        }
+
+        // Unknown
+        if (!factors.length) {
+            factors.push({
+                type: 'unknown',
+                label: 'Scenario could not be parsed — try including a percentage or dollar amount.',
+                annualImpact: 0,
+                matchedAccounts: [],
+            });
+        }
+
+        // ── Three scenario branches ────────────────────────────────────────────
+        // Branches differ in how optimistic/pessimistic the revenue loss and
+        // cleanup costs are. Impact multipliers are applied only to non-zero items.
+        const calcBranch = (impMult, onetimeMult) => {
+            let annual = 0, onetime = 0;
+            factors.forEach(f => {
+                annual  += (f.annualImpact || 0) * impMult;
+                onetime += (f.onetimeCost  || 0) * onetimeMult;
+            });
+            return {annualNet: Math.round(annual), onetimeCost: Math.round(onetime)};
+        };
+        const optimistic = calcBranch(0.7, 0.5);
+        const expected   = calcBranch(1.0, 1.0);
+        const worstCase  = calcBranch(1.3, 2.0);
+
+        const totalImpact = expected.annualNet;
+        const pctChange   = totalGLRevenue ? (totalImpact / totalGLRevenue * 100) : 0;
+        const allMatched  = [...matchedRev, ...matchedExp].filter((a,i,arr) => arr.findIndex(b=>b.number===a.number)===i);
+
+        // ── Interpretation text ────────────────────────────────────────────────
+        let interpretation = '';
+        if (factors[0].type === 'unknown') {
+            interpretation = 'Could not identify a specific financial action or amount. Try: "What if our data center accounting for 8% of utility revenue burns down, saving $100K/yr in expenses?"';
+        } else {
+            const parts = factors.filter(f=>f.type!=='onetime_cost').map(f => {
+                const sign = f.annualImpact >= 0 ? '+' : '';
+                return `${f.label} (${sign}${fc(f.annualImpact)}/yr)`;
+            });
+            const onetimeF = factors.find(f=>f.type==='onetime_cost');
+            interpretation  = `This scenario involves ${factors.length} financial factor${factors.length!==1?'s':''}: ${parts.join('; ')}.`;
+            if (onetimeF) interpretation += ` Additionally, an estimated one-time cost of ${fc(onetimeF.onetimeCost)} is projected for cleanup or remediation.`;
+            interpretation += ` Expected net annual position: ${fc(totalImpact)} (${pctChange >= 0 ? '+' : ''}${pctChange.toFixed(1)}% of total revenue).`;
+            if (allMatched.length) {
+                interpretation += ` ${allMatched.length} matching GL account${allMatched.length!==1?'s were':' was'} identified in the chart of accounts.`;
+            }
+        }
+
+        return {
+            interpretation,
+            totalImpact,
+            pctChange,
+            affectedCount: new Set(allMatched.map(a=>a.department)).size,
+            factors,
+            branches: {optimistic, expected, worstCase},
+            matchedAccounts: allMatched,
+            chartData: {
+                labels:   ['Optimistic', 'Expected', 'Worst Case'],
+                current:  [0, 0, 0],
+                proposed: [optimistic.annualNet, expected.annualNet, worstCase.annualNet],
+                changed:  [true, true, true],
+            },
+        };
+    };
+
+    const run = () => {
+        if (!query.trim()) return;
+        setLoading(true);
+        setTimeout(() => {
+            const r = parseMultiFactor(query);
+            setResults(r);
+            setTimeout(() => drawChart(r.chartData), 60);
+            setLoading(false);
+        }, 300);
+    };
+
+    const drawChart = (data) => {
+        if (!chartRef.current) return;
+        const ctx = chartRef.current.getContext('2d');
+        if (chartInst.current) chartInst.current.destroy();
+        const BRANCH_COLORS = ['#66bb6a','#1976d2','#f44336'];
+        chartInst.current = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Net Annual Impact',
+                    data: data.proposed,
+                    backgroundColor: data.proposed.map(v => v >= 0 ? '#66bb6a' : '#ef9a9a'),
+                    borderColor:     data.proposed.map(v => v >= 0 ? '#2e7d32' : '#c62828'),
+                    borderWidth: 2,
+                }],
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {callbacks: {label: c => `Net annual impact: ${fc(c.parsed.y)}`}},
+                },
+                scales: {y: {ticks: {callback: v => fc(v)}}},
+            },
+        });
+    };
+
+    const BRANCH_COLOR = {optimistic:'#2e7d32', expected:'#1565c0', worstCase:'#c62828'};
+    const BRANCH_LABEL = {optimistic:'Optimistic', expected:'Expected', worstCase:'Worst Case'};
+
+    return (
+        <div>
+            <h2>What-If Scenario Simulator</h2>
+            <p className="page-desc">
+                Describe any financial scenario — including complex multi-factor events — and see a breakdown of
+                revenue impacts, expense changes, one-time costs, and three scenario branches (Optimistic, Expected, Worst Case).
+                Analysis is matched against{' '}
+                {GL.revenue.length + GL.expense.length > 0
+                    ? `${GL.revenue.length + GL.expense.length} real GL accounts loaded from your chart of accounts.`
+                    : 'a representative municipal chart of accounts.'}
+            </p>
+            <div className="alert alert-info">
+                Try complex scenarios like: "What if our data center accounting for 8% of utility revenue burns down, saving $100K/yr in expenses but causing cleanup costs?"
+            </div>
+
+            <div className="form-group">
+                <label>Enter your scenario question</label>
+                <textarea value={query} onChange={e=>setQuery(e.target.value)}
+                    onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();run();} }}
+                    placeholder="Describe your scenario in plain language..." rows={4} />
+            </div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:16}}>
+                {samples.map((s,i) => <button key={i} className="btn btn-secondary btn-sm" onClick={()=>setQuery(s)}>{s}</button>)}
+            </div>
+            <button className="btn btn-primary" onClick={run} disabled={loading||!query.trim()}>
+                Analyze Scenario {loading && <span className="loading"></span>}
+            </button>
+
+            {results && (
+                <div style={{marginTop:24}}>
+
+                    {/* ── Interpretation ── */}
+                    <div className="card">
+                        <div className="card-header">Scenario Interpretation</div>
+                        <div className="card-body">
+                            <p style={{fontSize:14,lineHeight:1.7,marginBottom:16}}>{results.interpretation}</p>
+                            <div className="grid-3">
+                                <div className="stat-card">
+                                    <div className="stat-value" style={{color:results.totalImpact>=0?'#2e7d32':'#c62828'}}>
+                                        {results.totalImpact>=0?'+':''}{fc(results.totalImpact)}
+                                    </div>
+                                    <div className="stat-label">Expected Net Annual Impact</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-value" style={{color:results.pctChange>=0?'#2e7d32':'#c62828'}}>
+                                        {results.pctChange>=0?'+':''}{fp(Math.abs(results.pctChange))}
+                                    </div>
+                                    <div className="stat-label">% of Total Revenue</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-value">{results.factors.length}</div>
+                                    <div className="stat-label">Financial Factors Identified</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── Factor Breakdown ── */}
+                    <div className="card" style={{marginTop:16}}>
+                        <div className="card-header">Factor Breakdown</div>
+                        <div style={{overflowX:'auto'}}>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th style={{textAlign:'right'}}>Annual Impact</th>
+                                        <th style={{textAlign:'right'}}>One-Time Cost</th>
+                                        <th>Matched GL Accounts</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {results.factors.map((f,i) => (
+                                        <tr key={i}>
+                                            <td>
+                                                <span style={{display:'inline-block',padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:700,background:FACTOR_COLORS[f.type]||'#999',color:'white',whiteSpace:'nowrap'}}>
+                                                    {FACTOR_LABELS[f.type]||f.type}
+                                                </span>
+                                            </td>
+                                            <td style={{fontSize:13}}>{f.label}</td>
+                                            <td style={{textAlign:'right',fontWeight:700,color:(f.annualImpact||0)>=0?'#2e7d32':'#c62828'}}>
+                                                {f.annualImpact!==0?`${(f.annualImpact||0)>=0?'+':''}${fc(f.annualImpact||0)}`:'—'}
+                                            </td>
+                                            <td style={{textAlign:'right',color:'#6a1b9a',fontWeight:f.onetimeCost?700:400}}>
+                                                {f.onetimeCost?fc(f.onetimeCost):'—'}
+                                            </td>
+                                            <td style={{fontSize:11,color:'#666'}}>
+                                                {(f.matchedAccounts||[]).length > 0
+                                                    ? (f.matchedAccounts||[]).map(a=>a.name).slice(0,2).join(', ') + ((f.matchedAccounts||[]).length>2?` +${(f.matchedAccounts||[]).length-2} more`:'')
+                                                    : '—'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* ── Three Scenario Branches ── */}
+                    <div className="card" style={{marginTop:16}}>
+                        <div className="card-header">Scenario Branch Comparison</div>
+                        <div className="card-body">
+                            <p style={{fontSize:12,color:'#777',marginBottom:14}}>
+                                Optimistic assumes 70% of expected impact + 50% cleanup costs.
+                                Expected uses stated values.
+                                Worst Case assumes 130% of expected impact + 200% cleanup costs.
+                            </p>
+                            <div className="grid-3">
+                                {Object.entries(results.branches).map(([key, branch]) => (
+                                    <div key={key} style={{background:'#f9f9f9',border:`2px solid ${BRANCH_COLOR[key]}`,borderRadius:8,padding:16}}>
+                                        <div style={{fontWeight:700,fontSize:15,color:BRANCH_COLOR[key],marginBottom:12}}>{BRANCH_LABEL[key]}</div>
+                                        <div style={{marginBottom:8}}>
+                                            <div style={{fontSize:11,color:'#888',marginBottom:2}}>Net Annual Impact</div>
+                                            <div style={{fontWeight:700,fontSize:20,color:branch.annualNet>=0?'#2e7d32':'#c62828'}}>
+                                                {branch.annualNet>=0?'+':''}{fc(branch.annualNet)}
+                                            </div>
+                                        </div>
+                                        {branch.onetimeCost > 0 && (
+                                            <div>
+                                                <div style={{fontSize:11,color:'#888',marginBottom:2}}>One-Time Remediation</div>
+                                                <div style={{fontWeight:600,fontSize:15,color:'#6a1b9a'}}>{fc(branch.onetimeCost)}</div>
+                                            </div>
+                                        )}
+                                        <div style={{marginTop:10,paddingTop:8,borderTop:'1px solid #e0e0e0',fontSize:11,color:'#666'}}>
+                                            Year 1 total: {fc(branch.annualNet - branch.onetimeCost)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── Chart ── */}
+                    <div className="chart-box" style={{marginTop:16,height:260}}>
+                        <canvas ref={chartRef}></canvas>
+                    </div>
+
+                    {/* ── Matched GL Accounts ── */}
+                    {results.matchedAccounts.length > 0 && (
+                        <div className="card" style={{marginTop:16}}>
+                            <div className="card-header" style={{cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}} onClick={()=>setShowAccounts(v=>!v)}>
+                                <span>Matched GL Accounts ({results.matchedAccounts.length})</span>
+                                <span style={{fontSize:12,color:'#888'}}>{showAccounts?'Hide':'Show'}</span>
+                            </div>
+                            {showAccounts && (
+                                <div style={{overflowX:'auto'}}>
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>Account #</th>
+                                                <th>Account Name</th>
+                                                <th>Type</th>
+                                                <th>Department</th>
+                                                <th style={{textAlign:'right'}}>Budget</th>
+                                                <th style={{textAlign:'right'}}>YTD Actual</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {results.matchedAccounts.map((a,i) => (
+                                                <tr key={i}>
+                                                    <td style={{fontFamily:'monospace',fontSize:12}}>{a.number}</td>
+                                                    <td>{a.name}</td>
+                                                    <td><span style={{fontSize:11,padding:'1px 6px',borderRadius:10,background:a.type==='Revenue'?'#e8f5e9':'#fff3e0',color:a.type==='Revenue'?'#2e7d32':'#e65100',fontWeight:600}}>{a.type}</span></td>
+                                                    <td style={{fontSize:12,color:'#666'}}>{a.department}</td>
+                                                    <td style={{textAlign:'right'}}>{fc(a.budget||0)}</td>
+                                                    <td style={{textAlign:'right',color:(a.actual||0)>(a.budget||0)?'#c62828':'#555'}}>{fc(a.actual||0)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TAB 6 — LEGISLATIVE IMPACT
+// ════════════════════════════════════════════════════════════════════════════
+
+// State legislature website registry (for state bill direct links)
+const STATE_LEG_URLS = {
+    'Alabama':'https://legiscan.com/AL/legislation','Alaska':'https://legiscan.com/AK/legislation',
+    'Arizona':'https://legiscan.com/AZ/legislation','Arkansas':'https://legiscan.com/AR/legislation',
+    'California':'https://leginfo.legislature.ca.gov','Colorado':'https://leg.colorado.gov',
+    'Connecticut':'https://legiscan.com/CT/legislation','Delaware':'https://legiscan.com/DE/legislation',
+    'Florida':'https://www.flsenate.gov','Georgia':'https://legiscan.com/GA/legislation',
+    'Hawaii':'https://legiscan.com/HI/legislation','Idaho':'https://legiscan.com/ID/legislation',
+    'Illinois':'https://www.ilga.gov','Indiana':'https://legiscan.com/IN/legislation',
+    'Iowa':'https://legiscan.com/IA/legislation','Kansas':'https://legiscan.com/KS/legislation',
+    'Kentucky':'https://legiscan.com/KY/legislation','Louisiana':'https://legiscan.com/LA/legislation',
+    'Maine':'https://legiscan.com/ME/legislation','Maryland':'https://legiscan.com/MD/legislation',
+    'Massachusetts':'https://malegislature.gov','Michigan':'https://legiscan.com/MI/legislation',
+    'Minnesota':'https://legiscan.com/MN/legislation','Mississippi':'https://legiscan.com/MS/legislation',
+    'Missouri':'https://legiscan.com/MO/legislation','Montana':'https://legiscan.com/MT/legislation',
+    'Nebraska':'https://legiscan.com/NE/legislation','Nevada':'https://legiscan.com/NV/legislation',
+    'New Hampshire':'https://legiscan.com/NH/legislation','New Jersey':'https://legiscan.com/NJ/legislation',
+    'New Mexico':'https://legiscan.com/NM/legislation','New York':'https://www.nysenate.gov',
+    'North Carolina':'https://legiscan.com/NC/legislation','North Dakota':'https://legiscan.com/ND/legislation',
+    'Ohio':'https://legiscan.com/OH/legislation','Oklahoma':'https://legiscan.com/OK/legislation',
+    'Oregon':'https://legiscan.com/OR/legislation','Pennsylvania':'https://legiscan.com/PA/legislation',
+    'Rhode Island':'https://legiscan.com/RI/legislation','South Carolina':'https://legiscan.com/SC/legislation',
+    'South Dakota':'https://legiscan.com/SD/legislation','Tennessee':'https://legiscan.com/TN/legislation',
+    'Texas':'https://capitol.texas.gov','Utah':'https://le.utah.gov',
+    'Vermont':'https://legiscan.com/VT/legislation','Virginia':'https://legiscan.com/VA/legislation',
+    'Washington':'https://legiscan.com/WA/legislation','West Virginia':'https://legiscan.com/WV/legislation',
+    'Wisconsin':'https://legiscan.com/WI/legislation','Wyoming':'https://legiscan.com/WY/legislation',
+};
+
+// Map Congress.gov policy areas to municipal financial impact categories
+const POLICY_IMPACT_MAP = {
+    'Taxation': {level:'High', areas:['Revenue','Finance'], keywords:['tax rate changes','revenue projections','TABOR implications']},
+    'Transportation and Public Works': {level:'High', areas:['Public Works','Engineering'], keywords:['infrastructure grants','road funding','transit subsidies']},
+    'Government Operations and Politics': {level:'Medium', areas:['Administration','Clerk'], keywords:['reporting requirements','election administration','FOIA compliance']},
+    'Economics and Public Finance': {level:'Medium', areas:['Finance','Budget'], keywords:['federal aid formulas','block grant allocations','deficit impacts']},
+    'Public Lands and Natural Resources': {level:'Medium', areas:['Parks','Utilities'], keywords:['land use regulations','environmental compliance','permit requirements']},
+    'Crime and Law Enforcement': {level:'Medium', areas:['Police','Courts'], keywords:['grant eligibility','compliance mandates','training requirements']},
+    'Health': {level:'Medium', areas:['Human Services'], keywords:['Medicaid impacts','public health mandates','employee benefit costs']},
+    'Labor and Employment': {level:'Medium', areas:['Human Resources','All Departments'], keywords:['wage requirements','FLSA changes','benefit mandates']},
+    'Housing and Community Development': {level:'Low-Medium', areas:['Community Development'], keywords:['CDBG funding','affordable housing mandates','zoning impacts']},
+    'Education': {level:'Low', areas:['Library','Parks'], keywords:['federal education grants','program eligibility','reporting']},
+    'Armed Forces and National Security': {level:'Minimal', areas:['Administration'], keywords:['emergency management','national guard coordination']},
+    'Immigration': {level:'Low', areas:['Police','Courts'], keywords:['enforcement obligations','reporting requirements']},
+    'Agriculture and Food': {level:'Minimal', areas:['Parks'], keywords:['community garden programs','food assistance']},
+    'Environmental Protection': {level:'Medium', areas:['Utilities','Public Works'], keywords:['EPA compliance costs','stormwater mandates','air quality reporting']},
+    'Science, Technology, Communications': {level:'Low', areas:['Information Technology'], keywords:['broadband grants','cybersecurity mandates','digital infrastructure']},
+};
+
+const IMPACT_LEVEL_COLOR = {
+    'High':'#c62828', 'Medium':'#e65100', 'Low-Medium':'#f9a825',
+    'Low':'#2e7d32', 'Minimal':'#1565c0', 'Unknown':'#757575',
+};
+
+// Parse "HR 22", "S. 5", "H.R. 1234" etc into {type, number}
+const parseFederalBill = (input) => {
+    const cleaned = input.trim().replace(/\./g, '').replace(/\s+/g,' ');
+    const m = cleaned.match(/^(HR|HB|SR|SB|S|HJRES|SJRES|HCONRES|SCONRES|H RES|S RES)\s*(\d+)$/i);
+    if (!m) return null;
+    const raw = m[1].toUpperCase().replace(/\s/g,'');
+    const typeMap = {HR:'hr', HB:'hr', S:'s', SR:'s', SB:'s', HJRES:'hjres', SJRES:'sjres', HCONRES:'hconres', SCONRES:'sconres', HRES:'hres', SRES:'sres'};
+    return {type: typeMap[raw] || raw.toLowerCase(), number: m[2]};
+};
+
+// Generate a structured local impact analysis from bill data (no AI required)
+const generateLocalAnalysis = (bill, budgetAmt) => {
+    const policyArea = bill.policyArea?.name || 'Unknown';
+    const impact = POLICY_IMPACT_MAP[policyArea] || {level:'Unknown', areas:['All Departments'], keywords:['general compliance','administrative review']};
+    const status = bill.latestAction?.text || 'Status unknown';
+    const title = bill.title || '';
+    const budgetStr = budgetAmt ? `$${(budgetAmt/1000000).toFixed(1)}M` : 'your municipal budget';
+
+    const pctGuide = {High:'1–5%', 'Medium':'0.5–2%', 'Low-Medium':'0.2–1%', Low:'0–0.5%', Minimal:'<0.1%', Unknown:'indeterminate'};
+    const pct = pctGuide[impact.level] || 'indeterminate';
+
+    return `EXECUTIVE SUMMARY
+${title || 'This legislation'} falls under the "${policyArea}" policy area and has a ${impact.level} municipal financial impact profile. Current status: ${status}.
+
+ESTIMATED FINANCIAL IMPACT
+Based on policy area classification, bills of this type historically affect ${pct} of a municipal budget of ${budgetStr}. Key cost drivers: ${impact.keywords.join('; ')}.
+
+AFFECTED DEPARTMENTS
+Primary: ${impact.areas.join(', ')}. Secondary impact possible across all departments depending on specific provisions.
+
+IMPLEMENTATION TIMELINE
+If enacted, municipalities typically have 6–18 months to comply. Budget planning should begin as soon as the bill advances out of committee.
+
+COMPLIANCE REQUIREMENTS
+Review the full bill text on Congress.gov for specific reporting, staffing, or technology requirements. Sign up for legislative alerts to track amendments.
+
+RISK ASSESSMENT
+Impact level: ${impact.level}. Bills in committee may not become law — assess probability of passage before allocating significant planning resources. Monitor closely if it advances to floor vote.
+
+RECOMMENDED ACTIONS
+1. Assign a staff member to review the full bill text and identify specific municipal obligations.
+2. Contact your state municipal league for guidance and collective advocacy positions.
+3. If impact is material (>0.5% of budget), begin preliminary budget scenario planning now.
+4. Watch for any companion bills or amendments that may expand or narrow scope.
+
+Note: This is a rules-based preliminary assessment. For AI-enhanced analysis, ensure the GovSight API service is accessible from this environment.`;
+};
+
+function LegislativeTab() {
+    const [level, setLevel] = useState('federal');
+    const [state, setState] = useState('');
+    const [bill, setBill] = useState('');
+    const [congress, setCongress] = useState(119);
+    const [budget, setBudget] = useState(5000000);
+    const [billData, setBillData] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const STATES = ['Alabama','Alaska','Arizona','Arkansas','California','Colorado','Connecticut','Delaware','Florida','Georgia','Hawaii','Idaho','Illinois','Indiana','Iowa','Kansas','Kentucky','Louisiana','Maine','Maryland','Massachusetts','Michigan','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','New Hampshire','New Jersey','New Mexico','New York','North Carolina','North Dakota','Ohio','Oklahoma','Oregon','Pennsylvania','Rhode Island','South Carolina','South Dakota','Tennessee','Texas','Utah','Vermont','Virginia','Washington','West Virginia','Wisconsin','Wyoming'];
+
+    // Direct Congress.gov API call — works from the browser (CORS-enabled public API)
+    const lookupFederal = async (parsed, congressNum) => {
+        const base = 'https://api.congress.gov/v3';
+        const billUrl = `${base}/bill/${congressNum}/${parsed.type}/${parsed.number}?format=json`;
+
+        const billRes = await fetch(billUrl);
+        if (billRes.status === 404) return {found: false, error: `${parsed.type.toUpperCase()} ${parsed.number} not found in the ${congressNum}th Congress. Verify the bill number and congress session.`};
+        if (!billRes.ok) throw new Error(`Congress.gov returned HTTP ${billRes.status}`);
+
+        const billJson = await billRes.json();
+        const b = billJson.bill;
+
+        // Try to fetch a summary (best effort, don't fail if absent)
+        let summary = '';
+        try {
+            const sumRes = await fetch(`${base}/bill/${congressNum}/${parsed.type}/${parsed.number}/summaries?format=json`);
+            if (sumRes.ok) {
+                const sumJson = await sumRes.json();
+                const summaries = (sumJson.summaries || []).sort((a,z) => new Date(z.updateDate) - new Date(a.updateDate));
+                if (summaries.length) summary = summaries[0].text.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim().slice(0, 2000);
+            }
+        } catch {}
+
+        // Extract financial-relevant keywords from policy area and title
+        const policyArea = b.policyArea?.name || '';
+        const titleLower = (b.title||'').toLowerCase();
+        const FINANCIAL_TERMS = ['tax','fund','appropriat','grant','budget','revenue','spending','fee','cost','financ','fiscal','debt','bond','allocat','subsid','penalty','fine','reimburs'];
+        const financial_keywords = FINANCIAL_TERMS.filter(t => titleLower.includes(t) || policyArea.toLowerCase().includes(t));
+
+        const data = {
+            found: true,
+            bill_type: parsed.type,
+            bill_number: parsed.number,
+            title: b.title,
+            introduced_date: b.introducedDate,
+            policy_area: policyArea,
+            status: b.latestAction?.text || '',
+            summary,
+            financial_keywords,
+            congress_url: `https://www.congress.gov/bill/${congressNum}th-congress/${parsed.type === 'hr' ? 'house-bill' : parsed.type === 's' ? 'senate-bill' : parsed.type}/${parsed.number}`,
+            source: 'federal',
+            _rawBill: b,
+        };
+
+        // Generate local analysis immediately (no API dependency)
+        data.impact_analysis = generateLocalAnalysis(b, budget);
+
+        // Attempt AI enrichment via PBB API — but with a short timeout so we
+        // never block the UI if the API is unreachable in the deployment env
+        try {
+            const ctrl = new AbortController();
+            const tid = setTimeout(() => ctrl.abort(), 5000);
+            const aiRes = await fetch(`${API}/api/ai/bill-lookup`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({billNumber:`${parsed.type.toUpperCase()} ${parsed.number}`, level:'federal', congress:congressNum, annualBudget:budget}),
+                signal: ctrl.signal,
+            });
+            clearTimeout(tid);
+            if (aiRes.ok) {
+                const aiJson = await aiRes.json();
+                if (aiJson.success && aiJson.data?.impact_analysis) {
+                    data.impact_analysis = aiJson.data.impact_analysis;
+                    data.ai_enhanced = true;
+                }
+            }
+        } catch {}
+
+        return data;
+    };
+
+    const lookup = async () => {
+        if (!bill.trim()) { setError('Please enter a bill number.'); return; }
+        if (level === 'state' && !state) { setError('Please select a state.'); return; }
+        setLoading(true); setError(''); setBillData(null);
+
+        if (level === 'federal') {
+            const parsed = parseFederalBill(bill);
+            if (!parsed) {
+                setError('Could not parse bill number. Use format: HR 22, S 5, H.R. 1234');
+                setLoading(false);
+                return;
+            }
+            try {
+                const data = await lookupFederal(parsed, congress);
+                setBillData(data);
+                if (!data.found) setError(data.error || 'Bill not found');
+            } catch (e) {
+                setError(`Lookup failed: ${e.message}. Check your connection and try again.`);
+            }
+        } else {
+            // State bills — show a direct link to the state legislature
+            setBillData({
+                found: false,
+                isState: true,
+                stateName: state,
+                billRef: bill.trim(),
+                legUrl: STATE_LEG_URLS[state] || 'https://legiscan.com',
+            });
+        }
+        setLoading(false);
+    };
+
+    const impactLevel = billData?.found ? (POLICY_IMPACT_MAP[billData.policy_area]?.level || 'Unknown') : null;
+    const impactColor = impactLevel ? (IMPACT_LEVEL_COLOR[impactLevel] || '#757575') : null;
+
+    return (
+        <div>
+            <h2>Legislative Impact Analysis</h2>
+            <p className="page-desc">Look up federal bills directly from Congress.gov and get a structured municipal financial impact assessment. State bill lookups link to the official state legislature website.</p>
+            <div className="grid-2">
+                <div className="card">
+                    <div className="card-header">Bill Lookup</div>
+                    <div className="card-body">
+                        <div className="form-group"><label>Legislative Level</label>
+                            <div style={{display:'flex',gap:8}}>
+                                <button className={`btn ${level==='federal'?'btn-primary':'btn-secondary'}`} style={{flex:1}} onClick={()=>setLevel('federal')}>Federal</button>
+                                <button className={`btn ${level==='state'?'btn-primary':'btn-secondary'}`} style={{flex:1}} onClick={()=>setLevel('state')}>State</button>
+                            </div>
+                        </div>
+                        {level==='state'&&<div className="form-group"><label>Select State</label><select value={state} onChange={e=>setState(e.target.value)}><option value="">-- Select --</option>{STATES.map(s=><option key={s}>{s}</option>)}</select></div>}
+                        <div className="form-group">
+                            <label>{level==='federal'?'Federal Bill Number':'State Bill Number'}</label>
+                            <input type="text" value={bill} onChange={e=>setBill(e.target.value)}
+                                placeholder={level==='federal'?'e.g., HR 22, S 5, H.R. 1234':'e.g., HB 100, SB 200'}
+                                onKeyDown={e=>e.key==='Enter'&&lookup()} />
+                            {level==='federal'&&<div style={{fontSize:11,color:'#888',marginTop:4}}>Examples: HR 22, S 5, HJRES 7, SCONRES 2</div>}
+                        </div>
+                        {level==='federal'&&<div className="form-group"><label>Congress</label><select value={congress} onChange={e=>setCongress(+e.target.value)}><option value={119}>Current (119th, 2025–2026)</option><option value={118}>118th (2023–2024)</option><option value={117}>117th (2021–2022)</option></select></div>}
+                        <div className="form-group"><label>Your Annual Budget (for impact sizing)</label><input type="number" value={budget} step={100000} onChange={e=>setBudget(+e.target.value||0)} /></div>
+                        <button className="btn btn-primary" onClick={lookup} disabled={loading} style={{width:'100%'}}>
+                            {loading?'Looking up bill...':'Look Up Bill & Analyze Impact'}{loading&&<span className="loading"></span>}
+                        </button>
+                        {error&&<div className="alert alert-warning" style={{marginTop:10}}>{error}</div>}
+                        {level==='federal'&&<div className="alert alert-info" style={{marginTop:10,fontSize:12}}>
+                            Federal bills are fetched directly from Congress.gov. No API key required.
+                        </div>}
+                    </div>
+                </div>
+
+                <div>
+                    {/* ── Federal bill found ── */}
+                    {billData?.found && (
+                        <>
+                            <div className="card" style={{marginBottom:14}}>
+                                <div className="card-header" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                                    <span>{billData.bill_type?.toUpperCase()} {billData.bill_number}</span>
+                                    {impactLevel && (
+                                        <span style={{fontSize:11,padding:'2px 10px',borderRadius:12,background:impactColor,color:'white',fontWeight:700}}>
+                                            {impactLevel} Impact
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="card-body">
+                                    <h3 style={{marginBottom:10,lineHeight:1.4}}>{billData.title}</h3>
+                                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:12}}>
+                                        {billData.introduced_date&&<div style={{background:'#f8f9fa',padding:8,borderRadius:4,textAlign:'center'}}><div style={{fontSize:11,color:'#777'}}>Introduced</div><div style={{fontWeight:700,fontSize:13}}>{billData.introduced_date}</div></div>}
+                                        {billData.policy_area&&<div style={{background:'#f8f9fa',padding:8,borderRadius:4,textAlign:'center'}}><div style={{fontSize:11,color:'#777'}}>Policy Area</div><div style={{fontWeight:700,fontSize:12}}>{billData.policy_area}</div></div>}
+                                    </div>
+                                    {billData.status&&<div style={{fontSize:12,color:'#555',marginBottom:10,fontStyle:'italic'}}>Latest action: {billData.status}</div>}
+                                    {billData.financial_keywords?.length>0&&(
+                                        <div style={{marginBottom:10}}>
+                                            <div style={{fontSize:11,color:'#777',marginBottom:4}}>Financial Relevance Keywords</div>
+                                            <div style={{display:'flex',flexWrap:'wrap',gap:5}}>{billData.financial_keywords.map((kw,i)=><span key={i} className="badge badge-blue">{kw}</span>)}</div>
+                                        </div>
+                                    )}
+                                    {billData.congress_url&&<p style={{fontSize:13}}><a href={billData.congress_url} target="_blank" rel="noopener noreferrer">View full text on Congress.gov</a></p>}
+                                    {billData.ai_enhanced&&<div style={{fontSize:11,color:'#2e7d32',marginTop:6}}>AI-enhanced analysis available</div>}
+                                </div>
+                            </div>
+                            {billData.summary&&(
+                                <div className="card" style={{marginBottom:14}}>
+                                    <div className="card-header">Official Summary</div>
+                                    <div className="card-body" style={{fontSize:13,lineHeight:1.65,maxHeight:200,overflowY:'auto'}}>{billData.summary}</div>
+                                </div>
+                            )}
+                            {billData.impact_analysis&&(
+                                <div className="card">
+                                    <div className="card-header">Municipal Financial Impact Assessment {billData.ai_enhanced?'(AI-Enhanced)':'(Rules-Based)'}</div>
+                                    <div className="card-body" style={{whiteSpace:'pre-wrap',lineHeight:1.7,fontSize:13}}>{billData.impact_analysis}</div>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* ── State bill redirect ── */}
+                    {billData?.isState && (
+                        <div className="card">
+                            <div className="card-header">State Bill — {billData.stateName}</div>
+                            <div className="card-body">
+                                <p style={{fontSize:14,marginBottom:12}}>
+                                    State bill lookup ({billData.billRef}) requires accessing your state legislature's website directly.
+                                    Click below to search the {billData.stateName} legislature database.
+                                </p>
+                                <a href={billData.legUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{display:'inline-block'}}>
+                                    Search {billData.stateName} Legislature
+                                </a>
+                                <p style={{marginTop:14,fontSize:12,color:'#777'}}>
+                                    After finding the bill, return here and use the What-If Simulator to model its financial impact on your budget.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TAB 7 — MONTE CARLO
+// ════════════════════════════════════════════════════════════════════════════
+function MonteCarloTab() {
+    // API requires costMin/costLikely/costMax (triangular distribution for costs),
+    // NOT a costVolatility scalar — both sides use triangular distributions.
+    const [params, setParams] = useState({
+        revenueMin:900000, revenueLikely:1000000, revenueMax:1100000,
+        costMin:850000,    costLikely:950000,     costMax:1050000,
+        iterations:1000,
+    });
+    const [results, setResults] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError]     = useState('');
+    const chartRef = useRef(null); const chartInst = useRef(null);
+
+    const run = async () => {
+        setLoading(true); setError('');
+        try {
+            const r = await api.runMonteCarlo(params);
+            setResults(r);
+            if (r.distribution) drawChart(r.distribution);
+        } catch (e) {
+            setError('Simulation failed — check that all fields are filled in correctly.');
+        } finally { setLoading(false); }
+    };
+
+    const drawChart = (d) => {
+        if (!chartRef.current) return;
+        const ctx = chartRef.current.getContext('2d');
+        if (chartInst.current) chartInst.current.destroy();
+        chartInst.current = new Chart(ctx,{type:'bar',data:{labels:d.bins,datasets:[{label:'Net Budget Outcome Frequency',data:d.frequencies,backgroundColor:'#1976d2',borderColor:'#0d47a1',borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Simulated Budget Outcome Distribution'},legend:{display:false}},scales:{x:{ticks:{callback:function(v){return fc(this.getLabelForValue(v));},maxTicksLimit:8}},y:{beginAtZero:true,title:{display:true,text:'Frequency'}}}}});
+    };
+
+    const upd = (f,v) => setParams(p=>({...p,[f]:parseFloat(v)||0}));
+
+    return (
+        <div>
+            <h2>Monte Carlo Risk Simulation</h2>
+            <p className="page-desc">Model uncertainty in both revenue and costs using triangular distributions. Run thousands of simulations to see the full range of possible budget outcomes and their probabilities.</p>
+            <div className="grid-2">
+                <div className="card">
+                    <div className="card-header">Simulation Parameters</div>
+                    <div className="card-body">
+                        <h3>Revenue Range (Triangular Distribution)</h3>
+                        <div style={{fontSize:12,color:'#777',marginBottom:10}}>Enter the pessimistic, most likely, and optimistic revenue amounts.</div>
+                        <div className="form-group"><label>Minimum Revenue</label><input type="number" value={params.revenueMin} onChange={e=>upd('revenueMin',e.target.value)} /></div>
+                        <div className="form-group"><label>Most Likely Revenue</label><input type="number" value={params.revenueLikely} onChange={e=>upd('revenueLikely',e.target.value)} /></div>
+                        <div className="form-group"><label>Maximum Revenue</label><input type="number" value={params.revenueMax} onChange={e=>upd('revenueMax',e.target.value)} /></div>
+                        <h3 style={{marginTop:16}}>Cost Range (Triangular Distribution)</h3>
+                        <div style={{fontSize:12,color:'#777',marginBottom:10}}>Enter the best-case, expected, and worst-case total operating costs.</div>
+                        <div className="form-group"><label>Minimum Cost (best case)</label><input type="number" value={params.costMin} onChange={e=>upd('costMin',e.target.value)} /></div>
+                        <div className="form-group"><label>Most Likely Cost</label><input type="number" value={params.costLikely} onChange={e=>upd('costLikely',e.target.value)} /></div>
+                        <div className="form-group"><label>Maximum Cost (worst case)</label><input type="number" value={params.costMax} onChange={e=>upd('costMax',e.target.value)} /></div>
+                        <div className="form-group"><label>Iterations</label><input type="number" value={params.iterations} step={100} min={100} max={10000} onChange={e=>upd('iterations',e.target.value)} /></div>
+                        <button className="btn btn-primary" onClick={run} disabled={loading} style={{width:'100%'}}>
+                            {loading?'Running simulation...':'Run Simulation'}{loading&&<span className="loading"></span>}
+                        </button>
+                        {error&&<div className="alert alert-warning" style={{marginTop:10}}>{error}</div>}
+                    </div>
+                </div>
+                {results&&(
+                    <div>
+                        <div className="grid-2" style={{marginBottom:14}}>
+                            <div className="stat-card"><div className="stat-value">{fc(results.mean||0)}</div><div className="stat-label">Mean Outcome</div></div>
+                            <div className="stat-card"><div className="stat-value">{fc(results.standardDeviation||0)}</div><div className="stat-label">Std. Deviation</div></div>
+                        </div>
+                        <div className="card">
+                            <div className="card-header">Percentile Analysis</div>
+                            <table>
+                                <tbody>
+                                    {[['5% (Worst Case)','p5'],['25%','p25'],['50% (Median)','p50'],['75%','p75'],['95% (Best Case)','p95']].map(([lbl,k])=>(
+                                        <tr key={k}><td style={{padding:'8px 12px'}}>{lbl}</td><td style={{padding:'8px 12px',textAlign:'right',fontWeight:600}}>{fc(results.percentiles?.[k]||0)}</td></tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </div>
+            <div className="chart-box" style={{marginTop:20}}><canvas ref={chartRef}></canvas></div>
+        </div>
+    );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// APP ROOT
+// ════════════════════════════════════════════════════════════════════════════
+// Build a stable localStorage key from a scenario name.
+// Converts e.g. "Bridge Repair 2026" → "gs_notes_bridge_repair_2026".
+// Falls back to "gs_notes_default" when no scenario is named yet.
+const notesKey = (name) => {
+    const slug = (name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    return `gs_notes_${slug || 'default'}`;
+};
+
+const SAVED_KEY = 'gs_saved_scenarios';
+
+function App() {
+    const [tab, setTab] = useState('scenario');
+    const [scenario, setScenario] = useState({name:'',description:'',years:5});
+    const [fundingSources, setFundingSources] = useState([{id:'1',type:'tax',description:'Property Tax Revenue',amount:1000000}]);
+    const [expenses, setExpenses] = useState([]);
+    const [savedScenarios, setSavedScenarios] = useState(() => lsGet(SAVED_KEY, []));
+    const [saveMsg, setSaveMsg] = useState('');
+    // adjExpenseTotal and adjContingencyPct are updated whenever the user visits
+    // the Expenses & Analytics tab and the ExpensePlanner fires onGapChange.
+    // They represent the full cost including contingency and inflation adjustments —
+    // the authoritative number the main Scenario page should show.
+    const [adjExpenseTotal,   setAdjExpenseTotal]   = useState(0);
+    const [adjContingencyPct, setAdjContingencyPct] = useState(10);
+
+    // Save the entire current scenario to localStorage.
+    // No API call — avoids the network entirely and is always reliable.
+    const saveCurrentScenario = () => {
+        const name = scenario.name.trim() || 'Untitled';
+        const entry = {
+            id: genId(),
+            name,
+            savedAt: new Date().toISOString(),
+            scenario: {...scenario, name},
+            fundingSources,
+            expenses,
+        };
+        const existing = lsGet(SAVED_KEY, []);
+        // Overwrite if same name already exists, otherwise append
+        const idx = existing.findIndex(s => s.name === name);
+        const updated = idx >= 0 ? existing.map((s,i) => i===idx ? entry : s) : [...existing, entry];
+        lsSet(SAVED_KEY, updated);
+        setSavedScenarios(updated);
+        setSaveMsg(`Saved "${name}"`);
+        setTimeout(() => setSaveMsg(''), 3000);
+    };
+
+    // Reset everything to a blank working state.
+    const newScenario = () => {
+        setScenario({name:'', description:'', years:5});
+        setFundingSources([{id:genId(), type:'tax', description:'Property Tax Revenue', amount:1000000}]);
+        setExpenses([]);
+    };
+
+    // Restore a saved snapshot into the live working state.
+    const loadScenario = (entry) => {
+        setScenario(entry.scenario || {name:'',description:'',years:5});
+        setFundingSources(entry.fundingSources || []);
+        setExpenses(entry.expenses || []);
+    };
+
+    const deleteScenario = (id) => {
+        const updated = lsGet(SAVED_KEY, []).filter(s => s.id !== id);
+        lsSet(SAVED_KEY, updated);
+        setSavedScenarios(updated);
+    };
+    // fundingGap and gapDetails are derived — NOT state — so they update instantly
+    // whenever fundingSources or expenses change, without requiring the user to visit
+    // the Expenses tab first. This fixes auto-match grants showing even when revenue = 0.
+    const totalRevenue = fundingSources.reduce((s,f) => s+(f.amount||0), 0);
+    const numYrs = parseInt(scenario.years)||5;
+    const fundPerYr = totalRevenue / Math.max(numYrs, 1);
+    const yrExpMap = {};
+    expenses.forEach(e => { const yr = parseInt(e.year)||1; yrExpMap[yr] = (yrExpMap[yr]||0)+(parseFloat(e.amount)||0); });
+    const gapDetails = Array.from({length:numYrs},(_,i)=>i+1)
+        .filter(yr => (yrExpMap[yr]||0) > fundPerYr)
+        .map(yr => ({year:yr, shortfall:(yrExpMap[yr]||0)-fundPerYr}));
+    const fundingGap = gapDetails.length > 0 || expenses.reduce((s,e)=>s+(parseFloat(e.amount)||0),0) > totalRevenue;
+    // Notes are namespaced by scenario name so each project has its own thread.
+    // currentNotesKey tracks which localStorage key is active right now.
+    const [currentNotesKey, setCurrentNotesKey] = useState(() => notesKey(''));
+    const [annotations, setAnnotations] = useState(() => lsGet(notesKey(''), []));
+    const [isSharedView, setIsSharedView] = useState(false);
+
+    // Persist annotations whenever they change.
+    useEffect(() => { lsSet(currentNotesKey, annotations); }, [annotations, currentNotesKey]);
+
+    // When the scenario name changes, save current notes and switch to the new namespace.
+    useEffect(() => {
+        const newKey = notesKey(scenario.name);
+        if (newKey === currentNotesKey) return;
+        lsSet(currentNotesKey, annotations);   // flush current notes first
+        setAnnotations(lsGet(newKey, []));      // load notes for the new scenario
+        setCurrentNotesKey(newKey);
+    }, [scenario.name]);
+
+    useEffect(() => {
+        const hash = window.location.hash;
+        if (hash.startsWith('#share=')) {
+            try {
+                const payload = JSON.parse(decodeURIComponent(escape(atob(hash.slice(7)))));
+                if (payload.fundingSources) setFundingSources(payload.fundingSources);
+                if (payload.expenses) setExpenses(payload.expenses);
+                if (payload.name) setScenario(s=>({...s,name:payload.name,description:payload.description||''}));
+                setIsSharedView(true);
+            } catch {}
+        }
+    }, []);
+
+    const TABS = [
+        {key:'scenario',label:'Scenario'},
+        {key:'revenue',label:'Revenue'},
+        {key:'expenses',label:'Expenses & Analytics'},
+        {key:'comparison',label:'Scenario Comparison'},
+        {key:'whatif',label:'What-If Simulator'},
+        {key:'legislative',label:'Legislative Impact'},
+        {key:'montecarlo',label:'Monte Carlo'},
+    ];
+
+    return (
+        <div className="app-shell">
+            {isSharedView && (
+                <div className="shared-banner">
+                    Viewing a shared scenario — changes are local only.
+                </div>
+            )}
+            <div className="top-bar">
+                <h1>GovSight Scenario Planner</h1>
+                <div className="top-meta">
+                    {scenario.name ? scenario.name : 'No project loaded'} &bull; {scenario.years}-year horizon &bull; {fc(fundingSources.reduce((s,f)=>s+(f.amount||0),0))} total funding
+                </div>
+            </div>
+            <div className="main-nav">
+                {TABS.map(t => <button key={t.key} className={tab===t.key?'active':''} onClick={()=>setTab(t.key)}>{t.label}</button>)}
+            </div>
+            <div className="body-area">
+                <div className="content-area">
+                    {tab==='scenario'    && <ScenarioTab scenario={scenario} setScenario={setScenario} fundingSources={fundingSources} setFundingSources={setFundingSources} expenses={expenses} setExpenses={setExpenses} onSave={saveCurrentScenario} onLoad={loadScenario} onDelete={deleteScenario} onNew={newScenario} savedScenarios={savedScenarios} saveMsg={saveMsg} adjExpenseTotal={adjExpenseTotal} adjContingencyPct={adjContingencyPct} />}
+                    {tab==='revenue'     && <RevenueTab fundingGap={fundingGap} gapDetails={gapDetails} expenses={expenses} fundingSources={fundingSources} setFundingSources={setFundingSources} />}
+                    {tab==='expenses'    && <ExpensesTab expenses={expenses} setExpenses={setExpenses} fundingSources={fundingSources} onGapChange={(hasGap, gapDetails, adjTotal, contingencyPct) => { if (adjTotal != null) setAdjExpenseTotal(adjTotal); if (contingencyPct != null) setAdjContingencyPct(contingencyPct); }} annotations={annotations} setAnnotations={setAnnotations} projectYears={scenario.years} />}
+                    {tab==='comparison'  && <ComparisonTab fundingSources={fundingSources} expenses={expenses} scenario={scenario} savedScenarios={savedScenarios} />}
+                    {tab==='whatif'      && <WhatIfTab fundingSources={fundingSources} expenses={expenses} scenario={scenario} />}
+                    {tab==='legislative' && <LegislativeTab />}
+                    {tab==='montecarlo'  && <MonteCarloTab />}
+                </div>
+                <CollabSidebar annotations={annotations} setAnnotations={setAnnotations} currentTab={tab} scenarioName={scenario.name} />
+            </div>
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>

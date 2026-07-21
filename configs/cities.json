@@ -1,0 +1,38 @@
+{
+  "citya": {
+    "name": "City A",
+    "display_name": "City of Springfield",
+    "database_prefix": "citya",
+    "timezone": "America/New_York",
+    "fiscal_year_start": "07-01",
+    "contact_email": "finance@citya.gov",
+    "phone": "(555) 123-4567",
+    "address": "123 Main Street, Springfield, NY 12345",
+    "population": 45000,
+    "budget_fy2024": 85000000
+  },
+  "cityb": {
+    "name": "City B",
+    "display_name": "City of Riverside",
+    "database_prefix": "cityb",
+    "timezone": "America/Los_Angeles",
+    "fiscal_year_start": "07-01",
+    "contact_email": "finance@cityb.gov",
+    "phone": "(555) 987-6543",
+    "address": "456 River Road, Riverside, CA 92501",
+    "population": 78000,
+    "budget_fy2024": 145000000
+  },
+  "cityc": {
+    "name": "City C",
+    "display_name": "City of Lakewood",
+    "database_prefix": "cityc",
+    "timezone": "America/Chicago",
+    "fiscal_year_start": "01-01",
+    "contact_email": "finance@cityc.gov",
+    "phone": "(555) 555-1234",
+    "address": "789 Lake Avenue, Lakewood, IL 60601",
+    "population": 62000,
+    "budget_fy2024": 112000000
+  }
+}

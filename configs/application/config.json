@@ -1,0 +1,13 @@
+{
+    "cityA": {
+        "server": "sql.citya.gov",
+        "user": "citya_user",
+        "password": "citya_pass",
+        "database": "caselle_citya",
+        "login_password": "cityA2024",
+        "budget_ceiling": 10000000,
+        "org_name": "Spanish Fork",
+        "theme_color": "#0066cc",
+        "dashboard_db": "govsight_all_in_one_data.db"
+    }
+}

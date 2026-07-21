@@ -1,0 +1,18 @@
+{
+    "organizations": {
+        "cityA": {
+            "display_name": "City of Springfield",
+            "database": {
+                "dbtype": "sqlite",
+                "database_path": "cityA_dashboard_data.db"
+            }
+        },
+        "cityB": {
+            "display_name": "Shelbyville Metro",
+            "database": {
+                "dbtype": "sqlite",
+                "database_path": "cityB_dashboard_data.db"
+            }
+        }
+    }
+}

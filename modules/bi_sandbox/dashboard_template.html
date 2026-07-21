@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Municipal Intelligence Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        /* Professional Visual Analytics Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'San Francisco', system-ui, -apple-system, sans-serif;
+            background: #f8f9fa;
+            color: #323130;
+            overflow-x: hidden;
+        }
+
+        .analytics-dashboard {
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            background: #f8f9fa;
+        }
+
+        /* Header Section */
+        .dashboard-header {
+            background: white;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e1e5e9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .dashboard-title h1 {
+            margin: 0;
+            color: #323130;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .breadcrumb {
+            color: #605e5c;
+            font-size: 12px;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+
+        .dashboard-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .filter-bar select {
+            padding: 8px 12px;
+            border: 1px solid #d1d1d1;
+            border-radius: 4px;
+            background: white;
+            font-size: 14px;
+            color: #323130;
+            min-width: 120px;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .filter-bar select:hover {
+            border-color: #0078d4;
+        }
+
+        .filter-bar select:focus {
+            outline: none;
+            border-color: #0078d4;
+            box-shadow: 0 0 0 1px #0078d4;
+        }
+
+        .refresh-btn {
+            padding: 8px 12px;
+            background: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #106ebe;
+        }
+
+        /* KPI Cards Section */
+        .kpi-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            padding: 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 24px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #0078d4;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .kpi-card.revenue { border-left-color: #0078d4; }
+        .kpi-card.departments { border-left-color: #107c10; }
+        .kpi-card.variance { border-left-color: #d13438; }
+        .kpi-card.utilization { border-left-color: #ff8c00; }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #323130;
+            margin-bottom: 4px;
+            line-height: 1.1;
+        }
+
+        .kpi-label {
+            font-size: 14px;
+            color: #605e5c;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .kpi-trend {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        .kpi-trend.positive {
+            color: #107c10;
+            background: #dff6dd;
+        }
+
+        .kpi-trend.negative {
+            color: #d13438;
+            background: #fed9da;
+        }
+
+        .kpi-trend.neutral {
+            color: #8a8886;
+            background: #f3f2f1;
+        }
+
+        /* Main Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: 400px 320px;
+            gap: 16px;
+            padding: 0 24px 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-main {
+            grid-column: 1;
+            grid-row: 1 / 3;
+        }
+
+        .chart-secondary {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .insights-panel {
+            grid-column: 2;
+            grid-row: 2;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 20px;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #323130;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f3f2f1;
+        }
+
+        .chart-content {
+            height: calc(100% - 60px);
+        }
+
+        /* AI Insights Panel */
+        .insights-panel h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #323130;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .insight-card {
+            background: #f8f9fa;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border-left: 3px solid #0078d4;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .insight-card:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Data Table Section */
+        .data-table-section {
+            margin: 0 24px 24px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .data-table-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 20px;
+            border-bottom: 1px solid #f3f2f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #323130;
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .table-controls input[type="search"] {
+            padding: 8px 12px;
+            border: 1px solid #d1d1d1;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 200px;
+        }
+
+        .table-controls button {
+            padding: 8px 16px;
+            background: #f3f2f1;
+            border: 1px solid #d1d1d1;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .table-controls button:hover {
+            background: #e1dfdd;
+        }
+
+        .table-controls button.primary {
+            background: #0078d4;
+            color: white;
+            border-color: #0078d4;
+        }
+
+        .table-controls button.primary:hover {
+            background: #106ebe;
+        }
+
+        #data-table {
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        /* Floating AI Assistant */
+        .ai-assistant-float {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+        }
+
+        .ai-button {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #0078d4, #106ebe);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,120,212,0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            border: none;
+        }
+
+        .ai-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,120,212,0.4);
+        }
+
+        .ai-icon {
+            font-size: 24px;
+            color: white;
+            z-index: 2;
+        }
+
+        .ai-pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(0,120,212,0.3);
+            animation: pulse 2s infinite;
+            top: 0;
+            left: 0;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+
+        .ai-chat-panel {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            width: 320px;
+            height: 450px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 16px 20px;
+            background: #0078d4;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .chat-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .chat-close:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-message {
+            padding: 10px 14px;
+            border-radius: 12px;
+            max-width: 85%;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .chat-message.assistant {
+            background: #f3f2f1;
+            color: #323130;
+            align-self: flex-start;
+        }
+
+        .chat-message.user {
+            background: #0078d4;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .chat-message ul {
+            margin: 8px 0 0 16px;
+            padding: 0;
+        }
+
+        .chat-message li {
+            margin: 4px 0;
+            font-size: 13px;
+            color: #605e5c;
+        }
+
+        .chat-input-container {
+            display: flex;
+            padding: 16px;
+            border-top: 1px solid #e1e5e9;
+            gap: 8px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #d1d1d1;
+            border-radius: 20px;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+        }
+
+        .chat-input:focus {
+            border-color: #0078d4;
+        }
+
+        .chat-send {
+            padding: 10px 16px;
+            background: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .chat-send:hover {
+            background: #106ebe;
+        }
+
+        .chat-send:disabled {
+            background: #d1d1d1;
+            cursor: not-allowed;
+        }
+
+        /* Loading Animation */
+        .loading-dots {
+            display: inline-block;
+        }
+
+        .loading-dots:after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            90%, 100% { content: ''; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: 400px 300px 320px;
+            }
+            
+            .chart-main {
+                grid-column: 1;
+                grid-row: 1;
+            }
+            
+            .chart-secondary {
+                grid-column: 1;
+                grid-row: 2;
+            }
+            
+            .insights-panel {
+                grid-column: 1;
+                grid-row: 3;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: stretch;
+            }
+            
+            .filter-bar {
+                flex-wrap: wrap;
+            }
+            
+            .kpi-section {
+                grid-template-columns: 1fr 1fr;
+                padding: 16px;
+            }
+            
+            .dashboard-grid {
+                padding: 0 16px 16px;
+            }
+            
+            .ai-chat-panel {
+                width: 280px;
+            }
+        }
+
+        /* Chart Loading State */
+        .chart-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: #605e5c;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="analytics-dashboard">
+        <!-- Header Section -->
+        <header class="dashboard-header">
+            <div class="dashboard-title">
+                <h1>Municipal Intelligence Dashboard</h1>
+                <div class="breadcrumb" id="breadcrumb">Loading organization...</div>
+            </div>
+            <div class="dashboard-controls">
+                <div class="filter-bar">
+                    <select id="dept-filter" onchange="updateDashboard()">
+                        <option value="">All Departments</option>
+                    </select>
+                    <select id="year-filter" onchange="updateDashboard()">
+                        <option value="">All Years</option>
+                    </select>
+                    <select id="fund-filter" onchange="updateDashboard()">
+                        <option value="">All Funds</option>
+                    </select>
+                    <button class="refresh-btn" onclick="refreshDashboard()">🔄</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- KPI Cards Row -->
+        <section class="kpi-section">
+            <div class="kpi-card revenue" onclick="focusKPI('revenue')">
+                <div class="kpi-value" id="kpi-revenue">$0</div>
+                <div class="kpi-label">Total Budget</div>
+                <div class="kpi-trend positive" id="trend-revenue">Loading...</div>
+            </div>
+            <div class="kpi-card departments" onclick="focusKPI('departments')">
+                <div class="kpi-value" id="kpi-departments">0</div>
+                <div class="kpi-label">Departments</div>
+                <div class="kpi-trend neutral" id="trend-departments">Loading...</div>
+            </div>
+            <div class="kpi-card variance" onclick="focusKPI('variance')">
+                <div class="kpi-value" id="kpi-variance">$0</div>
+                <div class="kpi-label">Budget Variance</div>
+                <div class="kpi-trend neutral" id="trend-variance">Loading...</div>
+            </div>
+            <div class="kpi-card utilization" onclick="focusKPI('utilization')">
+                <div class="kpi-value" id="kpi-utilization">0%</div>
+                <div class="kpi-label">Fund Utilization</div>
+                <div class="kpi-trend neutral" id="trend-utilization">Loading...</div>
+            </div>
+        </section>
+
+        <!-- Main Dashboard Grid -->
+        <section class="dashboard-grid">
+            <!-- Primary Chart Area -->
+            <div class="chart-container chart-main">
+                <div class="chart-title">Department Budget Analysis</div>
+                <div class="chart-content" id="main-chart">
+                    <div class="chart-loading">Loading chart data...</div>
+                </div>
+            </div>
+            
+            <!-- Secondary Chart -->
+            <div class="chart-container chart-secondary">
+                <div class="chart-title">Monthly Trends</div>
+                <div class="chart-content" id="secondary-chart">
+                    <div class="chart-loading">Loading chart data...</div>
+                </div>
+            </div>
+            
+            <!-- AI Insights Panel -->
+            <div class="insights-panel">
+                <h3>🤖 AI Insights</h3>
+                <div id="insights-content">
+                    <div class="insight-card">
+                        <span class="loading-dots">Analyzing your data</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Data Table Section -->
+        <section class="data-table-section">
+            <div class="data-table-container">
+                <div class="table-header">
+                    <h3>Department Budget Details</h3>
+                    <div class="table-controls">
+                        <input type="search" id="table-search" placeholder="Search departments..." oninput="filterTable()">
+                        <button onclick="chartSelected()">📊 Chart Selected</button>
+                        <button class="primary" onclick="exportData()">📋 Export</button>
+                    </div>
+                </div>
+                <div id="data-table">
+                    <div class="chart-loading">Loading table data...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Floating AI Assistant -->
+        <div class="ai-assistant-float">
+            <div class="ai-button" onclick="toggleAIChat()">
+                <span class="ai-icon">🤖</span>
+                <div class="ai-pulse"></div>
+            </div>
+            
+            <!-- AI Chat Panel (hidden by default) -->
+            <div class="ai-chat-panel" id="ai-chat-panel">
+                <div class="chat-header">
+                    <span>💬 Ask Mantis</span>
+                    <button class="chat-close" onclick="closeAIChat()">✕</button>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-message assistant">
+                        Hi! I can help you analyze this dashboard. Try asking:
+                        <ul>
+                            <li>"Why is the police budget over?"</li>
+                            <li>"Show me trends for Parks department"</li>
+                            <li>"What departments need attention?"</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" id="chat-input" class="chat-input" placeholder="Ask about this dashboard..." onkeypress="handleChatKeyPress(event)">
+                    <button class="chat-send" onclick="sendAIMessage()" id="chat-send-btn">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let dashboardData = {};
+        let currentFilters = {
+            department: '',
+            year: '',
+            fund: ''
+        };
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            loadDashboardData();
+        });
+
+        // Dashboard initialization
+        function initializeDashboard() {
+            console.log('Initializing Municipal Intelligence Dashboard...');
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Initialize empty charts
+            initializeCharts();
+        }
+
+        function setupEventListeners() {
+            // Filter change listeners are already set via onchange attributes
+            
+            // Chat input enter key support
+            document.getElementById('chat-input').addEventListener('keypress', handleChatKeyPress);
+            
+            // Table search
+            document.getElementById('table-search').addEventListener('input', filterTable);
+        }
+
+        function initializeCharts() {
+            // Initialize main chart
+            const mainLayout = {
+                title: {
+                    text: 'Department Budget Analysis',
+                    font: { size: 16, color: '#323130' }
+                },
+                paper_bgcolor: 'white',
+                plot_bgcolor: 'white',
+                font: { family: 'Segoe UI, sans-serif', color: '#323130' },
+                margin: { t: 50, r: 30, b: 50, l: 80 },
+                showlegend: true,
+                legend: { orientation: 'h', y: -0.2 }
+            };
+            
+            Plotly.newPlot('main-chart', [], mainLayout, {responsive: true, displayModeBar: false});
+            
+            // Initialize secondary chart
+            const secondaryLayout = {
+                title: {
+                    text: 'Monthly Trends',
+                    font: { size: 16, color: '#323130' }
+                },
+                paper_bgcolor: 'white',
+                plot_bgcolor: 'white',
+                font: { family: 'Segoe UI, sans-serif', color: '#323130' },
+                margin: { t: 50, r: 30, b: 50, l: 60 },
+                showlegend: false
+            };
+            
+            Plotly.newPlot('secondary-chart', [], secondaryLayout, {responsive: true, displayModeBar: false});
+        }
+
+        // Data loading and API calls
+        async function loadDashboardData() {
+            try {
+                console.log('Loading dashboard data...');
+                
+                // Call the backend API (this will be implemented in Python)
+                const response = await fetch('/api/dashboard/data');
+                if (!response.ok) {
+                    throw new Error('Failed to load dashboard data');
+                }
+                
+                dashboardData = await response.json();
+                console.log('Dashboard data loaded:', dashboardData);
+                
+                // Update all dashboard components
+                updateBreadcrumb();
+                updateFilters();
+                updateKPIs();
+                updateCharts();
+                updateInsights();
+                updateDataTable();
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                
+                // Load sample data for demonstration
+                loadSampleData();
+            }
+        }
+
+        function loadSampleData() {
+            console.log('Loading sample data for demonstration...');
+            
+            dashboardData = {
+                organization: 'Spanish Fork',
+                filters: {
+                    departments: ['Police', 'Fire', 'Public Works', 'Parks & Recreation', 'Administration'],
+                    years: ['2023', '2024', '2025'],
+                    funds: ['General Fund', 'Water Fund', 'Sewer Fund', 'Capital Projects']
+                },
+                kpis: {
+                    totalBudget: 2340000,
+                    budgetChange: 12.3,
+                    departmentCount: 45,
+                    departmentChange: 3,
+                    variance: -45000,
+                    variancePercent: -2.1,
+                    utilization: 87,
+                    utilizationChange: 0
+                },
+                chartData: {
+                    departmentBudgets: [
+                        { department: 'Police', budget: 850000, actual: 892000 },
+                        { department: 'Fire', budget: 620000, actual: 615000 },
+                        { department: 'Public Works', budget: 480000, actual: 465000 },
+                        { department: 'Parks & Recreation', budget: 230000, actual: 225000 },
+                        { department: 'Administration', budget: 160000, actual: 158000 }
+                    ],
+                    monthlyTrends: [
+                        { month: 'Jan', budget: 180000, actual: 175000 },
+                        { month: 'Feb', budget: 180000, actual: 185000 },
+                        { month: 'Mar', budget: 180000, actual: 172000 },
+                        { month: 'Apr', budget: 180000, actual: 188000 },
+                        { month: 'May', budget: 180000, actual: 179000 },
+                        { month: 'Jun', budget: 180000, actual: 182000 }
+                    ]
+                },
+                insights: [
+                    "Police department is 5% over budget due to increased overtime costs. Consider reviewing patrol schedules.",
+                    "Parks & Recreation showing efficient spending at 98% of budget allocation with strong community engagement.",
+                    "Q2 revenue is tracking 8% above forecast. Opportunity to accelerate capital projects."
+                ]
+            };
+            
+            // Update dashboard with sample data
+            updateBreadcrumb();
+            updateFilters();
+            updateKPIs();
+            updateCharts();
+            updateInsights();
+            updateDataTable();
+        }
+
+        // Dashboard update functions
+        function updateBreadcrumb() {
+            const breadcrumb = document.getElementById('breadcrumb');
+            breadcrumb.textContent = `${dashboardData.organization} > Budget Analysis > Dashboard View`;
+        }
+
+        function updateFilters() {
+            const deptFilter = document.getElementById('dept-filter');
+            const yearFilter = document.getElementById('year-filter');
+            const fundFilter = document.getElementById('fund-filter');
+            
+            // Clear existing options (except "All" option)
+            deptFilter.innerHTML = '<option value="">All Departments</option>';
+            yearFilter.innerHTML = '<option value="">All Years</option>';
+            fundFilter.innerHTML = '<option value="">All Funds</option>';
+            
+            // Add options from data
+            if (dashboardData.filters) {
+                dashboardData.filters.departments?.forEach(dept => {
+                    deptFilter.innerHTML += `<option value="${dept}">${dept}</option>`;
+                });
+                
+                dashboardData.filters.years?.forEach(year => {
+                    yearFilter.innerHTML += `<option value="${year}">${year}</option>`;
+                });
+                
+                dashboardData.filters.funds?.forEach(fund => {
+                    fundFilter.innerHTML += `<option value="${fund}">${fund}</option>`;
+                });
+            }
+        }
+
+        function updateKPIs() {
+            if (!dashboardData.kpis) return;
+            
+            const kpis = dashboardData.kpis;
+            
+            // Update values
+            document.getElementById('kpi-revenue').textContent = formatCurrency(kpis.totalBudget);
+            document.getElementById('kpi-departments').textContent = kpis.departmentCount;
+            document.getElementById('kpi-variance').textContent = formatCurrency(kpis.variance);
+            document.getElementById('kpi-utilization').textContent = `${kpis.utilization}%`;
+            
+            // Update trends
+            updateTrend('trend-revenue', kpis.budgetChange, true);
+            updateTrend('trend-departments', kpis.departmentChange, false);
+            updateTrend('trend-variance', kpis.variancePercent, true);
+            updateTrend('trend-utilization', kpis.utilizationChange, false);
+        }
+
+        function updateTrend(elementId, value, isPercentage) {
+            const element = document.getElementById(elementId);
+            const absValue = Math.abs(value);
+            const sign = value > 0 ? '↑' : value < 0 ? '↓' : '→';
+            const suffix = isPercentage ? '%' : '';
+            
+            element.textContent = `${sign} ${absValue}${suffix}`;
+            
+            // Update class based on trend
+            element.className = 'kpi-trend';
+            if (value > 0) element.classList.add('positive');
+            else if (value < 0) element.classList.add('negative');
+            else element.classList.add('neutral');
+        }
+
+        function updateCharts() {
+            if (!dashboardData.chartData) return;
+            
+            updateMainChart();
+            updateSecondaryChart();
+        }
+
+        function updateMainChart() {
+            const data = dashboardData.chartData.departmentBudgets;
+            if (!data) return;
+            
+            const trace1 = {
+                x: data.map(d => d.department),
+                y: data.map(d => d.budget),
+                name: 'Budget',
+                type: 'bar',
+                marker: { color: '#0078d4' }
+            };
+            
+            const trace2 = {
+                x: data.map(d => d.department),
+                y: data.map(d => d.actual),
+                name: 'Actual',
+                type: 'bar',
+                marker: { color: '#107c10' }
+            };
+            
+            const layout = {
+                title: {
+                    text: 'Department Budget vs Actual',
+                    font: { size: 16, color: '#323130' }
+                },
+                xaxis: { title: 'Department' },
+                yaxis: { title: 'Amount ($)' },
+                barmode: 'group',
+                paper_bgcolor: 'white',
+                plot_bgcolor: 'white',
+                font: { family: 'Segoe UI, sans-serif', color: '#323130' },
+                margin: { t: 50, r: 30, b: 80, l: 80 },
+                showlegend: true,
+                legend: { orientation: 'h', y: -0.3 }
+            };
+            
+            Plotly.react('main-chart', [trace1, trace2], layout, {responsive: true, displayModeBar: false});
+        }
+
+        function updateSecondaryChart() {
+            const data = dashboardData.chartData.monthlyTrends;
+            if (!data) return;
+            
+            const trace = {
+                x: data.map(d => d.month),
+                y: data.map(d => d.actual),
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Monthly Spending',
+                line: { color: '#ff8c00', width: 3 },
+                marker: { color: '#ff8c00', size: 8 }
+            };
+            
+            const layout = {
+                title: {
+                    text: 'Monthly Spending Trend',
+                    font: { size: 16, color: '#323130' }
+                },
+                xaxis: { title: 'Month' },
+                yaxis: { title: 'Amount ($)' },
+                paper_bgcolor: 'white',
+                plot_bgcolor: 'white',
+                font: { family: 'Segoe UI, sans-serif', color: '#323130' },
+                margin: { t: 50, r: 30, b: 50, l: 80 },
+                showlegend: false
+            };
+            
+            Plotly.react('secondary-chart', [trace], layout, {responsive: true, displayModeBar: false});
+        }
+
+        function updateInsights() {
+            const container = document.getElementById('insights-content');
+            if (!dashboardData.insights) {
+                container.innerHTML = '<div class="insight-card">No insights available</div>';
+                return;
+            }
+            
+            container.innerHTML = dashboardData.insights.map(insight => 
+                `<div class="insight-card">${insight}</div>`
+            ).join('');
+        }
+
+        function updateDataTable() {
+            const container = document.getElementById('data-table');
+            if (!dashboardData.chartData?.departmentBudgets) {
+                container.innerHTML = '<div class="chart-loading">No data available</div>';
+                return;
+            }
+            
+            const data = dashboardData.chartData.departmentBudgets;
+            
+            let tableHTML = `
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #e1e5e9;">
+                            <th style="padding: 12px; text-align: left; font-weight: 600;">Department</th>
+                            <th style="padding: 12px; text-align: right; font-weight: 600;">Budget</th>
+                            <th style="padding: 12px; text-align: right; font-weight: 600;">Actual</th>
+                            <th style="padding: 12px; text-align: right; font-weight: 600;">Variance</th>
+                            <th style="padding: 12px; text-align: right; font-weight: 600;">Variance %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            data.forEach((row, index) => {
+                const variance = row.actual - row.budget;
+                const variancePercent = ((variance / row.budget) * 100).toFixed(1);
+                const rowClass = index % 2 === 0 ? 'background: white;' : 'background: #f8f9fa;';
+                const varianceColor = variance >= 0 ? '#d13438' : '#107c10';
+                
+                tableHTML += `
+                    <tr style="${rowClass} border-bottom: 1px solid #f3f2f1;">
+                        <td style="padding: 12px; font-weight: 500;">${row.department}</td>
+                        <td style="padding: 12px; text-align: right;">${formatCurrency(row.budget)}</td>
+                        <td style="padding: 12px; text-align: right;">${formatCurrency(row.actual)}</td>
+                        <td style="padding: 12px; text-align: right; color: ${varianceColor}; font-weight: 500;">${formatCurrency(variance)}</td>
+                        <td style="padding: 12px; text-align: right; color: ${varianceColor}; font-weight: 500;">${variancePercent}%</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            container.innerHTML = tableHTML;
+        }
+
+        // Event handlers
+        function updateDashboard() {
+            // Get current filter values
+            currentFilters.department = document.getElementById('dept-filter').value;
+            currentFilters.year = document.getElementById('year-filter').value;
+            currentFilters.fund = document.getElementById('fund-filter').value;
+            
+            console.log('Updating dashboard with filters:', currentFilters);
+            
+            // In a real implementation, this would trigger a new API call
+            // For now, we'll just reload the sample data
+            loadDashboardData();
+        }
+
+        function refreshDashboard() {
+            console.log('Refreshing dashboard...');
+            
+            // Show loading state
+            document.getElementById('main-chart').innerHTML = '<div class="chart-loading">Refreshing data...</div>';
+            document.getElementById('secondary-chart').innerHTML = '<div class="chart-loading">Refreshing data...</div>';
+            
+            // Reload data
+            setTimeout(() => {
+                loadDashboardData();
+            }, 1000);
+        }
+
+        function focusKPI(kpiType) {
+            console.log('Focusing on KPI:', kpiType);
+            
+            // This could trigger chart updates, filters, or AI insights
+            // For now, just log the action
+            addChatMessage(`Tell me more about ${kpiType} performance`, 'user');
+            
+            // Simulate AI response
+            setTimeout(() => {
+                let response = '';
+                switch(kpiType) {
+                    case 'revenue':
+                        response = 'Your total budget is $2.34M, up 12.3% from last year. This growth is primarily driven by increased property tax revenue and federal grants.';
+                        break;
+                    case 'departments':
+                        response = 'You have 45 active departments, with 3 new departments added this year: Cybersecurity, Environmental Services, and Community Outreach.';
+                        break;
+                    case 'variance':
+                        response = 'Current budget variance is -$45K (2.1% under budget). The Police department is over budget, but this is offset by savings in other departments.';
+                        break;
+                    case 'utilization':
+                        response = 'Fund utilization is at 87%, which is healthy. Consider accelerating capital projects if utilization drops below 85%.';
+                        break;
+                }
+                addChatMessage(response, 'assistant');
+            }, 1000);
+        }
+
+        function filterTable() {
+            const searchTerm = document.getElementById('table-search').value.toLowerCase();
+            const table = document.querySelector('#data-table table');
+            
+            if (!table) return;
+            
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const department = row.cells[0].textContent.toLowerCase();
+                if (department.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function chartSelected() {
+            console.log('Chart selected rows');
+            // This would chart the selected/filtered table rows
+            alert('Chart Selected functionality would be implemented here');
+        }
+
+        function exportData() {
+            console.log('Exporting data');
+            // This would export the current data view
+            alert('Export functionality would be implemented here');
+        }
+
+        // AI Chat Functions
+        function toggleAIChat() {
+            const panel = document.getElementById('ai-chat-panel');
+            panel.style.display = panel.style.display === 'none' || panel.style.display === '' ? 'flex' : 'none';
+        }
+
+        function closeAIChat() {
+            document.getElementById('ai-chat-panel').style.display = 'none';
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendAIMessage();
+            }
+        }
+
+        async function sendAIMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Disable send button
+            const sendBtn = document.getElementById('chat-send-btn');
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+            
+            // Add user message to chat
+            addChatMessage(message, 'user');
+            input.value = '';
+            
+            // Get dashboard context for AI
+            const dashboardContext = getDashboardContext();
+            
+            try {
+                // Call Mantis AI backend
+                const response = await fetch('/api/mantis/dashboard-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: message,
+                        context: dashboardContext
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to get AI response');
+                }
+                
+                const aiResponse = await response.json();
+                addChatMessage(aiResponse.message, 'assistant');
+                
+                // Update dashboard if AI suggests changes
+                if (aiResponse.dashboard_updates) {
+                    updateDashboardFromAI(aiResponse.dashboard_updates);
+                }
+                
+            } catch (error) {
+                console.error('AI chat error:', error);
+                
+                // Fallback to simulated responses for demonstration
+                generateSimulatedAIResponse(message);
+            }
+            
+            // Re-enable send button
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send';
+        }
+
+        function generateSimulatedAIResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            let response = '';
+            
+            if (lowerMessage.includes('police') || lowerMessage.includes('budget over')) {
+                response = 'The Police department is currently 5% over budget ($42K over). This is primarily due to increased overtime costs from recent community events and staff shortages. I recommend reviewing patrol schedules and consider hiring additional officers to reduce overtime dependency.';
+            } else if (lowerMessage.includes('trend') || lowerMessage.includes('park')) {
+                response = 'Parks & Recreation is performing well, utilizing 98% of their budget efficiently. Citizen satisfaction surveys show 94% approval for park services. Consider allocating additional funds for the new playground project which has strong community support.';
+            } else if (lowerMessage.includes('department') && lowerMessage.includes('attention')) {
+                response = 'Based on current data, I recommend focusing on: 1) Police department - address overtime costs, 2) Public Works - equipment maintenance backlog, 3) Fire department - excellent performance, potential for efficiency sharing with other departments.';
+            } else if (lowerMessage.includes('revenue') || lowerMessage.includes('income')) {
+                response = 'Revenue is tracking 8% above forecast this quarter, primarily from property tax increases and unexpected federal grant funding. This provides an opportunity to accelerate capital projects or build reserves for future economic uncertainty.';
+            } else {
+                response = `I understand you're asking about "${message}". I can help you analyze department budgets, identify trends, explain variances, and provide strategic insights. Try asking me about specific departments, budget performance, or what needs attention.`;
+            }
+            
+            setTimeout(() => {
+                addChatMessage(response, 'assistant');
+            }, 1500);
+        }
+
+        function addChatMessage(message, sender) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${sender}`;
+            messageDiv.textContent = message;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function getDashboardContext() {
+            return {
+                organization: dashboardData.organization || 'Unknown',
+                selectedFilters: currentFilters,
+                currentKPIs: {
+                    totalBudget: document.getElementById('kpi-revenue').textContent,
+                    departmentCount: document.getElementById('kpi-departments').textContent,
+                    variance: document.getElementById('kpi-variance').textContent,
+                    utilization: document.getElementById('kpi-utilization').textContent
+                },
+                visibleCharts: ['Department Budget Analysis', 'Monthly Trends'],
+                currentView: 'dashboard_overview'
+            };
+        }
+
+        function updateDashboardFromAI(updates) {
+            console.log('Updating dashboard from AI suggestions:', updates);
+            
+            // This would handle AI-suggested dashboard updates
+            // For example: changing chart focus, applying filters, highlighting issues
+            if (updates.highlightDepartment) {
+                // Highlight specific department in charts
+            }
+            if (updates.applyFilter) {
+                // Apply suggested filters
+            }
+        }
+
+        // Utility functions
+        function formatCurrency(amount) {
+            if (typeof amount !== 'number') return '$0';
+            
+            if (amount >= 1000000) {
+                return '$' + (amount / 1000000).toFixed(1) + 'M';
+            } else if (amount >= 1000) {
+                return '$' + (amount / 1000).toFixed(0) + 'K';
+            } else {
+                return '$' + amount.toLocaleString();
+            }
+        }
+
+        // Handle window resize for responsive charts
+        window.addEventListener('resize', function() {
+            Plotly.Plots.resize('main-chart');
+            Plotly.Plots.resize('secondary-chart');
+        });
+    </script>
+</body>
+</html>

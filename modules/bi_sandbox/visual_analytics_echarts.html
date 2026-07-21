@@ -1,0 +1,2131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Analytics Dashboard - GovSight</title>
+    <!-- ECharts for main visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
+    <!-- D3.js for custom visualizations -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Sortable for drag-and-drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        /* Professional Dashboard Design */
+        :root {
+            --sidebar-width: 320px;
+            --header-height: 48px;
+            --primary-color: #0078d4;
+            --secondary-color: #106ebe;
+            --hover-color: #005a9e;
+            --background: #f3f2f1;
+            --surface: #ffffff;
+            --border: #e1dfdd;
+            --text-primary: #323130;
+            --text-secondary: #605e5c;
+            --success: #107c10;
+            --warning: #ffb900;
+            --error: #d83b01;
+            --field-dimension: #0078d4;
+            --field-measure: #00bcf2;
+            --field-date: #bad80a;
+            --drop-zone-active: rgba(0, 120, 212, 0.1);
+            --card-shadow: 0 1.6px 3.6px 0 rgba(0,0,0,.132), 0 0.3px 0.9px 0 rgba(0,0,0,.108);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Main Layout */
+        .analytics-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Dashboard Style Header */
+        .header-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 1000;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 2px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Fields Panel */
+        .fields-sidebar {
+            position: fixed;
+            right: 0;
+            top: var(--header-height);
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            z-index: 900;
+        }
+
+        .fields-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .search-box {
+            margin: 12px 16px;
+            width: calc(100% - 32px);
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.1);
+        }
+
+        /* Field Categories */
+        .field-category {
+            margin-bottom: 8px;
+        }
+
+        .category-header {
+            padding: 8px 16px;
+            background: #f8f8f8;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .category-header:hover {
+            background: #f0f0f0;
+        }
+
+        .category-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .icon-dimension { background: var(--field-dimension); }
+        .icon-measure { background: var(--field-measure); }
+        .icon-date { background: var(--field-date); }
+
+        .field-list {
+            padding: 4px 0;
+        }
+
+        .field-item {
+            padding: 6px 16px 6px 40px;
+            font-size: 13px;
+            cursor: move;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .field-item:hover {
+            background: rgba(0, 120, 212, 0.05);
+        }
+
+        .field-item.dragging {
+            opacity: 0.5;
+        }
+
+        .field-icon {
+            width: 14px;
+            height: 14px;
+            margin-right: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            color: white;
+            font-size: 10px;
+        }
+
+        /* Main Canvas Area */
+        .canvas-area {
+            position: fixed;
+            left: 0;
+            top: var(--header-height);
+            right: var(--sidebar-width);
+            bottom: 0;
+            padding: 16px;
+            overflow-y: auto;
+            background: var(--background);
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        /* Visualization Cards */
+        .viz-card {
+            background: var(--surface);
+            border-radius: 4px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            min-height: 350px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .viz-card:hover {
+            box-shadow: 0 3.2px 7.2px 0 rgba(0,0,0,.132), 0 0.6px 1.8px 0 rgba(0,0,0,.108);
+        }
+
+        .viz-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fafafa;
+        }
+
+        .viz-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .viz-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .viz-action-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+
+        .viz-action-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .viz-content {
+            padding: 16px;
+            height: 300px;
+        }
+
+        /* Chart Type Selector */
+        .chart-selector {
+            position: fixed;
+            left: 16px;
+            top: calc(var(--header-height) + 16px);
+            width: 280px;
+            background: var(--surface);
+            border-radius: 4px;
+            box-shadow: var(--card-shadow);
+            z-index: 800;
+        }
+
+        .chart-selector-header {
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chart-categories {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .chart-category {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chart-category-title {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: #f8f8f8;
+        }
+
+        .chart-types {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 8px;
+        }
+
+        .chart-type-btn {
+            padding: 8px;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 2px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 11px;
+            transition: all 0.2s;
+            height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chart-type-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .chart-icon {
+            width: 24px;
+            height: 24px;
+            margin-bottom: 4px;
+        }
+
+        /* Drop Zones */
+        .config-panel {
+            background: #f8f8f8;
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 2px;
+            padding: 8px;
+            min-height: 40px;
+            margin-bottom: 8px;
+            transition: all 0.3s;
+        }
+
+        .drop-zone.drag-over {
+            background: var(--drop-zone-active);
+            border-color: var(--primary-color);
+        }
+
+        .drop-zone-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .dropped-field {
+            display: inline-block;
+            padding: 4px 8px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            margin: 2px;
+            font-size: 12px;
+        }
+
+        .dropped-field .remove-btn {
+            margin-left: 4px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        /* D3.js Custom Viz Panel */
+        .custom-viz-panel {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            width: 280px;
+            background: var(--surface);
+            border-radius: 4px;
+            box-shadow: var(--card-shadow);
+            z-index: 800;
+        }
+
+        .custom-viz-header {
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .custom-viz-list {
+            padding: 8px;
+        }
+
+        .custom-viz-btn {
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 2px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .custom-viz-btn:hover {
+            background: #f8f8f8;
+            border-color: var(--primary-color);
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(0, 120, 212, 0.2);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Chart Type Icons - Text only for professional appearance */
+        .chart-icon-bar::before { content: "[=]"; }
+        .chart-icon-line::before { content: "/\\"; }
+        .chart-icon-pie::before { content: "◔"; }
+        .chart-icon-scatter::before { content: "∴"; }
+        .chart-icon-heatmap::before { content: "▦"; }
+        .chart-icon-treemap::before { content: "▤"; }
+        .chart-icon-sankey::before { content: "≈"; }
+        .chart-icon-gauge::before { content: "◐"; }
+        .chart-icon-radar::before { content: "✦"; }
+        .chart-icon-funnel::before { content: "▼"; }
+    </style>
+</head>
+<body>
+    <div class="analytics-container">
+        <!-- Header Bar -->
+        <div class="header-bar">
+            <span class="header-title">GovSight Visual Analytics Dashboard</span>
+            <div class="header-actions">
+                <button class="action-btn" onclick="refreshData()">Refresh</button>
+                <button class="action-btn" onclick="exportDashboard()">Export</button>
+                <button class="action-btn" onclick="saveDashboard()">Save</button>
+                <button class="action-btn" onclick="toggleD3Mode()">Custom Viz</button>
+            </div>
+        </div>
+
+        <!-- Chart Type Selector Panel -->
+        <div class="chart-selector">
+            <div class="chart-selector-header">Visualizations</div>
+            <div class="chart-categories">
+                <!-- Basic Charts -->
+                <div class="chart-category">
+                    <div class="chart-category-title">Basic Charts</div>
+                    <div class="chart-types">
+                        <div class="chart-type-btn" onclick="createChart('bar')">
+                            <div class="chart-icon chart-icon-bar"></div>
+                            <span>Bar</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('line')">
+                            <div class="chart-icon chart-icon-line"></div>
+                            <span>Line</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('pie')">
+                            <div class="chart-icon chart-icon-pie"></div>
+                            <span>Pie</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('scatter')">
+                            <div class="chart-icon chart-icon-scatter"></div>
+                            <span>Scatter</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('area')">
+                            <div class="chart-icon">⤵</div>
+                            <span>Area</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('bubble')">
+                            <div class="chart-icon">○</div>
+                            <span>Bubble</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Charts -->
+                <div class="chart-category">
+                    <div class="chart-category-title">Advanced Analytics</div>
+                    <div class="chart-types">
+                        <div class="chart-type-btn" onclick="createChart('heatmap')">
+                            <div class="chart-icon chart-icon-heatmap"></div>
+                            <span>Heatmap</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('treemap')">
+                            <div class="chart-icon chart-icon-treemap"></div>
+                            <span>Treemap</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('sunburst')">
+                            <div class="chart-icon">◉</div>
+                            <span>Sunburst</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('sankey')">
+                            <div class="chart-icon chart-icon-sankey"></div>
+                            <span>Sankey</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('chord')">
+                            <div class="chart-icon">∞</div>
+                            <span>Chord</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('network')">
+                            <div class="chart-icon">⬡</div>
+                            <span>Network</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistical Charts -->
+                <div class="chart-category">
+                    <div class="chart-category-title">Statistical</div>
+                    <div class="chart-types">
+                        <div class="chart-type-btn" onclick="createChart('boxplot')">
+                            <div class="chart-icon">□</div>
+                            <span>Box Plot</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('violin')">
+                            <div class="chart-icon">⧈</div>
+                            <span>Violin</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('histogram')">
+                            <div class="chart-icon">📊</div>
+                            <span>Histogram</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('density')">
+                            <div class="chart-icon">≈</div>
+                            <span>Density</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('beeswarm')">
+                            <div class="chart-icon">⬢</div>
+                            <span>Beeswarm</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('parallel')">
+                            <div class="chart-icon">∥</div>
+                            <span>Parallel</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business Charts -->
+                <div class="chart-category">
+                    <div class="chart-category-title">Business Analytics</div>
+                    <div class="chart-types">
+                        <div class="chart-type-btn" onclick="createChart('gauge')">
+                            <div class="chart-icon chart-icon-gauge"></div>
+                            <span>Gauge</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('radar')">
+                            <div class="chart-icon chart-icon-radar"></div>
+                            <span>Radar</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('funnel')">
+                            <div class="chart-icon chart-icon-funnel"></div>
+                            <span>Funnel</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('waterfall')">
+                            <div class="chart-icon">◢</div>
+                            <span>Waterfall</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('candlestick')">
+                            <div class="chart-icon">▯</div>
+                            <span>Candlestick</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('kpi')">
+                            <div class="chart-icon">⊕</div>
+                            <span>KPI Card</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map & Geo Charts -->
+                <div class="chart-category">
+                    <div class="chart-category-title">Geographic</div>
+                    <div class="chart-types">
+                        <div class="chart-type-btn" onclick="createChart('map')">
+                            <div class="chart-icon">⬚</div>
+                            <span>Map</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('choropleth')">
+                            <div class="chart-icon">◍</div>
+                            <span>Choropleth</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('scatter-map')">
+                            <div class="chart-icon">▼</div>
+                            <span>Scatter Map</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3D Charts -->
+                <div class="chart-category">
+                    <div class="chart-category-title">3D Visualizations</div>
+                    <div class="chart-types">
+                        <div class="chart-type-btn" onclick="createChart('3d-bar')">
+                            <div class="chart-icon">📊</div>
+                            <span>3D Bar</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('3d-surface')">
+                            <div class="chart-icon">△</div>
+                            <span>3D Surface</span>
+                        </div>
+                        <div class="chart-type-btn" onclick="createChart('3d-scatter')">
+                            <div class="chart-icon">※</div>
+                            <span>3D Scatter</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom D3.js Visualizations Panel -->
+        <div class="custom-viz-panel" id="customVizPanel" style="display: none;">
+            <div class="custom-viz-header">D3.js Custom Visualizations</div>
+            <div class="custom-viz-list">
+                <button class="custom-viz-btn" onclick="createD3Viz('budget-flow')">
+                    Municipal Budget Flow
+                </button>
+                <button class="custom-viz-btn" onclick="createD3Viz('department-network')">
+                    Department Network Graph
+                </button>
+                <button class="custom-viz-btn" onclick="createD3Viz('tax-distribution')">
+                    Tax Distribution Spiral
+                </button>
+                <button class="custom-viz-btn" onclick="createD3Viz('project-timeline')">
+                    Interactive Project Timeline
+                </button>
+                <button class="custom-viz-btn" onclick="createD3Viz('utility-infrastructure')">
+                    Utility Infrastructure Map
+                </button>
+                <button class="custom-viz-btn" onclick="createD3Viz('financial-health')">
+                    Financial Health Dashboard
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Canvas Area -->
+        <div class="canvas-area" id="canvasArea">
+            <div class="dashboard-grid" id="dashboardGrid">
+                <!-- Visualizations will be added here dynamically -->
+            </div>
+        </div>
+
+        <!-- Fields Sidebar -->
+        <div class="fields-sidebar">
+            <div class="fields-header">Fields</div>
+            <input type="text" class="search-box" placeholder="Search fields..." id="fieldSearch" onkeyup="filterFields()">
+            
+            <div id="fieldCategories">
+                <!-- Dimensions -->
+                <div class="field-category">
+                    <div class="category-header" onclick="toggleCategory('dimensions')">
+                        <div>
+                            <span class="category-icon icon-dimension">D</span>
+                            Dimensions
+                        </div>
+                        <span id="dimensions-count">0</span>
+                    </div>
+                    <div class="field-list" id="dimensions-list"></div>
+                </div>
+
+                <!-- Measures -->
+                <div class="field-category">
+                    <div class="category-header" onclick="toggleCategory('measures')">
+                        <div>
+                            <span class="category-icon icon-measure">M</span>
+                            Measures
+                        </div>
+                        <span id="measures-count">0</span>
+                    </div>
+                    <div class="field-list" id="measures-list"></div>
+                </div>
+
+                <!-- Date Fields -->
+                <div class="field-category">
+                    <div class="category-header" onclick="toggleCategory('dates')">
+                        <div>
+                            <span class="category-icon icon-date">T</span>
+                            Date/Time
+                        </div>
+                        <span id="dates-count">0</span>
+                    </div>
+                    <div class="field-list" id="dates-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state management
+        let dashboardState = {
+            visualizations: [],
+            activeViz: null,
+            fields: {
+                dimensions: [],
+                measures: [],
+                dates: []
+            },
+            data: null,
+            d3Mode: false
+        };
+
+        // Initialize the dashboard
+        async function initDashboard() {
+            await loadDatabaseFields();
+            initializeDragDrop();
+            initializeChartCreation();
+        }
+
+        // Load fields from database
+        async function loadDatabaseFields() {
+            try {
+                // Use sample fields since API might not be available in iframe context
+                loadSampleFields();
+            } catch (error) {
+                console.error('Error loading fields:', error);
+                // Fallback to sample fields for demonstration
+                loadSampleFields();
+            }
+        }
+
+        // Categorize fields by type
+        function categorizeFields(fields) {
+            const categorized = {
+                dimensions: [],
+                measures: [],
+                dates: []
+            };
+            
+            fields.forEach(field => {
+                if (field.type === 'date' || field.type === 'datetime') {
+                    categorized.dates.push(field);
+                } else if (field.type === 'number' || field.type === 'decimal' || field.type === 'integer') {
+                    categorized.measures.push(field);
+                } else {
+                    categorized.dimensions.push(field);
+                }
+            });
+            
+            return categorized;
+        }
+
+        // Render field lists
+        function renderFieldLists() {
+            renderFieldCategory('dimensions', dashboardState.fields.dimensions);
+            renderFieldCategory('measures', dashboardState.fields.measures);
+            renderFieldCategory('dates', dashboardState.fields.dates);
+        }
+
+        // Render individual field category
+        function renderFieldCategory(category, fields) {
+            const listEl = document.getElementById(`${category}-list`);
+            const countEl = document.getElementById(`${category}-count`);
+            
+            listEl.innerHTML = '';
+            fields.forEach(field => {
+                const fieldEl = document.createElement('div');
+                fieldEl.className = 'field-item';
+                fieldEl.draggable = true;
+                fieldEl.dataset.field = field.name;
+                fieldEl.dataset.type = field.type;
+                fieldEl.dataset.category = category;
+                
+                const iconClass = category === 'dimensions' ? 'icon-dimension' : 
+                                 category === 'measures' ? 'icon-measure' : 'icon-date';
+                const iconText = category === 'dimensions' ? 'D' : 
+                                category === 'measures' ? 'M' : 'T';
+                
+                fieldEl.innerHTML = `
+                    <span class="field-icon ${iconClass}">${iconText}</span>
+                    ${field.display_name || field.name}
+                `;
+                
+                // Add drag event listeners
+                fieldEl.addEventListener('dragstart', handleDragStart);
+                fieldEl.addEventListener('dragend', handleDragEnd);
+                
+                listEl.appendChild(fieldEl);
+            });
+            
+            countEl.textContent = fields.length;
+        }
+
+        // Create a new chart
+        function createChart(chartType) {
+            const vizId = `viz_${Date.now()}`;
+            const vizCard = document.createElement('div');
+            vizCard.className = 'viz-card';
+            vizCard.id = vizId;
+            
+            vizCard.innerHTML = `
+                <div class="viz-header">
+                    <span class="viz-title">${getChartTitle(chartType)}</span>
+                    <div class="viz-actions">
+                        <button class="viz-action-btn" onclick="configureViz('${vizId}')">⚙️</button>
+                        <button class="viz-action-btn" onclick="maximizeViz('${vizId}')">⛶</button>
+                        <button class="viz-action-btn" onclick="removeViz('${vizId}')">✕</button>
+                    </div>
+                </div>
+                <div class="viz-content" id="${vizId}_content">
+                    <div class="loading-spinner"></div>
+                </div>
+                <div class="config-panel" id="${vizId}_config" style="display: none;">
+                    <div class="drop-zone" id="${vizId}_axis" data-role="axis">
+                        <div class="drop-zone-label">Axis</div>
+                    </div>
+                    <div class="drop-zone" id="${vizId}_values" data-role="values">
+                        <div class="drop-zone-label">Values</div>
+                    </div>
+                    <div class="drop-zone" id="${vizId}_legend" data-role="legend">
+                        <div class="drop-zone-label">Legend</div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('dashboardGrid').appendChild(vizCard);
+            
+            // Store visualization metadata
+            dashboardState.visualizations.push({
+                id: vizId,
+                type: chartType,
+                config: {
+                    axis: [],
+                    values: [],
+                    legend: []
+                }
+            });
+            
+            // Initialize drop zones for this viz
+            initializeVizDropZones(vizId);
+            
+            // Render initial chart
+            renderEChart(vizId, chartType);
+        }
+
+        // Get chart title based on type
+        function getChartTitle(chartType) {
+            const titles = {
+                'bar': 'Bar Chart',
+                'line': 'Line Chart',
+                'pie': 'Pie Chart',
+                'scatter': 'Scatter Plot',
+                'heatmap': 'Heat Map',
+                'treemap': 'Tree Map',
+                'sankey': 'Sankey Diagram',
+                'gauge': 'Gauge Chart',
+                'radar': 'Radar Chart',
+                'funnel': 'Funnel Chart',
+                'boxplot': 'Box Plot',
+                'waterfall': 'Waterfall Chart',
+                'candlestick': 'Candlestick Chart',
+                'map': 'Geographic Map',
+                '3d-bar': '3D Bar Chart',
+                '3d-surface': '3D Surface',
+                'network': 'Network Graph',
+                'chord': 'Chord Diagram',
+                'sunburst': 'Sunburst Chart'
+            };
+            return titles[chartType] || 'Visualization';
+        }
+
+        // Render ECharts visualization
+        function renderEChart(vizId, chartType) {
+            const container = document.getElementById(`${vizId}_content`);
+            const chart = echarts.init(container);
+            
+            const viz = dashboardState.visualizations.find(v => v.id === vizId);
+            
+            // Build chart option based on type and configuration
+            const option = buildEChartsOption(chartType, viz.config);
+            
+            chart.setOption(option);
+            
+            // Handle resize
+            window.addEventListener('resize', () => {
+                chart.resize();
+            });
+            
+            // Store chart instance
+            viz.chartInstance = chart;
+        }
+
+        // Build ECharts configuration
+        function buildEChartsOption(chartType, config) {
+            // Base configuration for all chart types
+            const baseOption = {
+                title: {
+                    text: '',
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                toolbox: {
+                    feature: {
+                        dataZoom: { yAxisIndex: 'none' },
+                        restore: {},
+                        saveAsImage: {}
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                }
+            };
+
+            // Get data based on configuration
+            const data = getVisualizationData(config);
+            
+            // Build specific chart configurations
+            let specificOption = {};
+            
+            switch(chartType) {
+                case 'bar':
+                    specificOption = {
+                        xAxis: {
+                            type: 'category',
+                            data: data.categories || []
+                        },
+                        yAxis: {
+                            type: 'value'
+                        },
+                        series: [{
+                            type: 'bar',
+                            data: data.values || [],
+                            itemStyle: {
+                                color: '#0078d4'
+                            }
+                        }]
+                    };
+                    break;
+                    
+                case 'line':
+                    specificOption = {
+                        xAxis: {
+                            type: 'category',
+                            data: data.categories || []
+                        },
+                        yAxis: {
+                            type: 'value'
+                        },
+                        series: [{
+                            type: 'line',
+                            data: data.values || [],
+                            smooth: true,
+                            lineStyle: {
+                                color: '#0078d4',
+                                width: 2
+                            }
+                        }]
+                    };
+                    break;
+                    
+                case 'pie':
+                    specificOption = {
+                        tooltip: {
+                            trigger: 'item'
+                        },
+                        series: [{
+                            type: 'pie',
+                            radius: '50%',
+                            data: data.pieData || [],
+                            emphasis: {
+                                itemStyle: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                }
+                            }
+                        }]
+                    };
+                    break;
+                    
+                case 'scatter':
+                    specificOption = {
+                        xAxis: {},
+                        yAxis: {},
+                        series: [{
+                            type: 'scatter',
+                            data: data.scatterData || [],
+                            symbolSize: 10,
+                            itemStyle: {
+                                color: '#0078d4'
+                            }
+                        }]
+                    };
+                    break;
+                    
+                case 'heatmap':
+                    specificOption = {
+                        tooltip: {
+                            position: 'top'
+                        },
+                        grid: {
+                            height: '50%',
+                            top: '10%'
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data.xCategories || []
+                        },
+                        yAxis: {
+                            type: 'category',
+                            data: data.yCategories || []
+                        },
+                        visualMap: {
+                            min: 0,
+                            max: 100,
+                            calculable: true,
+                            orient: 'horizontal',
+                            left: 'center',
+                            bottom: '15%',
+                            color: ['#d94e5d','#eac736','#50a3ba']
+                        },
+                        series: [{
+                            type: 'heatmap',
+                            data: data.heatmapData || [],
+                            label: {
+                                show: true
+                            }
+                        }]
+                    };
+                    break;
+                    
+                case 'treemap':
+                    specificOption = {
+                        series: [{
+                            type: 'treemap',
+                            data: data.treemapData || [],
+                            leafDepth: 2,
+                            levels: [
+                                {
+                                    itemStyle: {
+                                        borderWidth: 0,
+                                        gapWidth: 5
+                                    }
+                                },
+                                {
+                                    itemStyle: {
+                                        gapWidth: 1
+                                    }
+                                }
+                            ]
+                        }]
+                    };
+                    break;
+                    
+                case 'sankey':
+                    specificOption = {
+                        series: [{
+                            type: 'sankey',
+                            layout: 'none',
+                            emphasis: {
+                                focus: 'adjacency'
+                            },
+                            data: data.nodes || [],
+                            links: data.links || []
+                        }]
+                    };
+                    break;
+                    
+                case 'gauge':
+                    specificOption = {
+                        series: [{
+                            type: 'gauge',
+                            detail: {
+                                formatter: '{value}%'
+                            },
+                            data: [{
+                                value: data.gaugeValue || 50,
+                                name: 'Completion'
+                            }]
+                        }]
+                    };
+                    break;
+                    
+                case 'radar':
+                    specificOption = {
+                        radar: {
+                            indicator: data.indicators || []
+                        },
+                        series: [{
+                            type: 'radar',
+                            data: data.radarData || []
+                        }]
+                    };
+                    break;
+                    
+                case 'funnel':
+                    specificOption = {
+                        series: [{
+                            type: 'funnel',
+                            data: data.funnelData || [],
+                            gap: 2,
+                            label: {
+                                show: true,
+                                position: 'inside'
+                            }
+                        }]
+                    };
+                    break;
+                    
+                case 'waterfall':
+                    // Waterfall chart using custom bar series
+                    specificOption = buildWaterfallOption(data);
+                    break;
+                    
+                case '3d-bar':
+                    // 3D Bar chart using echarts-gl
+                    specificOption = build3DBarOption(data);
+                    break;
+                    
+                case 'network':
+                    specificOption = {
+                        series: [{
+                            type: 'graph',
+                            layout: 'force',
+                            data: data.nodes || [],
+                            links: data.links || [],
+                            roam: true,
+                            label: {
+                                show: true,
+                                position: 'right'
+                            },
+                            force: {
+                                repulsion: 100
+                            }
+                        }]
+                    };
+                    break;
+                    
+                case 'chord':
+                    // Chord diagram using custom implementation
+                    specificOption = buildChordOption(data);
+                    break;
+                    
+                case 'sunburst':
+                    specificOption = {
+                        series: [{
+                            type: 'sunburst',
+                            data: data.sunburstData || [],
+                            radius: [0, '90%'],
+                            label: {
+                                rotate: 'radial'
+                            }
+                        }]
+                    };
+                    break;
+                    
+                default:
+                    specificOption = {
+                        series: [{
+                            type: 'bar',
+                            data: []
+                        }]
+                    };
+            }
+            
+            return Object.assign({}, baseOption, specificOption);
+        }
+
+        // Get visualization data based on configuration
+        function getVisualizationData(config) {
+            // Generate data based on the actual field configuration
+            const axisFields = config.axis || [];
+            const valueFields = config.values || [];
+            const legendFields = config.legend || [];
+            
+            // Use field names to generate more relevant sample data
+            let categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+            let values = [120, 200, 150, 80, 70, 110];
+            
+            // If we have axis fields, customize categories
+            if (axisFields.length > 0) {
+                const axisField = axisFields[0];
+                if (axisField.field === 'Department') {
+                    categories = ['Police', 'Fire', 'Public Works', 'Parks', 'Finance', 'Admin'];
+                    values = [300000, 200000, 250000, 150000, 100000, 80000];
+                } else if (axisField.field === 'Account') {
+                    categories = ['Personnel', 'Supplies', 'Equipment', 'Utilities', 'Travel', 'Other'];
+                    values = [400000, 50000, 100000, 30000, 20000, 25000];
+                } else if (axisField.field === 'Month') {
+                    categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                    values = [120000, 135000, 142000, 128000, 151000, 146000];
+                }
+            }
+            
+            // If we have value fields, customize the data ranges
+            if (valueFields.length > 0) {
+                const valueField = valueFields[0];
+                if (valueField.field === 'Budget') {
+                    values = values.map(v => v * 1000); // Larger budget numbers
+                } else if (valueField.field === 'Percentage') {
+                    values = [85, 92, 78, 88, 95, 82]; // Percentage values
+                }
+            }
+            
+            return {
+                categories: categories,
+                values: values,
+                pieData: [
+                    {value: 335, name: 'Direct'},
+                    {value: 310, name: 'Email'},
+                    {value: 234, name: 'Union Ads'},
+                    {value: 135, name: 'Video Ads'},
+                    {value: 1548, name: 'Search'}
+                ],
+                scatterData: [[10, 8], [0, 2], [6, 10], [8, 8], [5, 5]],
+                xCategories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                yCategories: ['Morning', 'Afternoon', 'Evening'],
+                heatmapData: [[0, 0, 5], [0, 1, 10], [0, 2, 15], [1, 0, 20], [1, 1, 25]],
+                treemapData: [
+                    {
+                        name: 'Category A',
+                        value: 40,
+                        children: [
+                            {name: 'A1', value: 15},
+                            {name: 'A2', value: 25}
+                        ]
+                    },
+                    {
+                        name: 'Category B',
+                        value: 60,
+                        children: [
+                            {name: 'B1', value: 30},
+                            {name: 'B2', value: 30}
+                        ]
+                    }
+                ],
+                nodes: [
+                    {name: 'Source'},
+                    {name: 'Target 1'},
+                    {name: 'Target 2'}
+                ],
+                links: [
+                    {source: 'Source', target: 'Target 1', value: 10},
+                    {source: 'Source', target: 'Target 2', value: 15}
+                ],
+                gaugeValue: 75,
+                indicators: [
+                    {name: 'Sales', max: 100},
+                    {name: 'Admin', max: 100},
+                    {name: 'IT', max: 100},
+                    {name: 'Support', max: 100},
+                    {name: 'Dev', max: 100}
+                ],
+                radarData: [{
+                    value: [80, 90, 70, 60, 85],
+                    name: 'Budget'
+                }],
+                funnelData: [
+                    {value: 60, name: 'Visit'},
+                    {value: 40, name: 'Inquiry'},
+                    {value: 20, name: 'Order'},
+                    {value: 80, name: 'Click'},
+                    {value: 100, name: 'Show'}
+                ],
+                sunburstData: [
+                    {
+                        name: 'Root',
+                        children: [
+                            {
+                                name: 'Branch 1',
+                                value: 10,
+                                children: [
+                                    {name: 'Leaf 1', value: 5},
+                                    {name: 'Leaf 2', value: 5}
+                                ]
+                            },
+                            {
+                                name: 'Branch 2',
+                                value: 20
+                            }
+                        ]
+                    }
+                ]
+            };
+        }
+
+        // Build waterfall chart option
+        function buildWaterfallOption(data) {
+            return {
+                xAxis: {
+                    type: 'category',
+                    data: ['Start', 'Q1', 'Q2', 'Q3', 'Q4', 'End']
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: [{
+                    type: 'bar',
+                    stack: 'waterfall',
+                    data: [
+                        {value: 100, itemStyle: {color: '#0078d4'}},
+                        {value: 20, itemStyle: {color: '#40e0d0'}},
+                        {value: -30, itemStyle: {color: '#ff6b6b'}},
+                        {value: 40, itemStyle: {color: '#40e0d0'}},
+                        {value: -10, itemStyle: {color: '#ff6b6b'}},
+                        {value: 120, itemStyle: {color: '#0078d4'}}
+                    ]
+                }]
+            };
+        }
+
+        // Build 3D bar chart option
+        function build3DBarOption(data) {
+            return {
+                grid3D: {
+                    boxWidth: 200,
+                    boxDepth: 80,
+                    viewControl: {
+                        distance: 150
+                    }
+                },
+                xAxis3D: {
+                    type: 'category',
+                    data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+                },
+                yAxis3D: {
+                    type: 'category',
+                    data: ['Morning', 'Afternoon', 'Evening']
+                },
+                zAxis3D: {
+                    type: 'value'
+                },
+                series: [{
+                    type: 'bar3D',
+                    data: [
+                        [0, 0, 10], [0, 1, 20], [0, 2, 30],
+                        [1, 0, 40], [1, 1, 50], [1, 2, 60],
+                        [2, 0, 70], [2, 1, 80], [2, 2, 90],
+                        [3, 0, 100], [3, 1, 110], [3, 2, 120],
+                        [4, 0, 130], [4, 1, 140], [4, 2, 150]
+                    ],
+                    shading: 'lambert',
+                    itemStyle: {
+                        color: '#0078d4'
+                    }
+                }]
+            };
+        }
+
+        // Build chord diagram option
+        function buildChordOption(data) {
+            // Chord diagram implementation using graph series
+            return {
+                series: [{
+                    type: 'graph',
+                    layout: 'circular',
+                    circular: {
+                        rotateLabel: true
+                    },
+                    data: [
+                        {name: 'Group A', symbolSize: 40},
+                        {name: 'Group B', symbolSize: 30},
+                        {name: 'Group C', symbolSize: 20},
+                        {name: 'Group D', symbolSize: 25}
+                    ],
+                    links: [
+                        {source: 'Group A', target: 'Group B', value: 10},
+                        {source: 'Group A', target: 'Group C', value: 5},
+                        {source: 'Group B', target: 'Group C', value: 15},
+                        {source: 'Group B', target: 'Group D', value: 8},
+                        {source: 'Group C', target: 'Group D', value: 12}
+                    ],
+                    roam: true,
+                    label: {
+                        show: true,
+                        position: 'right'
+                    },
+                    lineStyle: {
+                        curveness: 0.3,
+                        opacity: 0.7
+                    }
+                }]
+            };
+        }
+
+        // Create D3.js custom visualization
+        function createD3Viz(vizType) {
+            const vizId = `d3_viz_${Date.now()}`;
+            const vizCard = document.createElement('div');
+            vizCard.className = 'viz-card';
+            vizCard.id = vizId;
+            
+            vizCard.innerHTML = `
+                <div class="viz-header">
+                    <span class="viz-title">${getD3VizTitle(vizType)}</span>
+                    <div class="viz-actions">
+                        <button class="viz-action-btn" onclick="configureViz('${vizId}')">⚙️</button>
+                        <button class="viz-action-btn" onclick="maximizeViz('${vizId}')">⛶</button>
+                        <button class="viz-action-btn" onclick="removeViz('${vizId}')">✕</button>
+                    </div>
+                </div>
+                <div class="viz-content" id="${vizId}_content">
+                    <svg id="${vizId}_svg" width="100%" height="300"></svg>
+                </div>
+            `;
+            
+            document.getElementById('dashboardGrid').appendChild(vizCard);
+            
+            // Render D3 visualization
+            renderD3Visualization(vizId, vizType);
+        }
+
+        // Get D3 viz title
+        function getD3VizTitle(vizType) {
+            const titles = {
+                'budget-flow': 'Municipal Budget Flow',
+                'department-network': 'Department Network',
+                'tax-distribution': 'Tax Distribution',
+                'project-timeline': 'Project Timeline',
+                'utility-infrastructure': 'Utility Infrastructure',
+                'financial-health': 'Financial Health Dashboard'
+            };
+            return titles[vizType] || 'Custom Visualization';
+        }
+
+        // Render D3.js visualization
+        function renderD3Visualization(vizId, vizType) {
+            const svg = d3.select(`#${vizId}_svg`);
+            const width = 600;
+            const height = 300;
+            
+            svg.attr('viewBox', `0 0 ${width} ${height}`);
+            
+            switch(vizType) {
+                case 'budget-flow':
+                    renderBudgetFlow(svg, width, height);
+                    break;
+                case 'department-network':
+                    renderDepartmentNetwork(svg, width, height);
+                    break;
+                case 'tax-distribution':
+                    renderTaxDistribution(svg, width, height);
+                    break;
+                case 'project-timeline':
+                    renderProjectTimeline(svg, width, height);
+                    break;
+                case 'utility-infrastructure':
+                    renderUtilityInfrastructure(svg, width, height);
+                    break;
+                case 'financial-health':
+                    renderFinancialHealth(svg, width, height);
+                    break;
+            }
+        }
+
+        // D3 Budget Flow Visualization
+        function renderBudgetFlow(svg, width, height) {
+            // Create a custom budget flow diagram
+            const data = {
+                nodes: [
+                    {id: 'Revenue', group: 1, value: 1000000},
+                    {id: 'Police', group: 2, value: 300000},
+                    {id: 'Fire', group: 2, value: 200000},
+                    {id: 'Public Works', group: 2, value: 250000},
+                    {id: 'Parks', group: 2, value: 150000},
+                    {id: 'Admin', group: 2, value: 100000}
+                ],
+                links: [
+                    {source: 'Revenue', target: 'Police', value: 300000},
+                    {source: 'Revenue', target: 'Fire', value: 200000},
+                    {source: 'Revenue', target: 'Public Works', value: 250000},
+                    {source: 'Revenue', target: 'Parks', value: 150000},
+                    {source: 'Revenue', target: 'Admin', value: 100000}
+                ]
+            };
+
+            const simulation = d3.forceSimulation(data.nodes)
+                .force('link', d3.forceLink(data.links).id(d => d.id).distance(100))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2));
+
+            const link = svg.append('g')
+                .selectAll('line')
+                .data(data.links)
+                .enter().append('line')
+                .attr('stroke', '#999')
+                .attr('stroke-opacity', 0.6)
+                .attr('stroke-width', d => Math.sqrt(d.value / 50000));
+
+            const node = svg.append('g')
+                .selectAll('circle')
+                .data(data.nodes)
+                .enter().append('circle')
+                .attr('r', d => Math.sqrt(d.value / 10000))
+                .attr('fill', d => d.group === 1 ? '#0078d4' : '#00bcf2')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+
+            node.append('title')
+                .text(d => `${d.id}: $${d.value.toLocaleString()}`);
+
+            const label = svg.append('g')
+                .selectAll('text')
+                .data(data.nodes)
+                .enter().append('text')
+                .text(d => d.id)
+                .style('font-size', '12px')
+                .attr('dx', 15)
+                .attr('dy', 4);
+
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                node
+                    .attr('cx', d => d.x)
+                    .attr('cy', d => d.y);
+
+                label
+                    .attr('x', d => d.x)
+                    .attr('y', d => d.y);
+            });
+
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+
+        // D3 Department Network
+        function renderDepartmentNetwork(svg, width, height) {
+            // Implementation for department network visualization
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) / 3;
+            
+            const departments = [
+                'Finance', 'HR', 'IT', 'Operations', 'Legal', 'Planning'
+            ];
+            
+            const angleStep = (Math.PI * 2) / departments.length;
+            
+            departments.forEach((dept, i) => {
+                const angle = i * angleStep;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                
+                svg.append('circle')
+                    .attr('cx', x)
+                    .attr('cy', y)
+                    .attr('r', 30)
+                    .attr('fill', '#0078d4')
+                    .attr('opacity', 0.7);
+                
+                svg.append('text')
+                    .attr('x', x)
+                    .attr('y', y)
+                    .attr('text-anchor', 'middle')
+                    .attr('dy', 5)
+                    .style('fill', 'white')
+                    .style('font-size', '12px')
+                    .text(dept);
+                
+                // Draw connections
+                for (let j = i + 1; j < departments.length; j++) {
+                    const angle2 = j * angleStep;
+                    const x2 = centerX + radius * Math.cos(angle2);
+                    const y2 = centerY + radius * Math.sin(angle2);
+                    
+                    svg.append('line')
+                        .attr('x1', x)
+                        .attr('y1', y)
+                        .attr('x2', x2)
+                        .attr('y2', y2)
+                        .attr('stroke', '#ccc')
+                        .attr('stroke-width', 1)
+                        .attr('opacity', 0.3);
+                }
+            });
+        }
+
+        // D3 Tax Distribution Spiral
+        function renderTaxDistribution(svg, width, height) {
+            const data = [
+                {category: 'Property Tax', value: 45},
+                {category: 'Sales Tax', value: 30},
+                {category: 'Income Tax', value: 15},
+                {category: 'Other', value: 10}
+            ];
+            
+            const spiral = d3.lineRadial()
+                .angle(d => d.angle)
+                .radius(d => d.radius)
+                .curve(d3.curveCardinal);
+            
+            const points = [];
+            let angle = 0;
+            let radius = 10;
+            
+            for (let i = 0; i < 200; i++) {
+                points.push({angle: angle, radius: radius});
+                angle += 0.1;
+                radius += 0.5;
+            }
+            
+            const g = svg.append('g')
+                .attr('transform', `translate(${width/2}, ${height/2})`);
+            
+            g.append('path')
+                .datum(points)
+                .attr('d', spiral)
+                .attr('fill', 'none')
+                .attr('stroke', '#0078d4')
+                .attr('stroke-width', 2);
+            
+            // Add data points along the spiral
+            data.forEach((d, i) => {
+                const pointIndex = Math.floor((i + 1) * 40);
+                const point = points[pointIndex];
+                const x = point.radius * Math.cos(point.angle);
+                const y = point.radius * Math.sin(point.angle);
+                
+                g.append('circle')
+                    .attr('cx', x)
+                    .attr('cy', y)
+                    .attr('r', d.value / 3)
+                    .attr('fill', d3.schemeCategory10[i])
+                    .attr('opacity', 0.7);
+                
+                g.append('text')
+                    .attr('x', x)
+                    .attr('y', y - d.value / 3 - 5)
+                    .attr('text-anchor', 'middle')
+                    .style('font-size', '11px')
+                    .text(`${d.category}: ${d.value}%`);
+            });
+        }
+
+        // D3 Project Timeline
+        function renderProjectTimeline(svg, width, height) {
+            const projects = [
+                {name: 'Road Repair', start: 0, end: 3, budget: 500000},
+                {name: 'Park Renovation', start: 2, end: 5, budget: 300000},
+                {name: 'School Upgrade', start: 4, end: 8, budget: 800000},
+                {name: 'Water System', start: 6, end: 10, budget: 1200000}
+            ];
+            
+            const xScale = d3.scaleLinear()
+                .domain([0, 12])
+                .range([50, width - 50]);
+            
+            const yScale = d3.scaleBand()
+                .domain(projects.map(d => d.name))
+                .range([50, height - 50])
+                .padding(0.2);
+            
+            // Draw timeline bars
+            svg.selectAll('.timeline-bar')
+                .data(projects)
+                .enter().append('rect')
+                .attr('class', 'timeline-bar')
+                .attr('x', d => xScale(d.start))
+                .attr('y', d => yScale(d.name))
+                .attr('width', d => xScale(d.end) - xScale(d.start))
+                .attr('height', yScale.bandwidth())
+                .attr('fill', '#0078d4')
+                .attr('opacity', 0.7);
+            
+            // Add project labels
+            svg.selectAll('.project-label')
+                .data(projects)
+                .enter().append('text')
+                .attr('class', 'project-label')
+                .attr('x', d => xScale(d.start) + 5)
+                .attr('y', d => yScale(d.name) + yScale.bandwidth() / 2)
+                .attr('dy', 5)
+                .style('fill', 'white')
+                .style('font-size', '12px')
+                .text(d => d.name);
+            
+            // Add x-axis
+            svg.append('g')
+                .attr('transform', `translate(0, ${height - 40})`)
+                .call(d3.axisBottom(xScale).tickFormat(d => `Month ${d}`));
+            
+            // Add y-axis
+            svg.append('g')
+                .attr('transform', 'translate(45, 0)')
+                .call(d3.axisLeft(yScale));
+        }
+
+        // D3 Utility Infrastructure
+        function renderUtilityInfrastructure(svg, width, height) {
+            // Create a map-like visualization of utility infrastructure
+            const utilities = [
+                {type: 'Water', x: 100, y: 100, connections: [1, 2]},
+                {type: 'Electric', x: 300, y: 100, connections: [0, 2, 3]},
+                {type: 'Gas', x: 200, y: 200, connections: [0, 1, 3]},
+                {type: 'Sewer', x: 400, y: 200, connections: [1, 2]}
+            ];
+            
+            // Draw connections
+            utilities.forEach((util, i) => {
+                util.connections.forEach(j => {
+                    if (j > i) {
+                        svg.append('line')
+                            .attr('x1', util.x)
+                            .attr('y1', util.y)
+                            .attr('x2', utilities[j].x)
+                            .attr('y2', utilities[j].y)
+                            .attr('stroke', '#999')
+                            .attr('stroke-width', 2)
+                            .attr('stroke-dasharray', '5,5');
+                    }
+                });
+            });
+            
+            // Draw nodes
+            const nodes = svg.selectAll('.util-node')
+                .data(utilities)
+                .enter().append('g')
+                .attr('class', 'util-node')
+                .attr('transform', d => `translate(${d.x}, ${d.y})`);
+            
+            nodes.append('circle')
+                .attr('r', 25)
+                .attr('fill', (d, i) => d3.schemeSet2[i])
+                .attr('stroke', '#333')
+                .attr('stroke-width', 2);
+            
+            nodes.append('text')
+                .attr('text-anchor', 'middle')
+                .attr('dy', 5)
+                .style('fill', 'white')
+                .style('font-size', '12px')
+                .style('font-weight', 'bold')
+                .text(d => d.type);
+        }
+
+        // D3 Financial Health Dashboard
+        function renderFinancialHealth(svg, width, height) {
+            // Create a comprehensive financial health visualization
+            const metrics = [
+                {name: 'Revenue', value: 85, target: 100},
+                {name: 'Expenses', value: 70, target: 80},
+                {name: 'Reserves', value: 60, target: 50},
+                {name: 'Debt', value: 40, target: 30},
+                {name: 'Growth', value: 75, target: 70}
+            ];
+            
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const maxRadius = Math.min(width, height) / 3;
+            
+            // Create radial scale
+            const angleScale = d3.scaleLinear()
+                .domain([0, metrics.length])
+                .range([0, Math.PI * 2]);
+            
+            // Draw background circles
+            [20, 40, 60, 80, 100].forEach(value => {
+                const radius = (value / 100) * maxRadius;
+                svg.append('circle')
+                    .attr('cx', centerX)
+                    .attr('cy', centerY)
+                    .attr('r', radius)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#e0e0e0')
+                    .attr('stroke-width', 1);
+            });
+            
+            // Draw metric lines
+            metrics.forEach((metric, i) => {
+                const angle = angleScale(i) - Math.PI / 2;
+                const x = centerX + maxRadius * Math.cos(angle);
+                const y = centerY + maxRadius * Math.sin(angle);
+                
+                svg.append('line')
+                    .attr('x1', centerX)
+                    .attr('y1', centerY)
+                    .attr('x2', x)
+                    .attr('y2', y)
+                    .attr('stroke', '#e0e0e0')
+                    .attr('stroke-width', 1);
+                
+                // Add labels
+                const labelX = centerX + (maxRadius + 30) * Math.cos(angle);
+                const labelY = centerY + (maxRadius + 30) * Math.sin(angle);
+                
+                svg.append('text')
+                    .attr('x', labelX)
+                    .attr('y', labelY)
+                    .attr('text-anchor', 'middle')
+                    .style('font-size', '12px')
+                    .text(metric.name);
+            });
+            
+            // Draw actual values
+            const actualPoints = metrics.map((metric, i) => {
+                const angle = angleScale(i) - Math.PI / 2;
+                const radius = (metric.value / 100) * maxRadius;
+                return [
+                    centerX + radius * Math.cos(angle),
+                    centerY + radius * Math.sin(angle)
+                ];
+            });
+            
+            const line = d3.line();
+            svg.append('path')
+                .datum(actualPoints)
+                .attr('d', line)
+                .attr('fill', 'rgba(0, 120, 212, 0.3)')
+                .attr('stroke', '#0078d4')
+                .attr('stroke-width', 2)
+                .attr('stroke-linejoin', 'round');
+            
+            // Draw target values
+            const targetPoints = metrics.map((metric, i) => {
+                const angle = angleScale(i) - Math.PI / 2;
+                const radius = (metric.target / 100) * maxRadius;
+                return [
+                    centerX + radius * Math.cos(angle),
+                    centerY + radius * Math.sin(angle)
+                ];
+            });
+            
+            svg.append('path')
+                .datum(targetPoints)
+                .attr('d', line)
+                .attr('fill', 'none')
+                .attr('stroke', '#ff6b6b')
+                .attr('stroke-width', 1)
+                .attr('stroke-dasharray', '5,5');
+        }
+
+        // Initialize drag and drop
+        function initializeDragDrop() {
+            // Handled by individual field items
+        }
+
+        // Initialize chart creation
+        function initializeChartCreation() {
+            // Chart buttons are already set up with onclick handlers
+        }
+
+        // Initialize drop zones for a visualization
+        function initializeVizDropZones(vizId) {
+            const dropZones = document.querySelectorAll(`#${vizId}_config .drop-zone`);
+            
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', handleDragOver);
+                zone.addEventListener('drop', handleDrop);
+                zone.addEventListener('dragleave', handleDragLeave);
+            });
+        }
+
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'copy';
+            e.dataTransfer.setData('text/plain', JSON.stringify({
+                field: e.target.dataset.field,
+                type: e.target.dataset.type,
+                category: e.target.dataset.category
+            }));
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            
+            const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+            const role = e.currentTarget.dataset.role;
+            const vizId = e.currentTarget.id.split('_')[0] + '_' + e.currentTarget.id.split('_')[1];
+            
+            // Add field to drop zone
+            const fieldEl = document.createElement('span');
+            fieldEl.className = 'dropped-field';
+            fieldEl.innerHTML = `
+                ${data.field}
+                <span class="remove-btn" onclick="removeField(this, '${vizId}', '${role}', '${data.field}')">×</span>
+            `;
+            e.currentTarget.appendChild(fieldEl);
+            
+            // Update visualization configuration
+            const viz = dashboardState.visualizations.find(v => v.id === vizId);
+            if (viz) {
+                if (!viz.config[role]) viz.config[role] = [];
+                viz.config[role].push(data);
+                
+                // Show update indicator
+                showChartUpdateIndicator(vizId);
+                
+                // Re-render chart with new configuration
+                setTimeout(() => {
+                    renderEChart(vizId, viz.type);
+                }, 100);
+            }
+        }
+
+        // Remove field from drop zone
+        function removeField(element, vizId, role, field) {
+            element.parentElement.remove();
+            
+            const viz = dashboardState.visualizations.find(v => v.id === vizId);
+            if (viz && viz.config[role]) {
+                viz.config[role] = viz.config[role].filter(f => f.field !== field);
+                
+                // Show update indicator
+                showChartUpdateIndicator(vizId);
+                
+                // Re-render chart
+                setTimeout(() => {
+                    renderEChart(vizId, viz.type);
+                }, 100);
+            }
+        }
+        
+        // Show visual feedback when chart is updating
+        function showChartUpdateIndicator(vizId) {
+            const vizCard = document.getElementById(vizId);
+            const content = document.getElementById(`${vizId}_content`);
+            
+            // Add updating class for visual feedback
+            vizCard.style.border = '2px solid #0078d4';
+            content.style.opacity = '0.7';
+            
+            // Remove indicator after update
+            setTimeout(() => {
+                vizCard.style.border = '';
+                content.style.opacity = '1';
+            }, 500);
+        }
+
+        // Configure visualization
+        function configureViz(vizId) {
+            const configPanel = document.getElementById(`${vizId}_config`);
+            const isHidden = configPanel.style.display === 'none' || configPanel.style.display === '';
+            configPanel.style.display = isHidden ? 'block' : 'none';
+            
+            // Update button appearance
+            const configBtn = document.querySelector(`#${vizId} .viz-action-btn[onclick="configureViz('${vizId}')"]`);
+            if (configBtn) {
+                configBtn.style.background = isHidden ? '#0078d4' : 'transparent';
+                configBtn.style.color = isHidden ? 'white' : 'var(--text-secondary)';
+            }
+        }
+
+        // Maximize visualization
+        function maximizeViz(vizId) {
+            const vizCard = document.getElementById(vizId);
+            vizCard.style.gridColumn = vizCard.style.gridColumn === 'span 2' ? 'span 1' : 'span 2';
+            vizCard.style.gridRow = vizCard.style.gridRow === 'span 2' ? 'span 1' : 'span 2';
+            
+            // Resize chart
+            const viz = dashboardState.visualizations.find(v => v.id === vizId);
+            if (viz && viz.chartInstance) {
+                setTimeout(() => viz.chartInstance.resize(), 100);
+            }
+        }
+
+        // Remove visualization
+        function removeViz(vizId) {
+            const vizCard = document.getElementById(vizId);
+            vizCard.remove();
+            
+            dashboardState.visualizations = dashboardState.visualizations.filter(v => v.id !== vizId);
+        }
+
+        // Toggle category visibility
+        function toggleCategory(category) {
+            const list = document.getElementById(`${category}-list`);
+            list.style.display = list.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Filter fields
+        function filterFields() {
+            const searchTerm = document.getElementById('fieldSearch').value.toLowerCase();
+            const fieldItems = document.querySelectorAll('.field-item');
+            
+            fieldItems.forEach(item => {
+                const fieldName = item.textContent.toLowerCase();
+                item.style.display = fieldName.includes(searchTerm) ? 'flex' : 'none';
+            });
+        }
+
+        // Toggle D3 mode
+        function toggleD3Mode() {
+            const panel = document.getElementById('customVizPanel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            dashboardState.d3Mode = !dashboardState.d3Mode;
+        }
+
+        // Refresh data
+        async function refreshData() {
+            await loadDatabaseFields();
+            
+            // Refresh all visualizations
+            dashboardState.visualizations.forEach(viz => {
+                if (viz.chartInstance) {
+                    renderEChart(viz.id, viz.type);
+                }
+            });
+        }
+
+        // Export dashboard
+        function exportDashboard() {
+            // Export logic here
+            console.log('Exporting dashboard...');
+        }
+
+        // Save dashboard
+        function saveDashboard() {
+            // Save logic here
+            console.log('Saving dashboard...');
+        }
+
+        // Load sample fields for demonstration
+        function loadSampleFields() {
+            dashboardState.fields = {
+                dimensions: [
+                    {name: 'Department', type: 'text', display_name: 'Department'},
+                    {name: 'Account', type: 'text', display_name: 'Account'},
+                    {name: 'Category', type: 'text', display_name: 'Category'},
+                    {name: 'Vendor', type: 'text', display_name: 'Vendor'},
+                    {name: 'Project', type: 'text', display_name: 'Project'},
+                    {name: 'Location', type: 'text', display_name: 'Location'},
+                    {name: 'Status', type: 'text', display_name: 'Status'},
+                    {name: 'Type', type: 'text', display_name: 'Type'}
+                ],
+                measures: [
+                    {name: 'Budget', type: 'number', display_name: 'Budget'},
+                    {name: 'Actual', type: 'number', display_name: 'Actual'},
+                    {name: 'Variance', type: 'number', display_name: 'Variance'},
+                    {name: 'Revenue', type: 'number', display_name: 'Revenue'},
+                    {name: 'Expenses', type: 'number', display_name: 'Expenses'},
+                    {name: 'Count', type: 'number', display_name: 'Count'},
+                    {name: 'Amount', type: 'number', display_name: 'Amount'},
+                    {name: 'Percentage', type: 'number', display_name: 'Percentage'}
+                ],
+                dates: [
+                    {name: 'Date', type: 'date', display_name: 'Date'},
+                    {name: 'Month', type: 'date', display_name: 'Month'},
+                    {name: 'Quarter', type: 'date', display_name: 'Quarter'},
+                    {name: 'Year', type: 'date', display_name: 'Year'},
+                    {name: 'Created', type: 'datetime', display_name: 'Created Date'},
+                    {name: 'Updated', type: 'datetime', display_name: 'Updated Date'}
+                ]
+            };
+            
+            renderFieldLists();
+        }
+
+        // Initialize dashboard on load
+        window.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>

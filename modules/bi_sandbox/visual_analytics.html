@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Analytics Dashboard - GovSight</title>
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        /* Professional BI Design System */
+        :root {
+            --sidebar-width: 300px;
+            --header-height: 56px;
+            --primary-color: #0066cc;
+            --secondary-color: #004499;
+            --hover-color: #0052a3;
+            --background: #f5f5f7;
+            --surface: #ffffff;
+            --border: #d1d1d6;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --success: #34c759;
+            --warning: #ff9500;
+            --error: #ff3b30;
+            --field-dimension: #4a90e2;
+            --field-measure: #50c878;
+            --field-date: #ff6b6b;
+            --drop-zone-active: rgba(0, 102, 204, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--background);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Main Layout */
+        .analytics-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Header Bar */
+        .header-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Fields Sidebar */
+        .fields-sidebar {
+            position: fixed;
+            left: 0;
+            top: var(--header-height);
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 20px;
+            z-index: 900;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            background: white;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+
+        /* Field Categories */
+        .field-category {
+            margin-bottom: 24px;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: var(--background);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .category-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .category-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .category-count {
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        /* Field Items */
+        .fields-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .field-item {
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: move;
+            transition: all 0.2s;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .field-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-color: var(--primary-color);
+        }
+
+        .field-item.dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+        }
+
+        .field-item.dimension {
+            border-left: 3px solid var(--field-dimension);
+        }
+
+        .field-item.measure {
+            border-left: 3px solid var(--field-measure);
+        }
+
+        .field-item.date {
+            border-left: 3px solid var(--field-date);
+        }
+
+        .field-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            opacity: 0.6;
+        }
+
+        /* Main Canvas */
+        .main-canvas {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--background);
+            position: relative;
+        }
+
+        /* Field Wells Section */
+        .field-wells {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 16px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            min-height: 120px;
+        }
+
+        .field-well {
+            flex: 1;
+            min-width: 200px;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            background: var(--background);
+            transition: all 0.2s;
+        }
+
+        .field-well.drag-over {
+            background: var(--drop-zone-active);
+            border-color: var(--primary-color);
+            transform: scale(1.02);
+        }
+
+        .well-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .well-fields {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-height: 40px;
+        }
+
+        .field-pill {
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            cursor: move;
+            position: relative;
+        }
+
+        .field-pill:hover {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .field-pill .remove-field {
+            margin-left: 8px;
+            cursor: pointer;
+            opacity: 0.5;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .field-pill .remove-field:hover {
+            opacity: 1;
+            color: var(--error);
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            grid-auto-rows: minmax(300px, auto);
+            gap: 20px;
+            align-content: start;
+        }
+
+        .dashboard-grid.empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 60px;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-state-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .empty-state-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Visualization Cards */
+        .viz-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+        }
+
+        .viz-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .viz-card.selected {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+
+        .viz-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .viz-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .viz-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .viz-action {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .viz-action:hover {
+            background: var(--background);
+            color: var(--text-primary);
+        }
+
+        .viz-content {
+            flex: 1;
+            min-height: 250px;
+            position: relative;
+        }
+
+        /* Floating Toolbar */
+        .floating-toolbar {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 800;
+        }
+
+        .toolbar-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            position: relative;
+            font-size: 20px;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .toolbar-tooltip {
+            position: absolute;
+            right: 48px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .toolbar-btn:hover .toolbar-tooltip {
+            opacity: 1;
+        }
+
+        /* Loading State */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .fields-sidebar {
+                width: 250px;
+            }
+            
+            .main-canvas {
+                margin-left: 250px;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .fields-sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            
+            .fields-sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-canvas {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Bar -->
+    <div class="header-bar">
+        <div class="header-title">Visual Analytics Dashboard</div>
+        <div class="header-actions">
+            <button class="action-btn" onclick="refreshData()">
+                <span>Refresh</span>
+            </button>
+            <button class="action-btn" onclick="saveLayout()">
+                <span>Save</span>
+            </button>
+            <button class="action-btn" onclick="exportDashboard()">
+                <span>Export</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="analytics-container">
+        <!-- Fields Sidebar -->
+        <div class="fields-sidebar" id="fieldsSidebar">
+            <input type="text" class="search-box" placeholder="Search fields..." onkeyup="filterFields(this.value)">
+            
+            <!-- Quick Access Fields -->
+            <div class="field-category">
+                <div class="category-header">
+                    <span class="category-icon">⚡</span>
+                    <span class="category-title">Quick Access</span>
+                    <span class="category-count" id="quickCount">0</span>
+                </div>
+                <div class="fields-list" id="quickFields">
+                    <!-- Quick fields will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Measures -->
+            <div class="field-category">
+                <div class="category-header" onclick="toggleCategory('measures')">
+                    <span class="category-icon">∑</span>
+                    <span class="category-title">Measures</span>
+                    <span class="category-count" id="measuresCount">0</span>
+                </div>
+                <div class="fields-list" id="measureFields">
+                    <!-- Measure fields will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Dimensions -->
+            <div class="field-category">
+                <div class="category-header" onclick="toggleCategory('dimensions')">
+                    <span class="category-icon">📦</span>
+                    <span class="category-title">Dimensions</span>
+                    <span class="category-count" id="dimensionsCount">0</span>
+                </div>
+                <div class="fields-list" id="dimensionFields">
+                    <!-- Dimension fields will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Date Fields -->
+            <div class="field-category">
+                <div class="category-header" onclick="toggleCategory('dates')">
+                    <span class="category-icon">📅</span>
+                    <span class="category-title">Date Fields</span>
+                    <span class="category-count" id="datesCount">0</span>
+                </div>
+                <div class="fields-list" id="dateFields">
+                    <!-- Date fields will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Canvas -->
+        <div class="main-canvas">
+            <!-- Field Wells -->
+            <div class="field-wells">
+                <div class="field-well" id="axisWell" ondrop="dropField(event, 'axis')" ondragover="allowDrop(event)" ondragleave="clearDropZone(event)">
+                    <div class="well-label">
+                        <span>📊 Axis</span>
+                    </div>
+                    <div class="well-fields" id="axisFields"></div>
+                </div>
+                
+                <div class="field-well" id="valuesWell" ondrop="dropField(event, 'values')" ondragover="allowDrop(event)" ondragleave="clearDropZone(event)">
+                    <div class="well-label">
+                        <span>📈 Values</span>
+                    </div>
+                    <div class="well-fields" id="valuesFields"></div>
+                </div>
+                
+                <div class="field-well" id="legendWell" ondrop="dropField(event, 'legend')" ondragover="allowDrop(event)" ondragleave="clearDropZone(event)">
+                    <div class="well-label">
+                        <span>🎨 Legend</span>
+                    </div>
+                    <div class="well-fields" id="legendFields"></div>
+                </div>
+                
+                <div class="field-well" id="filtersWell" ondrop="dropField(event, 'filters')" ondragover="allowDrop(event)" ondragleave="clearDropZone(event)">
+                    <div class="well-label">
+                        <span>🔍 Filters</span>
+                    </div>
+                    <div class="well-fields" id="filtersFields"></div>
+                </div>
+            </div>
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid empty" id="dashboardGrid">
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-state-icon">📊</div>
+                    <div class="empty-state-title">Start Building Your Dashboard</div>
+                    <div class="empty-state-description">
+                        Drag fields from the left panel to the field wells above to create visualizations
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Toolbar -->
+    <div class="floating-toolbar">
+        <button class="toolbar-btn" onclick="addChart('bar')">
+            <span>📊</span>
+            <span class="toolbar-tooltip">Bar Chart</span>
+        </button>
+        <button class="toolbar-btn" onclick="addChart('line')">
+            <span>📈</span>
+            <span class="toolbar-tooltip">Line Chart</span>
+        </button>
+        <button class="toolbar-btn" onclick="addChart('pie')">
+            <span>🥧</span>
+            <span class="toolbar-tooltip">Pie Chart</span>
+        </button>
+        <button class="toolbar-btn" onclick="addChart('scatter')">
+            <span>⚡</span>
+            <span class="toolbar-tooltip">Scatter Plot</span>
+        </button>
+        <button class="toolbar-btn" onclick="addChart('heatmap')">
+            <span>🗺️</span>
+            <span class="toolbar-tooltip">Heatmap</span>
+        </button>
+        <button class="toolbar-btn" onclick="addKPI()">
+            <span>🎯</span>
+            <span class="toolbar-tooltip">KPI Card</span>
+        </button>
+    </div>
+
+    <script>
+        // Global state management
+        let dashboardState = {
+            fields: {
+                measures: [],
+                dimensions: [],
+                dates: [],
+                quick: []
+            },
+            fieldWells: {
+                axis: [],
+                values: [],
+                legend: [],
+                filters: []
+            },
+            visualizations: [],
+            selectedViz: null,
+            draggedField: null
+        };
+
+        // Initialize the dashboard on load
+        window.addEventListener('load', function() {
+            console.log('Initializing Visual Analytics Dashboard...');
+            // Wait a moment for Streamlit to inject the data
+            setTimeout(() => {
+                loadFieldsFromAPI();
+                setupDragAndDrop();
+                setupKeyboardShortcuts();
+            }, 100);
+        });
+
+        // Load fields from the API with proper categorization
+        async function loadFieldsFromAPI() {
+            console.log('Loading fields from API...');
+            
+            // Always try to use real data first
+            if (window.dashboardAPI && typeof window.dashboardAPI.get_fast_schema === 'function') {
+                try {
+                    const fastSchema = window.dashboardAPI.get_fast_schema();
+                    console.log('Using fast schema from backend with', fastSchema.fields?.length || 0, 'fields');
+                    processFieldSchema(fastSchema);
+                    return; // Success - don't load sample data
+                } catch (error) {
+                    console.error('Error processing fast schema:', error);
+                }
+            }
+            
+            if (window.streamlitDashboardData) {
+                try {
+                    console.log('Using streamlit dashboard data');
+                    processStreamlitData(window.streamlitDashboardData);
+                    return; // Success - don't load sample data
+                } catch (error) {
+                    console.error('Error processing streamlit data:', error);
+                }
+            }
+            
+            // If no real data available, show error
+            console.error('No database connection available');
+            showDataConnectionError();
+        }
+
+        // Process streamlit data
+        function processStreamlitData(data) {
+            if (data && data.fields) {
+                processFieldSchema({ fields: data.fields, load_time: 0 });
+            } else if (data && data.schema) {
+                processFieldSchema(data.schema);
+            } else {
+                console.error('Invalid streamlit data format');
+                showDataConnectionError();
+            }
+        }
+
+        // Process field schema from API
+        function processFieldSchema(schema) {
+            if (!schema) {
+                console.error('No schema provided');
+                showDataConnectionError();
+                return;
+            }
+            
+            // Handle both direct fields array and nested structure
+            let fieldsArray = [];
+            if (schema.fields) {
+                fieldsArray = schema.fields;
+            } else if (schema.field_types) {
+                // Combine all field types
+                fieldsArray = [
+                    ...(schema.field_types.measures || []),
+                    ...(schema.field_types.dimensions || []),
+                    ...(schema.field_types.dates || []),
+                    ...(schema.field_types.calculations || [])
+                ];
+            }
+            
+            if (fieldsArray.length === 0) {
+                console.error('No fields found in schema');
+                showDataConnectionError();
+                return;
+            }
+
+            // Clear existing fields
+            dashboardState.fields = {
+                measures: [],
+                dimensions: [],
+                dates: [],
+                quick: []
+            };
+
+            // Process each field with proper categorization
+            fieldsArray.forEach(field => {
+                const fieldObj = {
+                    id: field.field_name || field.name || field.column_name,
+                    name: field.display_name || field.field_name || field.name || field.column_name,
+                    table: field.table_name || field.table || 'default',
+                    type: field.field_type || field.type || 'text',
+                    dataType: field.data_type || field.dataType || 'string',
+                    category: field.category
+                };
+
+                // Categorize based on field type
+                if (field.category === 'measure' || 
+                    ['numeric', 'decimal', 'float', 'double', 'integer', 'bigint', 'number', 'int'].includes(String(field.data_type || field.type || '').toLowerCase())) {
+                    dashboardState.fields.measures.push(fieldObj);
+                    fieldObj.category = 'measure';
+                } else if (field.category === 'date' || 
+                          ['date', 'datetime', 'timestamp', 'time'].includes(String(field.data_type || field.type || '').toLowerCase())) {
+                    dashboardState.fields.dates.push(fieldObj);
+                    fieldObj.category = 'date';
+                } else {
+                    dashboardState.fields.dimensions.push(fieldObj);
+                    fieldObj.category = 'dimension';
+                }
+
+                // Add to quick access if it's a commonly used field
+                if (field.is_quick_access || field.usage_count > 100 || field.quick_access) {
+                    dashboardState.fields.quick.push(fieldObj);
+                }
+            });
+
+            // If no quick access fields, take top fields from each category
+            if (dashboardState.fields.quick.length === 0) {
+                dashboardState.fields.quick = [
+                    ...dashboardState.fields.measures.slice(0, 3),
+                    ...dashboardState.fields.dimensions.slice(0, 3),
+                    ...dashboardState.fields.dates.slice(0, 2)
+                ].filter(Boolean);
+            }
+
+            renderFields();
+            console.log(`Loaded ${fieldsArray.length} fields from database in ${schema.load_time || 0}ms`);
+        }
+
+        // Show error when database connection fails
+        function showDataConnectionError() {
+            console.error('Database connection error - unable to load real data');
+            
+            // Show error message in UI
+            const quickContainer = document.getElementById('quickFields');
+            const measuresContainer = document.getElementById('measureFields');
+            const dimensionsContainer = document.getElementById('dimensionFields');
+            const datesContainer = document.getElementById('dateFields');
+            
+            const errorMsg = '<div style="padding: 12px; color: #ff3b30; text-align: center; font-size: 13px;">⚠️ Database not connected. Please check admin panel.</div>';
+            
+            quickContainer.innerHTML = errorMsg;
+            measuresContainer.innerHTML = errorMsg;
+            dimensionsContainer.innerHTML = errorMsg;
+            datesContainer.innerHTML = errorMsg;
+            
+            // Update counts to 0
+            document.getElementById('quickCount').textContent = '0';
+            document.getElementById('measuresCount').textContent = '0';
+            document.getElementById('dimensionsCount').textContent = '0';
+            document.getElementById('datesCount').textContent = '0';
+        }
+        
+        // Fallback sample fields - DEPRECATED - Should not be used
+        function loadSampleFields() {
+            console.error('WARNING: loadSampleFields called but should not be used!');
+            showDataConnectionError();
+            // Do not load sample data - show error instead
+            return;
+        }
+
+        // Render fields in the sidebar
+        function renderFields() {
+            // Render Quick Access
+            const quickContainer = document.getElementById('quickFields');
+            quickContainer.innerHTML = '';
+            dashboardState.fields.quick.forEach(field => {
+                if (field) quickContainer.appendChild(createFieldElement(field));
+            });
+            document.getElementById('quickCount').textContent = dashboardState.fields.quick.length;
+
+            // Render Measures
+            const measuresContainer = document.getElementById('measureFields');
+            measuresContainer.innerHTML = '';
+            dashboardState.fields.measures.forEach(field => {
+                measuresContainer.appendChild(createFieldElement(field, 'measure'));
+            });
+            document.getElementById('measuresCount').textContent = dashboardState.fields.measures.length;
+
+            // Render Dimensions
+            const dimensionsContainer = document.getElementById('dimensionFields');
+            dimensionsContainer.innerHTML = '';
+            dashboardState.fields.dimensions.forEach(field => {
+                dimensionsContainer.appendChild(createFieldElement(field, 'dimension'));
+            });
+            document.getElementById('dimensionsCount').textContent = dashboardState.fields.dimensions.length;
+
+            // Render Date Fields
+            const datesContainer = document.getElementById('dateFields');
+            datesContainer.innerHTML = '';
+            dashboardState.fields.dates.forEach(field => {
+                datesContainer.appendChild(createFieldElement(field, 'date'));
+            });
+            document.getElementById('datesCount').textContent = dashboardState.fields.dates.length;
+        }
+
+        // Create a draggable field element
+        function createFieldElement(field, type) {
+            const div = document.createElement('div');
+            const fieldType = type || field.category || field.type || 'dimension';
+            div.className = `field-item ${fieldType}`;
+            div.draggable = true;
+            div.dataset.field = JSON.stringify(field);
+            
+            // Add icon based on type
+            let icon = '📊';
+            if (fieldType === 'measure') icon = '∑';
+            else if (fieldType === 'dimension') icon = '📦';
+            else if (fieldType === 'date') icon = '📅';
+            
+            div.innerHTML = `
+                <span class="field-icon">${icon}</span>
+                <span>${field.name}</span>
+            `;
+            
+            // Add drag event listeners
+            div.addEventListener('dragstart', handleDragStart);
+            div.addEventListener('dragend', handleDragEnd);
+            div.addEventListener('dblclick', () => quickAddField(field));
+            
+            return div;
+        }
+
+        // Quick add field on double click
+        function quickAddField(field) {
+            // Add to appropriate well based on type
+            if (field.category === 'measure' || field.type === 'measure') {
+                if (!dashboardState.fieldWells.values.find(f => f.id === field.id)) {
+                    dashboardState.fieldWells.values.push(field);
+                }
+            } else {
+                if (!dashboardState.fieldWells.axis.find(f => f.id === field.id)) {
+                    dashboardState.fieldWells.axis.push(field);
+                }
+            }
+            
+            renderFieldWells();
+            updateVisualizations();
+        }
+
+        // Setup drag and drop functionality
+        function setupDragAndDrop() {
+            // Add global drag event listeners
+            document.addEventListener('dragover', function(e) {
+                if (e.target.classList.contains('dashboard-grid') && dashboardState.draggedField) {
+                    e.preventDefault();
+                    e.target.style.background = 'var(--drop-zone-active)';
+                }
+            });
+            
+            document.addEventListener('dragleave', function(e) {
+                if (e.target.classList.contains('dashboard-grid')) {
+                    e.target.style.background = '';
+                }
+            });
+            
+            document.addEventListener('drop', function(e) {
+                if (e.target.classList.contains('dashboard-grid') && dashboardState.draggedField) {
+                    e.preventDefault();
+                    e.target.style.background = '';
+                    createVisualizationFromDrop(e);
+                }
+            });
+        }
+
+        // Handle drag start
+        function handleDragStart(e) {
+            dashboardState.draggedField = JSON.parse(e.target.dataset.field);
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'copy';
+            e.dataTransfer.setData('text/plain', e.target.dataset.field);
+            
+            // Visual feedback
+            e.target.style.opacity = '0.5';
+        }
+
+        // Handle drag end
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            e.target.style.opacity = '';
+            dashboardState.draggedField = null;
+            
+            // Clear all drop zone highlights
+            document.querySelectorAll('.field-well').forEach(well => {
+                well.classList.remove('drag-over');
+            });
+            
+            const grid = document.getElementById('dashboardGrid');
+            grid.style.background = '';
+        }
+
+        // Allow drop on field wells
+        function allowDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        // Clear drop zone highlight
+        function clearDropZone(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        // Handle field drop on wells
+        function dropField(e, wellType) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.currentTarget.classList.remove('drag-over');
+            
+            const fieldData = e.dataTransfer.getData('text/plain');
+            if (!fieldData) return;
+            
+            try {
+                const field = JSON.parse(fieldData);
+                
+                // Add field to the well if not already present
+                if (!dashboardState.fieldWells[wellType].find(f => f.id === field.id)) {
+                    dashboardState.fieldWells[wellType].push(field);
+                    renderFieldWells();
+                    updateVisualizations();
+                }
+            } catch (error) {
+                console.error('Error dropping field:', error);
+            }
+        }
+
+        // Render field wells
+        function renderFieldWells() {
+            Object.keys(dashboardState.fieldWells).forEach(wellType => {
+                const container = document.getElementById(`${wellType}Fields`);
+                container.innerHTML = '';
+                
+                dashboardState.fieldWells[wellType].forEach((field, index) => {
+                    const pill = document.createElement('div');
+                    pill.className = 'field-pill';
+                    pill.draggable = true;
+                    pill.innerHTML = `
+                        ${field.name}
+                        <span class="remove-field" onclick="removeFieldFromWell('${wellType}', '${field.id}')">×</span>
+                    `;
+                    
+                    // Allow reordering within wells
+                    pill.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('wellField', JSON.stringify({wellType, field, index}));
+                    });
+                    
+                    container.appendChild(pill);
+                });
+            });
+        }
+
+        // Remove field from well
+        function removeFieldFromWell(wellType, fieldId) {
+            dashboardState.fieldWells[wellType] = dashboardState.fieldWells[wellType].filter(f => f.id !== fieldId);
+            renderFieldWells();
+            updateVisualizations();
+        }
+
+        // Create visualization from drop
+        function createVisualizationFromDrop(e) {
+            const field = dashboardState.draggedField;
+            if (!field) return;
+            
+            // Determine best chart type based on field type
+            let chartType = 'bar';
+            if (field.category === 'measure' || field.type === 'measure') {
+                chartType = 'bar';
+                // Add to values well
+                if (!dashboardState.fieldWells.values.find(f => f.id === field.id)) {
+                    dashboardState.fieldWells.values.push(field);
+                }
+            } else if (field.category === 'date' || field.type === 'date') {
+                chartType = 'line';
+                // Add to axis well
+                if (!dashboardState.fieldWells.axis.find(f => f.id === field.id)) {
+                    dashboardState.fieldWells.axis.push(field);
+                }
+            } else {
+                // Dimension - add to axis
+                if (!dashboardState.fieldWells.axis.find(f => f.id === field.id)) {
+                    dashboardState.fieldWells.axis.push(field);
+                }
+            }
+            
+            renderFieldWells();
+            
+            // Create visualization if we have both axis and values
+            if (dashboardState.fieldWells.axis.length > 0 || dashboardState.fieldWells.values.length > 0) {
+                addChart(chartType);
+            }
+        }
+
+        // Update existing visualizations
+        function updateVisualizations() {
+            const hasData = dashboardState.fieldWells.axis.length > 0 || 
+                           dashboardState.fieldWells.values.length > 0;
+            
+            if (hasData) {
+                const grid = document.getElementById('dashboardGrid');
+                const emptyState = document.getElementById('emptyState');
+                
+                // If no visualizations exist, create one
+                if (dashboardState.visualizations.length === 0) {
+                    grid.classList.remove('empty');
+                    if (emptyState) emptyState.style.display = 'none';
+                    addChart('bar');
+                } else {
+                    // Update existing visualizations
+                    dashboardState.visualizations.forEach(viz => {
+                        updateVisualization(viz);
+                    });
+                }
+            }
+        }
+
+        // Add a new chart
+        function addChart(type) {
+            const grid = document.getElementById('dashboardGrid');
+            grid.classList.remove('empty');
+            
+            // Hide empty state if visible
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+            
+            const vizId = `viz_${Date.now()}`;
+            const vizCard = document.createElement('div');
+            vizCard.className = 'viz-card';
+            vizCard.id = vizId;
+            
+            const titleMap = {
+                'bar': 'Bar Chart',
+                'line': 'Line Chart',
+                'pie': 'Pie Chart',
+                'scatter': 'Scatter Plot',
+                'heatmap': 'Heatmap'
+            };
+            
+            vizCard.innerHTML = `
+                <div class="viz-header">
+                    <div class="viz-title" contenteditable="true" onclick="event.stopPropagation()">
+                        ${titleMap[type] || 'Chart'}
+                    </div>
+                    <div class="viz-actions">
+                        <button class="viz-action" onclick="editVisualization('${vizId}')">✏️</button>
+                        <button class="viz-action" onclick="duplicateVisualization('${vizId}')">📋</button>
+                        <button class="viz-action" onclick="removeVisualization('${vizId}')">×</button>
+                    </div>
+                </div>
+                <div class="viz-content" id="${vizId}_content">
+                    <div class="loading-spinner" style="margin: 100px auto; display: block;"></div>
+                </div>
+            `;
+            
+            vizCard.addEventListener('click', () => selectVisualization(vizId));
+            
+            grid.appendChild(vizCard);
+            
+            // Add to state
+            const viz = {
+                id: vizId,
+                type: type,
+                data: null
+            };
+            dashboardState.visualizations.push(viz);
+            
+            // Generate and render the chart
+            setTimeout(() => {
+                viz.data = generateChartData();
+                renderChart(viz);
+            }, 300);
+        }
+
+        // Generate chart data based on field wells
+        function generateChartData() {
+            const axisFields = dashboardState.fieldWells.axis;
+            const valueFields = dashboardState.fieldWells.values;
+            const legendFields = dashboardState.fieldWells.legend;
+            
+            // Generate realistic sample data
+            let categories = [];
+            if (axisFields.length > 0) {
+                const field = axisFields[0];
+                if (field.name.toLowerCase().includes('department')) {
+                    categories = ['Police', 'Fire', 'Parks & Rec', 'Public Works', 'Administration', 'Health'];
+                } else if (field.name.toLowerCase().includes('month')) {
+                    categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                } else if (field.name.toLowerCase().includes('quarter')) {
+                    categories = ['Q1', 'Q2', 'Q3', 'Q4'];
+                } else if (field.name.toLowerCase().includes('year')) {
+                    categories = ['2020', '2021', '2022', '2023', '2024'];
+                } else {
+                    categories = ['Category A', 'Category B', 'Category C', 'Category D', 'Category E'];
+                }
+            } else {
+                categories = ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'];
+            }
+            
+            // Generate values
+            let values = [];
+            if (valueFields.length > 0) {
+                const field = valueFields[0];
+                const isPercentage = field.name.toLowerCase().includes('%') || field.name.toLowerCase().includes('percent');
+                const isScore = field.name.toLowerCase().includes('score');
+                
+                if (isPercentage) {
+                    values = categories.map(() => Math.floor(Math.random() * 100));
+                } else if (isScore) {
+                    values = categories.map(() => (Math.random() * 5).toFixed(1));
+                } else {
+                    values = categories.map(() => Math.floor(Math.random() * 900000) + 100000);
+                }
+            } else {
+                values = categories.map(() => Math.floor(Math.random() * 100000) + 50000);
+            }
+            
+            return {
+                x: categories,
+                y: values,
+                name: valueFields[0]?.name || 'Values',
+                axisName: axisFields[0]?.name || 'Categories',
+                hasLegend: legendFields.length > 0,
+                legendField: legendFields[0]
+            };
+        }
+
+        // Render chart using Plotly
+        function renderChart(viz) {
+            if (!viz.data) return;
+            
+            const data = viz.data;
+            const layout = {
+                margin: { t: 40, r: 40, b: 60, l: 60 },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto', size: 12 },
+                xaxis: { 
+                    gridcolor: '#f0f0f0',
+                    title: data.axisName
+                },
+                yaxis: { 
+                    gridcolor: '#f0f0f0',
+                    title: data.name
+                },
+                showlegend: data.hasLegend,
+                hovermode: 'closest'
+            };
+            
+            let traces = [];
+            switch(viz.type) {
+                case 'line':
+                    traces.push({
+                        x: data.x,
+                        y: data.y,
+                        type: 'scatter',
+                        mode: 'lines+markers',
+                        name: data.name,
+                        line: { color: '#0066cc', width: 3 },
+                        marker: { size: 8 },
+                        fill: 'tozeroy',
+                        fillcolor: 'rgba(0, 102, 204, 0.1)'
+                    });
+                    break;
+                    
+                case 'pie':
+                    traces.push({
+                        labels: data.x,
+                        values: data.y,
+                        type: 'pie',
+                        hole: 0.4,
+                        textposition: 'inside',
+                        textinfo: 'label+percent',
+                        marker: {
+                            colors: ['#0066cc', '#00aa44', '#ffaa00', '#ff4444', '#aa00ff', '#00aaff']
+                        }
+                    });
+                    layout.showlegend = true;
+                    break;
+                    
+                case 'scatter':
+                    traces.push({
+                        x: data.x.map((_, i) => i * 10 + Math.random() * 20),
+                        y: data.y,
+                        mode: 'markers',
+                        type: 'scatter',
+                        name: data.name,
+                        marker: { 
+                            size: 12,
+                            color: data.y,
+                            colorscale: 'Viridis',
+                            showscale: true
+                        }
+                    });
+                    break;
+                    
+                case 'heatmap':
+                    const zData = [];
+                    for (let i = 0; i < 4; i++) {
+                        zData.push(data.y.map(v => v * (0.7 + Math.random() * 0.6)));
+                    }
+                    traces.push({
+                        z: zData,
+                        x: data.x,
+                        y: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                        type: 'heatmap',
+                        colorscale: 'Viridis',
+                        showscale: true
+                    });
+                    break;
+                    
+                default: // bar
+                    traces.push({
+                        x: data.x,
+                        y: data.y,
+                        type: 'bar',
+                        name: data.name,
+                        marker: { 
+                            color: '#0066cc',
+                            opacity: 0.8
+                        },
+                        text: data.y.map(v => v.toLocaleString()),
+                        textposition: 'outside',
+                        hovertemplate: '%{x}<br>%{y:,.0f}<extra></extra>'
+                    });
+            }
+            
+            const config = {
+                responsive: true,
+                displayModeBar: true,
+                displaylogo: false,
+                modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d'],
+                toImageButtonOptions: {
+                    format: 'png',
+                    filename: 'dashboard_chart',
+                    height: 500,
+                    width: 700,
+                    scale: 1
+                }
+            };
+            
+            Plotly.newPlot(`${viz.id}_content`, traces, layout, config);
+        }
+
+        // Update visualization with new data
+        function updateVisualization(viz) {
+            viz.data = generateChartData();
+            renderChart(viz);
+        }
+
+        // Select visualization
+        function selectVisualization(vizId) {
+            // Remove all selected states
+            document.querySelectorAll('.viz-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selected state
+            const vizCard = document.getElementById(vizId);
+            if (vizCard) {
+                vizCard.classList.add('selected');
+                dashboardState.selectedViz = vizId;
+            }
+        }
+
+        // Edit visualization
+        function editVisualization(vizId) {
+            selectVisualization(vizId);
+            console.log('Editing visualization:', vizId);
+            // In production, this would open a properties panel
+        }
+
+        // Duplicate visualization
+        function duplicateVisualization(vizId) {
+            const viz = dashboardState.visualizations.find(v => v.id === vizId);
+            if (viz) {
+                addChart(viz.type);
+            }
+        }
+
+        // Remove visualization
+        function removeVisualization(vizId) {
+            const vizCard = document.getElementById(vizId);
+            if (vizCard) {
+                vizCard.remove();
+            }
+            
+            dashboardState.visualizations = dashboardState.visualizations.filter(v => v.id !== vizId);
+            
+            // Show empty state if no visualizations
+            if (dashboardState.visualizations.length === 0) {
+                const grid = document.getElementById('dashboardGrid');
+                grid.classList.add('empty');
+                const emptyState = document.getElementById('emptyState');
+                if (emptyState) {
+                    emptyState.style.display = 'block';
+                }
+            }
+        }
+
+        // Add KPI card
+        function addKPI() {
+            const grid = document.getElementById('dashboardGrid');
+            grid.classList.remove('empty');
+            
+            const emptyState = document.getElementById('emptyState');
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+            
+            const kpiId = `kpi_${Date.now()}`;
+            const kpiCard = document.createElement('div');
+            kpiCard.className = 'viz-card';
+            kpiCard.id = kpiId;
+            
+            // Use field wells to determine KPI
+            const valueField = dashboardState.fieldWells.values[0];
+            const kpiName = valueField ? valueField.name : 'Total Revenue';
+            
+            const value = Math.floor(Math.random() * 1000000) + 500000;
+            const change = (Math.random() * 40 - 20).toFixed(1);
+            const changeColor = change > 0 ? '#34c759' : '#ff3b30';
+            const changeIcon = change > 0 ? '↑' : '↓';
+            
+            kpiCard.innerHTML = `
+                <div class="viz-header">
+                    <div class="viz-title" contenteditable="true" onclick="event.stopPropagation()">
+                        ${kpiName}
+                    </div>
+                    <div class="viz-actions">
+                        <button class="viz-action" onclick="editVisualization('${kpiId}')">✏️</button>
+                        <button class="viz-action" onclick="removeVisualization('${kpiId}')">×</button>
+                    </div>
+                </div>
+                <div class="viz-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div style="font-size: 48px; font-weight: bold; color: var(--text-primary);">
+                        $${value.toLocaleString()}
+                    </div>
+                    <div style="font-size: 20px; color: ${changeColor}; margin-top: 8px;">
+                        ${changeIcon} ${Math.abs(change)}%
+                    </div>
+                    <div style="font-size: 14px; color: var(--text-secondary); margin-top: 8px;">
+                        vs. Previous Period
+                    </div>
+                </div>
+            `;
+            
+            kpiCard.addEventListener('click', () => selectVisualization(kpiId));
+            
+            grid.appendChild(kpiCard);
+            
+            dashboardState.visualizations.push({
+                id: kpiId,
+                type: 'kpi',
+                data: { value, change, name: kpiName }
+            });
+        }
+
+        // Filter fields
+        function filterFields(searchTerm) {
+            const term = searchTerm.toLowerCase();
+            
+            // Filter each category
+            ['quick', 'measure', 'dimension', 'date'].forEach(category => {
+                const container = document.getElementById(`${category}Fields`);
+                if (container) {
+                    const fields = container.querySelectorAll('.field-item');
+                    
+                    fields.forEach(field => {
+                        const fieldData = JSON.parse(field.dataset.field);
+                        const matches = fieldData.name.toLowerCase().includes(term) || 
+                                      (fieldData.table && fieldData.table.toLowerCase().includes(term));
+                        field.style.display = matches ? 'flex' : 'none';
+                    });
+                }
+            });
+        }
+
+        // Toggle category visibility
+        function toggleCategory(category) {
+            const fieldMap = {
+                'measures': 'measureFields',
+                'dimensions': 'dimensionFields',
+                'dates': 'dateFields'
+            };
+            
+            const container = document.getElementById(fieldMap[category]);
+            if (container) {
+                container.style.display = container.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        // Refresh data
+        function refreshData() {
+            console.log('Refreshing data...');
+            
+            // Show loading state
+            document.querySelectorAll('.viz-content').forEach(content => {
+                const spinner = document.createElement('div');
+                spinner.className = 'loading-spinner';
+                spinner.style = 'margin: 100px auto; display: block;';
+                content.innerHTML = '';
+                content.appendChild(spinner);
+            });
+            
+            // Reload fields
+            loadFieldsFromAPI();
+            
+            // Refresh visualizations
+            setTimeout(() => {
+                dashboardState.visualizations.forEach(viz => {
+                    updateVisualization(viz);
+                });
+            }, 500);
+        }
+
+        // Save layout
+        function saveLayout() {
+            const layoutData = {
+                fieldWells: dashboardState.fieldWells,
+                visualizations: dashboardState.visualizations.map(v => ({
+                    id: v.id,
+                    type: v.type,
+                    title: document.querySelector(`#${v.id} .viz-title`)?.textContent
+                }))
+            };
+            
+            localStorage.setItem('govSightDashboardLayout', JSON.stringify(layoutData));
+            console.log('Layout saved:', layoutData);
+            
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>✓ Saved</span>';
+            btn.style.background = '#34c759';
+            btn.style.color = 'white';
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = '';
+                btn.style.color = '';
+            }, 2000);
+        }
+
+        // Export dashboard
+        function exportDashboard() {
+            console.log('Exporting dashboard...');
+            
+            // Create a summary of the dashboard
+            const summary = {
+                created: new Date().toISOString(),
+                visualizations: dashboardState.visualizations.length,
+                fields: {
+                    axis: dashboardState.fieldWells.axis.map(f => f.name),
+                    values: dashboardState.fieldWells.values.map(f => f.name),
+                    legend: dashboardState.fieldWells.legend.map(f => f.name),
+                    filters: dashboardState.fieldWells.filters.map(f => f.name)
+                }
+            };
+            
+            // Download as JSON
+            const blob = new Blob([JSON.stringify(summary, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `dashboard_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>✓ Exported</span>';
+            btn.style.background = '#34c759';
+            btn.style.color = 'white';
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = '';
+                btn.style.color = '';
+            }, 2000);
+        }
+
+        // Setup keyboard shortcuts
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                // Ctrl/Cmd + S to save
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveLayout();
+                }
+                
+                // Delete key to remove selected visualization
+                if (e.key === 'Delete' && dashboardState.selectedViz) {
+                    removeVisualization(dashboardState.selectedViz);
+                }
+                
+                // Ctrl/Cmd + D to duplicate
+                if ((e.ctrlKey || e.metaKey) && e.key === 'd' && dashboardState.selectedViz) {
+                    e.preventDefault();
+                    duplicateVisualization(dashboardState.selectedViz);
+                }
+            });
+        }
+
+        // Load saved layout on startup
+        window.addEventListener('DOMContentLoaded', function() {
+            const savedLayout = localStorage.getItem('govSightDashboardLayout');
+            if (savedLayout) {
+                try {
+                    const layoutData = JSON.parse(savedLayout);
+                    console.log('Loading saved layout:', layoutData);
+                    // Apply saved layout in future implementation
+                } catch (error) {
+                    console.error('Error loading saved layout:', error);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

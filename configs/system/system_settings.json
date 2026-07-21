@@ -1,0 +1,14 @@
+{
+    "OrganizationName": "Spanish Fork",
+    "DefaultPassword": "govsight123",
+    "OpenAI_Key": "sk-xxx",
+    "AutoBackupEnabled": false,
+    "DB_Type": "SQLite",
+    "SQLite_File": "caselle_gl0_mock.db",
+    "State": "Utah",
+    "Mask_BalanceSheet": "FF-DD-OOOO",
+    "Mask_Revenue": "F-D-OOO",
+    "Mask_Expense": "FF-DD-CC-AAAA",
+    "current_database": "caselle_gl0_mock.db",
+    "GoogleSheets_Credentials": "REDACTED - service account JSON removed before publishing to GitHub (was govsight@landsearch-sync.iam.gserviceaccount.com); rotate this key and load via env var/secret manager"
+}

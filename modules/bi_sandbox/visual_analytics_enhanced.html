@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GovSight Visual Analytics Dashboard - Enhanced</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f0f2f5;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        /* Main dashboard area */
+        .dashboard {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            margin: 8px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        /* Header bar */
+        .header {
+            background: linear-gradient(135deg, #0078d4 0%, #004e8c 100%);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 500;
+            margin: 0;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .header button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .header button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Chart grid area */
+        .chart-grid {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 16px;
+            grid-auto-rows: 400px;
+        }
+        
+        .chart-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: all 0.3s;
+        }
+        
+        .chart-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-card.selected {
+            border: 2px solid #0078d4;
+            box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+        }
+        
+        .chart-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+        }
+        
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .chart-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .chart-actions button {
+            background: transparent;
+            border: none;
+            color: #666;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .chart-actions button:hover {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .edit-btn {
+            background: #0078d4 !important;
+            color: white !important;
+            font-size: 13px !important;
+            padding: 4px 10px !important;
+        }
+        
+        .edit-btn:hover {
+            background: #106ebe !important;
+        }
+        
+        .chart-content {
+            flex: 1;
+            padding: 16px;
+            position: relative;
+        }
+        
+        /* Field configuration modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal.show {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 50px auto;
+            padding: 0;
+            border-radius: 8px;
+            width: 800px;
+            max-width: 90%;
+            max-height: 80vh;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            animation: slideIn 0.3s;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #0078d4 0%, #004e8c 100%);
+            color: white;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .close-btn {
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            line-height: 1;
+        }
+        
+        .close-btn:hover {
+            opacity: 0.8;
+        }
+        
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .config-section {
+            margin-bottom: 24px;
+        }
+        
+        .config-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .field-group {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+        }
+        
+        .field-group-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .field-list-modal {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .field-item-modal {
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            background: white;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .field-item-modal:hover {
+            background: #e8f0fe;
+        }
+        
+        .field-item-modal.selected {
+            background: #e8f0fe;
+            border: 1px solid #0078d4;
+        }
+        
+        .field-checkbox {
+            margin-right: 10px;
+        }
+        
+        .field-name {
+            flex: 1;
+            font-size: 13px;
+            color: #333;
+        }
+        
+        .field-type {
+            font-size: 11px;
+            color: #999;
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        .chart-type-selector {
+            margin-bottom: 16px;
+        }
+        
+        .chart-type-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        
+        .chart-type-option {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .chart-type-option:hover {
+            background: #f0f0f0;
+        }
+        
+        .chart-type-option.selected {
+            background: #0078d4;
+            color: white;
+            border-color: #0078d4;
+        }
+        
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .modal-footer button {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #0078d4;
+            color: white;
+            border-color: #0078d4;
+        }
+        
+        .btn-primary:hover {
+            background: #106ebe;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #f0f0f0;
+        }
+        
+        /* Field count indicators */
+        .field-count {
+            background: #0078d4;
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .empty-state h3 {
+            color: #666;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Main Dashboard -->
+        <div class="dashboard">
+            <div class="header">
+                <h1>Visual Analytics Dashboard - Advanced Field Configuration</h1>
+                <div class="header-actions">
+                    <button onclick="addChart()">+ Add Chart</button>
+                    <button onclick="clearDashboard()">Clear All</button>
+                    <button onclick="exportDashboard()">Export</button>
+                </div>
+            </div>
+            
+            <div class="chart-grid" id="chartGrid">
+                <!-- Charts will be added here dynamically -->
+                <div class="empty-state" id="emptyState">
+                    <h3>No charts yet</h3>
+                    <p>Click "Add Chart" to create your first visualization</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Field Configuration Modal -->
+    <div id="fieldModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-title">Configure Chart Fields</span>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Chart Type Selection -->
+                <div class="config-section">
+                    <div class="config-section-title">Chart Type</div>
+                    <div class="chart-type-grid" id="chartTypeGrid">
+                        <div class="chart-type-option" data-type="bar" onclick="selectChartType('bar')">Bar</div>
+                        <div class="chart-type-option" data-type="line" onclick="selectChartType('line')">Line</div>
+                        <div class="chart-type-option" data-type="pie" onclick="selectChartType('pie')">Pie</div>
+                        <div class="chart-type-option" data-type="scatter" onclick="selectChartType('scatter')">Scatter</div>
+                        <div class="chart-type-option" data-type="area" onclick="selectChartType('area')">Area</div>
+                        <div class="chart-type-option" data-type="heatmap" onclick="selectChartType('heatmap')">Heatmap</div>
+                        <div class="chart-type-option" data-type="treemap" onclick="selectChartType('treemap')">Treemap</div>
+                        <div class="chart-type-option" data-type="radar" onclick="selectChartType('radar')">Radar</div>
+                        <div class="chart-type-option" data-type="gauge" onclick="selectChartType('gauge')">Gauge</div>
+                        <div class="chart-type-option" data-type="funnel" onclick="selectChartType('funnel')">Funnel</div>
+                        <div class="chart-type-option" data-type="waterfall" onclick="selectChartType('waterfall')">Waterfall</div>
+                        <div class="chart-type-option" data-type="sunburst" onclick="selectChartType('sunburst')">Sunburst</div>
+                    </div>
+                </div>
+                
+                <!-- Field Selection -->
+                <div class="config-section">
+                    <div class="config-section-title">Data Fields</div>
+                    <div class="config-grid">
+                        <!-- Dimensions -->
+                        <div class="field-group">
+                            <div class="field-group-title">
+                                Dimensions
+                                <span class="field-count" id="dimensionCount">0</span>
+                            </div>
+                            <div class="field-list-modal" id="dimensionList">
+                                <!-- Dimension fields will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Measures -->
+                        <div class="field-group">
+                            <div class="field-group-title">
+                                Measures
+                                <span class="field-count" id="measureCount">0</span>
+                            </div>
+                            <div class="field-list-modal" id="measureList">
+                                <!-- Measure fields will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Options -->
+                <div class="config-section">
+                    <div class="config-section-title">Chart Options</div>
+                    <div class="config-grid">
+                        <div>
+                            <label for="chartTitle">Chart Title:</label>
+                            <input type="text" id="chartTitle" style="width: 100%; padding: 6px; margin-top: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label for="aggregation">Aggregation:</label>
+                            <select id="aggregation" style="width: 100%; padding: 6px; margin-top: 4px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="sum">Sum</option>
+                                <option value="average">Average</option>
+                                <option value="count">Count</option>
+                                <option value="min">Min</option>
+                                <option value="max">Max</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn-primary" onclick="applyChartConfig()">Apply Configuration</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Dashboard state management
+        let dashboardState = {
+            charts: [],
+            currentEditingChart: null
+        };
+        
+        // Available fields (sample data structure)
+        const availableFields = {
+            dimensions: [
+                { id: 'dept', name: 'Department', type: 'string' },
+                { id: 'account', name: 'Account', type: 'string' },
+                { id: 'category', name: 'Category', type: 'string' },
+                { id: 'vendor', name: 'Vendor', type: 'string' },
+                { id: 'project', name: 'Project', type: 'string' },
+                { id: 'location', name: 'Location', type: 'string' },
+                { id: 'fund', name: 'Fund', type: 'string' },
+                { id: 'type', name: 'Transaction Type', type: 'string' }
+            ],
+            measures: [
+                { id: 'budget', name: 'Budget', type: 'number' },
+                { id: 'actual', name: 'Actual', type: 'number' },
+                { id: 'variance', name: 'Variance', type: 'number' },
+                { id: 'percentage', name: 'Percentage', type: 'number' },
+                { id: 'ytd_budget', name: 'YTD Budget', type: 'number' },
+                { id: 'ytd_actual', name: 'YTD Actual', type: 'number' },
+                { id: 'forecast', name: 'Forecast', type: 'number' },
+                { id: 'amount', name: 'Amount', type: 'number' }
+            ]
+        };
+        
+        // Initialize dashboard
+        function init() {
+            // Clear empty state if charts exist
+            if (dashboardState.charts.length > 0) {
+                document.getElementById('emptyState').style.display = 'none';
+            }
+        }
+        
+        // Add new chart
+        function addChart() {
+            // Hide empty state
+            document.getElementById('emptyState').style.display = 'none';
+            
+            // Generate unique ID
+            const chartId = 'chart_' + Date.now();
+            
+            // Create chart configuration
+            const chartConfig = {
+                id: chartId,
+                type: 'bar',
+                title: 'New Chart',
+                dimensions: [],
+                measures: [],
+                aggregation: 'sum',
+                instance: null
+            };
+            
+            // Add to state
+            dashboardState.charts.push(chartConfig);
+            
+            // Create chart card
+            createChartCard(chartConfig);
+            
+            // Open configuration modal for new chart
+            editChart(chartId);
+        }
+        
+        // Create chart card element
+        function createChartCard(config) {
+            const chartCard = document.createElement('div');
+            chartCard.className = 'chart-card';
+            chartCard.id = config.id;
+            
+            chartCard.innerHTML = `
+                <div class="chart-header">
+                    <span class="chart-title">${config.title}</span>
+                    <div class="chart-actions">
+                        <button class="edit-btn" onclick="editChart('${config.id}')">Edit Fields</button>
+                        <button onclick="duplicateChart('${config.id}')" title="Duplicate">📋</button>
+                        <button onclick="removeChart('${config.id}')" title="Remove">🗑️</button>
+                    </div>
+                </div>
+                <div class="chart-content" id="${config.id}_content"></div>
+            `;
+            
+            document.getElementById('chartGrid').appendChild(chartCard);
+            
+            // Render chart
+            renderChart(config);
+        }
+        
+        // Edit chart configuration
+        function editChart(chartId) {
+            const chart = dashboardState.charts.find(c => c.id === chartId);
+            if (!chart) return;
+            
+            // Set current editing chart
+            dashboardState.currentEditingChart = chart;
+            
+            // Show modal
+            const modal = document.getElementById('fieldModal');
+            modal.classList.add('show');
+            
+            // Set current chart type
+            document.querySelectorAll('.chart-type-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.type === chart.type) {
+                    option.classList.add('selected');
+                }
+            });
+            
+            // Set chart title
+            document.getElementById('chartTitle').value = chart.title;
+            
+            // Set aggregation
+            document.getElementById('aggregation').value = chart.aggregation;
+            
+            // Populate dimension fields
+            const dimensionList = document.getElementById('dimensionList');
+            dimensionList.innerHTML = '';
+            availableFields.dimensions.forEach(field => {
+                const isSelected = chart.dimensions.some(d => d.id === field.id);
+                const fieldItem = createFieldItem(field, isSelected, 'dimension');
+                dimensionList.appendChild(fieldItem);
+            });
+            
+            // Populate measure fields
+            const measureList = document.getElementById('measureList');
+            measureList.innerHTML = '';
+            availableFields.measures.forEach(field => {
+                const isSelected = chart.measures.some(m => m.id === field.id);
+                const fieldItem = createFieldItem(field, isSelected, 'measure');
+                measureList.appendChild(fieldItem);
+            });
+            
+            // Update counts
+            updateFieldCounts();
+        }
+        
+        // Create field item element
+        function createFieldItem(field, isSelected, type) {
+            const fieldItem = document.createElement('div');
+            fieldItem.className = 'field-item-modal' + (isSelected ? ' selected' : '');
+            fieldItem.onclick = () => toggleField(field, type, fieldItem);
+            
+            fieldItem.innerHTML = `
+                <input type="checkbox" class="field-checkbox" ${isSelected ? 'checked' : ''}>
+                <span class="field-name">${field.name}</span>
+                <span class="field-type">${field.type}</span>
+            `;
+            
+            return fieldItem;
+        }
+        
+        // Toggle field selection
+        function toggleField(field, type, element) {
+            const checkbox = element.querySelector('.field-checkbox');
+            checkbox.checked = !checkbox.checked;
+            element.classList.toggle('selected');
+            
+            const chart = dashboardState.currentEditingChart;
+            if (!chart) return;
+            
+            const fieldArray = type === 'dimension' ? chart.dimensions : chart.measures;
+            const index = fieldArray.findIndex(f => f.id === field.id);
+            
+            if (checkbox.checked && index === -1) {
+                fieldArray.push(field);
+            } else if (!checkbox.checked && index !== -1) {
+                fieldArray.splice(index, 1);
+            }
+            
+            updateFieldCounts();
+        }
+        
+        // Update field counts
+        function updateFieldCounts() {
+            const chart = dashboardState.currentEditingChart;
+            if (!chart) return;
+            
+            document.getElementById('dimensionCount').textContent = chart.dimensions.length;
+            document.getElementById('measureCount').textContent = chart.measures.length;
+        }
+        
+        // Select chart type
+        function selectChartType(type) {
+            if (!dashboardState.currentEditingChart) return;
+            
+            dashboardState.currentEditingChart.type = type;
+            
+            document.querySelectorAll('.chart-type-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.type === type) {
+                    option.classList.add('selected');
+                }
+            });
+        }
+        
+        // Apply chart configuration
+        function applyChartConfig() {
+            const chart = dashboardState.currentEditingChart;
+            if (!chart) return;
+            
+            // Update chart title
+            chart.title = document.getElementById('chartTitle').value || 'Untitled Chart';
+            chart.aggregation = document.getElementById('aggregation').value;
+            
+            // Update chart card title
+            const chartCard = document.getElementById(chart.id);
+            if (chartCard) {
+                chartCard.querySelector('.chart-title').textContent = chart.title;
+            }
+            
+            // Re-render chart with new configuration
+            renderChart(chart);
+            
+            // Close modal
+            closeModal();
+        }
+        
+        // Close modal
+        function closeModal() {
+            const modal = document.getElementById('fieldModal');
+            modal.classList.remove('show');
+            dashboardState.currentEditingChart = null;
+        }
+        
+        // Render chart
+        function renderChart(config) {
+            const container = document.getElementById(`${config.id}_content`);
+            if (!container) return;
+            
+            // Dispose existing chart
+            if (config.instance) {
+                config.instance.dispose();
+            }
+            
+            // Check if fields are selected
+            if (config.dimensions.length === 0 && config.measures.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #999;">
+                        <p>No fields selected</p>
+                        <p style="font-size: 12px; margin-top: 10px;">Click "Edit Fields" to configure this chart</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Create new chart
+            const chartInstance = echarts.init(container);
+            
+            // Generate data based on selected fields
+            const data = generateChartData(config);
+            
+            // Configure chart options
+            const option = getChartOptions(config, data);
+            
+            // Set option
+            chartInstance.setOption(option);
+            
+            // Store instance
+            config.instance = chartInstance;
+            
+            // Resize on window resize
+            window.addEventListener('resize', () => chartInstance.resize());
+        }
+        
+        // Generate chart data based on configuration
+        function generateChartData(config) {
+            // This is sample data generation - in real application, this would fetch actual data
+            let categories = [];
+            let values = [];
+            
+            // Generate based on selected dimensions
+            if (config.dimensions.length > 0) {
+                const dimension = config.dimensions[0];
+                switch (dimension.id) {
+                    case 'dept':
+                        categories = ['Police', 'Fire', 'Public Works', 'Parks', 'Finance', 'Admin'];
+                        values = [450000, 380000, 320000, 180000, 150000, 120000];
+                        break;
+                    case 'account':
+                        categories = ['Personnel', 'Supplies', 'Equipment', 'Utilities', 'Travel', 'Other'];
+                        values = [600000, 80000, 150000, 45000, 30000, 35000];
+                        break;
+                    case 'category':
+                        categories = ['Operating', 'Capital', 'Debt Service', 'Transfers', 'Reserves'];
+                        values = [800000, 300000, 200000, 150000, 100000];
+                        break;
+                    case 'vendor':
+                        categories = ['Vendor A', 'Vendor B', 'Vendor C', 'Vendor D', 'Vendor E'];
+                        values = [125000, 98000, 87000, 65000, 43000];
+                        break;
+                    default:
+                        categories = ['Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5'];
+                        values = [100, 200, 150, 300, 250];
+                }
+            } else {
+                // Default data if no dimensions selected
+                categories = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+                values = [120, 200, 150, 80, 70, 110];
+            }
+            
+            // Adjust values based on selected measures
+            if (config.measures.length > 0) {
+                const measure = config.measures[0];
+                switch (measure.id) {
+                    case 'budget':
+                        values = values.map(v => v * 1.2);
+                        break;
+                    case 'actual':
+                        values = values.map(v => v * 0.95);
+                        break;
+                    case 'variance':
+                        values = values.map(v => v * 0.05);
+                        break;
+                    case 'percentage':
+                        values = [85, 92, 78, 88, 95, 82];
+                        break;
+                }
+            }
+            
+            // Apply aggregation
+            if (config.aggregation === 'average') {
+                const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                values = values.map(() => avg);
+            } else if (config.aggregation === 'min') {
+                const min = Math.min(...values);
+                values = values.map(() => min);
+            } else if (config.aggregation === 'max') {
+                const max = Math.max(...values);
+                values = values.map(() => max);
+            } else if (config.aggregation === 'count') {
+                values = values.map(() => values.length);
+            }
+            
+            return { categories, values };
+        }
+        
+        // Get chart options based on type and data
+        function getChartOptions(config, data) {
+            const baseOption = {
+                title: {
+                    text: config.title,
+                    left: 'center',
+                    top: 10,
+                    textStyle: {
+                        fontSize: 14,
+                        fontWeight: 'normal'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        if (Array.isArray(params)) {
+                            return params[0].name + '<br/>' + 
+                                   params.map(p => `${p.seriesName || 'Value'}: ${typeof p.value === 'number' ? p.value.toLocaleString() : p.value}`).join('<br/>');
+                        }
+                        return `${params.name}<br/>Value: ${typeof params.value === 'number' ? params.value.toLocaleString() : params.value}`;
+                    }
+                },
+                grid: { left: '12%', right: '10%', bottom: '15%', top: '15%' },
+                color: ['#0078d4', '#00bcf2', '#00188f', '#68768a', '#69797e']
+            };
+            
+            // Get axis labels from selected fields
+            const xAxisLabel = config.dimensions.length > 0 ? config.dimensions[0].name : 'Category';
+            const yAxisLabel = config.measures.length > 0 ? config.measures[0].name : 'Value';
+            
+            switch (config.type) {
+                case 'bar':
+                    return {
+                        ...baseOption,
+                        xAxis: { 
+                            type: 'category', 
+                            data: data.categories,
+                            name: xAxisLabel,
+                            nameLocation: 'middle',
+                            nameGap: 35,
+                            axisLabel: {
+                                rotate: 45,
+                                interval: 0
+                            }
+                        },
+                        yAxis: { 
+                            type: 'value',
+                            name: yAxisLabel,
+                            nameLocation: 'middle',
+                            nameGap: 50,
+                            axisLabel: {
+                                formatter: function(value) {
+                                    return value >= 1000 ? (value/1000).toFixed(0) + 'K' : value;
+                                }
+                            }
+                        },
+                        series: [{
+                            type: 'bar',
+                            data: data.values,
+                            itemStyle: {
+                                borderRadius: [4, 4, 0, 0]
+                            }
+                        }]
+                    };
+                    
+                case 'line':
+                    return {
+                        ...baseOption,
+                        xAxis: { 
+                            type: 'category', 
+                            data: data.categories,
+                            name: xAxisLabel
+                        },
+                        yAxis: { 
+                            type: 'value',
+                            name: yAxisLabel
+                        },
+                        series: [{
+                            type: 'line',
+                            data: data.values,
+                            smooth: true
+                        }]
+                    };
+                    
+                case 'pie':
+                    const pieData = data.categories.map((cat, idx) => ({
+                        name: cat,
+                        value: data.values[idx]
+                    }));
+                    return {
+                        ...baseOption,
+                        tooltip: {
+                            trigger: 'item'
+                        },
+                        series: [{
+                            type: 'pie',
+                            radius: '50%',
+                            data: pieData,
+                            emphasis: {
+                                itemStyle: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                }
+                            }
+                        }]
+                    };
+                    
+                case 'scatter':
+                    const scatterData = data.values.map((val, idx) => [idx, val]);
+                    return {
+                        ...baseOption,
+                        xAxis: { type: 'value', name: xAxisLabel },
+                        yAxis: { type: 'value', name: yAxisLabel },
+                        series: [{
+                            type: 'scatter',
+                            data: scatterData,
+                            symbolSize: 10
+                        }]
+                    };
+                    
+                case 'area':
+                    return {
+                        ...baseOption,
+                        xAxis: { 
+                            type: 'category', 
+                            data: data.categories,
+                            boundaryGap: false,
+                            name: xAxisLabel
+                        },
+                        yAxis: { 
+                            type: 'value',
+                            name: yAxisLabel
+                        },
+                        series: [{
+                            type: 'line',
+                            data: data.values,
+                            areaStyle: {}
+                        }]
+                    };
+                    
+                case 'heatmap':
+                    // Generate heatmap data
+                    const heatmapData = [];
+                    for (let i = 0; i < data.categories.length; i++) {
+                        for (let j = 0; j < 5; j++) {
+                            heatmapData.push([i, j, Math.random() * 100]);
+                        }
+                    }
+                    return {
+                        ...baseOption,
+                        tooltip: {
+                            position: 'top'
+                        },
+                        grid: {
+                            height: '50%',
+                            top: '10%'
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data.categories,
+                            splitArea: {
+                                show: true
+                            }
+                        },
+                        yAxis: {
+                            type: 'category',
+                            data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                            splitArea: {
+                                show: true
+                            }
+                        },
+                        visualMap: {
+                            min: 0,
+                            max: 100,
+                            calculable: true,
+                            orient: 'horizontal',
+                            left: 'center',
+                            bottom: '15%'
+                        },
+                        series: [{
+                            type: 'heatmap',
+                            data: heatmapData,
+                            label: {
+                                show: true
+                            }
+                        }]
+                    };
+                    
+                default:
+                    // Default to bar chart
+                    return getChartOptions({...config, type: 'bar'}, data);
+            }
+        }
+        
+        // Duplicate chart
+        function duplicateChart(chartId) {
+            const originalChart = dashboardState.charts.find(c => c.id === chartId);
+            if (!originalChart) return;
+            
+            const newChart = {
+                ...originalChart,
+                id: 'chart_' + Date.now(),
+                title: originalChart.title + ' (Copy)',
+                dimensions: [...originalChart.dimensions],
+                measures: [...originalChart.measures],
+                instance: null
+            };
+            
+            dashboardState.charts.push(newChart);
+            createChartCard(newChart);
+        }
+        
+        // Remove chart
+        function removeChart(chartId) {
+            if (!confirm('Are you sure you want to remove this chart?')) return;
+            
+            // Remove from DOM
+            const chartElement = document.getElementById(chartId);
+            if (chartElement) {
+                chartElement.remove();
+            }
+            
+            // Remove from state
+            const index = dashboardState.charts.findIndex(c => c.id === chartId);
+            if (index !== -1) {
+                // Dispose chart instance
+                if (dashboardState.charts[index].instance) {
+                    dashboardState.charts[index].instance.dispose();
+                }
+                dashboardState.charts.splice(index, 1);
+            }
+            
+            // Show empty state if no charts
+            if (dashboardState.charts.length === 0) {
+                document.getElementById('emptyState').style.display = 'block';
+            }
+        }
+        
+        // Clear dashboard
+        function clearDashboard() {
+            if (!confirm('Are you sure you want to clear all charts?')) return;
+            
+            // Dispose all chart instances
+            dashboardState.charts.forEach(chart => {
+                if (chart.instance) {
+                    chart.instance.dispose();
+                }
+            });
+            
+            // Clear state
+            dashboardState.charts = [];
+            
+            // Clear DOM
+            document.getElementById('chartGrid').innerHTML = `
+                <div class="empty-state" id="emptyState">
+                    <h3>No charts yet</h3>
+                    <p>Click "Add Chart" to create your first visualization</p>
+                </div>
+            `;
+        }
+        
+        // Export dashboard configuration
+        function exportDashboard() {
+            const config = dashboardState.charts.map(chart => ({
+                id: chart.id,
+                type: chart.type,
+                title: chart.title,
+                dimensions: chart.dimensions,
+                measures: chart.measures,
+                aggregation: chart.aggregation
+            }));
+            
+            const dataStr = JSON.stringify(config, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = 'dashboard_config.json';
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+        
+        // Initialize on load
+        window.onload = init;
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('fieldModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,965 @@
+{
+  "sql_injection_vulnerabilities": [
+    {
+      "file": "./streamlit_govsight_frontend.py",
+      "line": 466,
+      "code": "scenario_name = st.text_input(\"Scenario Name\", value=f\"Scenario for {selected_project_data['name']} - {timestamp}\")",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./app.py",
+      "line": 597,
+      "code": "scenario_name = st.text_input(\"Scenario Name\", value=f\"{org} - {selected_project_data['name']} - {timestamp}\")",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./ai_hub.py",
+      "line": 77,
+      "code": "context += f\"\\n\\n=== Using State Context: {selected_state} ===\\n\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./ai_hub.py",
+      "line": 90,
+      "code": "context += f\"\\n\\n[{src.upper()} Reference for {selected_state}]:\\n{ref}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./ai_hub.py",
+      "line": 90,
+      "code": "context += f\"\\n\\n[{src.upper()} Reference for {selected_state}]:\\n{ref}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./ai_hub.py",
+      "line": 99,
+      "code": "context += f\"\\n\\n[{src.upper()} Reference for {selected_state}]:\\n{ref}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./ai_hub.py",
+      "line": 99,
+      "code": "context += f\"\\n\\n[{src.upper()} Reference for {selected_state}]:\\n{ref}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./ai_assistant_clean.py",
+      "line": 198,
+      "code": "query = f\"SELECT * FROM {safe_table}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./scenario_planner.py",
+      "line": 776,
+      "code": "all_available_grants = has_saved_grants + has_selected_grants",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./scenario_planner.py",
+      "line": 2034,
+      "code": "title=f\"{selected_dept} Budget and Actual by {selected_segment}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./scenario_planner.py",
+      "line": 2146,
+      "code": "\"Shift funding between categories\": f\"Move 10% of {selected_dept} equipment budget to personnel\",",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./scenario_planner.py",
+      "line": 2147,
+      "code": "\"Emergency budget reduction\": f\"Implement emergency 8% reduction across all {selected_dept} budget categories\",",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./bi_sandbox.py",
+      "line": 3005,
+      "code": "key=f\"select_{chart_type}\",",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./streamlit_multiorg_frontend.py",
+      "line": 740,
+      "code": "scenario_name = st.text_input(\"Scenario Name\", value=f\"{org} - {selected_project_data['name']} - {timestamp}\")",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./streamlit_multiorg_frontend.py",
+      "line": 1027,
+      "code": "dept_kpi1.metric(f\"{selected_dept} Total Budget\", f\"${dept_total_budget:,.0f}\")",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./run_security_audit.py",
+      "line": 33,
+      "code": "r'f\".*SELECT.*{.*}\"',  # f-string with SELECT",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./run_security_audit.py",
+      "line": 35,
+      "code": "r'\\.format\\(.*\\).*SELECT',  # .format() with SELECT",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./run_security_audit.py",
+      "line": 36,
+      "code": "r'\\+.*SELECT',  # String concatenation with SELECT",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./run_security_audit.py",
+      "line": 37,
+      "code": "r'%.*SELECT',  # % formatting with SELECT",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./run_security_audit.py",
+      "line": 80,
+      "code": "r'st\\.selectbox\\([^,]+\\)(?!\\s*if\\s)',  # Streamlit selectbox without validation",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./security_sql_injection_fixes.py",
+      "line": 120,
+      "code": "query = f\"SELECT {column_str} FROM {safe_table}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./apply_security_fixes.py",
+      "line": 46,
+      "code": "r'f\"SELECT \\* FROM \\{([^}]+)\\}\"',",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./apply_security_fixes.py",
+      "line": 47,
+      "code": "r'f\"SELECT * FROM {SQLSecurityValidator.validate_table_name(\\1)}\"',",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./apply_security_fixes.py",
+      "line": 53,
+      "code": "r'query = f\"SELECT \\* FROM \\{([^}]+)\\}\"',",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./apply_security_fixes.py",
+      "line": 54,
+      "code": "r'safe_table = SQLSecurityValidator.validate_table_name(\\1)\\n        query = f\"SELECT * FROM {safe_table}\"',",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./db_connection.py",
+      "line": 607,
+      "code": "query = f\"SELECT * FROM {safe_table}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./ai_assistant.py",
+      "line": 235,
+      "code": "query = f\"SELECT * FROM {safe_table}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./attached_assets/scenario_planner_restricted.py",
+      "line": 987,
+      "code": "title=f\"{selected_dept} Budget and Actual by {selected_segment}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./attached_assets/scenario_planner_restricted.py",
+      "line": 1030,
+      "code": "\"Shift funding between categories\": f\"Move 10% of {selected_dept} equipment budget to personnel\",",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./attached_assets/scenario_planner_restricted.py",
+      "line": 1031,
+      "code": "\"Emergency budget reduction\": f\"Implement emergency 8% reduction across all {selected_dept} budget categories\",",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./attached_assets/db_connection (3).py",
+      "line": 19,
+      "code": "return pd.read_sql(f\"SELECT * FROM {table}\", conn)",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./attached_assets/govsight_portal.py",
+      "line": 133,
+      "code": "log_security_event(\"AI_SQL_BLOCKED\", f\"Non-SELECT query blocked: {raw_sql[:50]}\")",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./govsight_copy/streamlit_multiorg_frontend.py",
+      "line": 718,
+      "code": "scenario_name = st.text_input(\"Scenario Name\", value=f\"{org} - {selected_project_data['name']} - {timestamp}\")",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./govsight_copy/streamlit_multiorg_frontend.py",
+      "line": 1005,
+      "code": "dept_kpi1.metric(f\"{selected_dept} Total Budget\", f\"${dept_total_budget:,.0f}\")",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/scenario_planner/original_scenario_planner.py",
+      "line": 652,
+      "code": "all_available_grants = has_saved_grants + has_selected_grants",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/scenario_planner/original_scenario_planner.py",
+      "line": 1807,
+      "code": "title=f\"{selected_dept} Budget and Actual by {selected_segment}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/scenario_planner/original_scenario_planner.py",
+      "line": 1919,
+      "code": "\"Shift funding between categories\": f\"Move 10% of {selected_dept} equipment budget to personnel\",",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/scenario_planner/original_scenario_planner.py",
+      "line": 1920,
+      "code": "\"Emergency budget reduction\": f\"Implement emergency 8% reduction across all {selected_dept} budget categories\",",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/ai_assistant/original_ai_assistant.py",
+      "line": 233,
+      "code": "query = f\"SELECT * FROM {selected_table}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/bi_sandbox/security_integration.py",
+      "line": 148,
+      "code": "query = f\"SELECT * FROM {data_source}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/advanced_filters/original_advanced_filters_clean.py",
+      "line": 179,
+      "code": "key=f\"{key_prefix}_select_{column}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/advanced_filters/original_advanced_filters_clean.py",
+      "line": 203,
+      "code": "key=f\"{key_prefix}_filtered_select_{column}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/database/original_db_connection.py",
+      "line": 548,
+      "code": "query = f\"SELECT * FROM {table}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/ai_hub/original_ai_hub.py",
+      "line": 39,
+      "code": "context += f\"\\n\\n=== Using State Context: {selected_state} ===\\n\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/ai_hub/original_ai_hub.py",
+      "line": 52,
+      "code": "context += f\"\\n\\n[{src.upper()} Reference for {selected_state}]:\\n{ref}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/ai_hub/original_ai_hub.py",
+      "line": 52,
+      "code": "context += f\"\\n\\n[{src.upper()} Reference for {selected_state}]:\\n{ref}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/ai_hub/original_ai_hub.py",
+      "line": 61,
+      "code": "context += f\"\\n\\n[{src.upper()} Reference for {selected_state}]:\\n{ref}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/ai_hub/original_ai_hub.py",
+      "line": 61,
+      "code": "context += f\"\\n\\n[{src.upper()} Reference for {selected_state}]:\\n{ref}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    },
+    {
+      "file": "./modules/security/secure_db_operations.py",
+      "line": 317,
+      "code": "query = f\"SELECT {select_clause} FROM {safe_table_name}\"",
+      "type": "SQL_INJECTION",
+      "severity": "HIGH",
+      "description": "Potential SQL injection vulnerability"
+    }
+  ],
+  "input_validation_issues": [
+    {
+      "file": "./department_forecast_tool.py",
+      "line": 150,
+      "code": "group_name = st.text_input(\"Group Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./scenario_planner_secured_final.py",
+      "line": 24,
+      "code": "project_name = st.text_input(\"Enter Project Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./admin_panel.py",
+      "line": 337,
+      "code": "new_username = st.text_input(\"Username\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./scenario_planner.py",
+      "line": 629,
+      "code": "project_name = st.text_input(\"Enter Project Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./bi_sandbox.py",
+      "line": 1471,
+      "code": "value = st.selectbox(\"Select value to measure (Y-axis)\",",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./bi_sandbox.py",
+      "line": 2218,
+      "code": "chart_desc = st.text_input(\"Chart Description (optional)\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./bi_sandbox.py",
+      "line": 2687,
+      "code": "color_column = st.selectbox(\"Color By (Optional)\", [\"None\"] + categorical_columns)",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./bi_sandbox.py",
+      "line": 2926,
+      "code": "x_column = st.selectbox(\"Independent Variable (X)\", numeric_columns)",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./bi_sandbox.py",
+      "line": 2927,
+      "code": "y_column = st.selectbox(\"Dependent Variable (Y)\", numeric_columns)",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./bi_sandbox.py",
+      "line": 3821,
+      "code": "scenario_name = st.text_input(\"Scenario Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./bi_sandbox.py",
+      "line": 3824,
+      "code": "scenario_tags = st.text_input(\"Tags (comma separated)\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./run_security_audit.py",
+      "line": 81,
+      "code": "r'input\\(\\)(?!\\s*if\\s)',  # Raw input() without validation",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/govsight_portal_enhanced.py",
+      "line": 61,
+      "code": "project_name = st.text_input(\"Enter Project Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/govsight_portal_enhanced_v2.py",
+      "line": 23,
+      "code": "project_name = st.text_input(\"Enter project name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/govsight_sandbox_module_with_scenario.py",
+      "line": 57,
+      "code": "scenario_name = st.text_input(\"Scenario Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/scenario_planner_secured.py",
+      "line": 24,
+      "code": "project_name = st.text_input(\"Enter Project Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/scenario_planner_secured_with_report.py",
+      "line": 25,
+      "code": "project_name = st.text_input(\"Enter Project Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/ai_assistant_with_grants.py",
+      "line": 64,
+      "code": "keywords = st.text_input(\"Enter keywords to search (comma-separated)\", \"water, infrastructure, IT, park\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/scenario_planner_secured_final.py",
+      "line": 25,
+      "code": "project_name = st.text_input(\"Enter Project Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/admin_panel.py",
+      "line": 32,
+      "code": "new_username = st.text_input(\"Username\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/admin_panel.py",
+      "line": 35,
+      "code": "new_departments = st.text_input(\"Departments (comma-separated)\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/admin_panel_fully_rebuilt.py",
+      "line": 61,
+      "code": "new_username = st.text_input(\"Username\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/admin_panel_fully_rebuilt.py",
+      "line": 64,
+      "code": "new_departments = st.text_input(\"Departments (comma-separated)\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/historical_analysis_ai.py",
+      "line": 400,
+      "code": "custom_q = st.text_input(\"Ask any question about this department's historical trends:\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/department_insights_ai.py",
+      "line": 114,
+      "code": "user_question = st.text_input(\"Ask a question about the selected department's budget data:\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/scenario_planner_legislation.py",
+      "line": 59,
+      "code": "project_name = st.text_input(\"Enter Project Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/scenario_planner_whatif.py",
+      "line": 59,
+      "code": "project_name = st.text_input(\"Enter Project Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/scenario_planner_restricted.py",
+      "line": 67,
+      "code": "project_name = st.text_input(\"Enter Project Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./attached_assets/govsight_portal.py",
+      "line": 62,
+      "code": "project_name = st.text_input(\"Enter Project Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./govsight_copy/department_forecast_tool.py",
+      "line": 153,
+      "code": "group_name = st.text_input(\"Group Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./modules/scenario_planner/original_scenario_planner.py",
+      "line": 505,
+      "code": "project_name = st.text_input(\"Enter Project Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./modules/bi_sandbox/original_bi_sandbox.py",
+      "line": 97,
+      "code": "value = st.selectbox(\"Select value to measure (Y-axis)\",",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./modules/bi_sandbox/original_bi_sandbox.py",
+      "line": 844,
+      "code": "chart_desc = st.text_input(\"Chart Description (optional)\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./modules/bi_sandbox/original_bi_sandbox.py",
+      "line": 1585,
+      "code": "scenario_name = st.text_input(\"Scenario Name\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./modules/bi_sandbox/original_bi_sandbox.py",
+      "line": 1588,
+      "code": "scenario_tags = st.text_input(\"Tags (comma separated)\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    },
+    {
+      "file": "./modules/admin_panel/original_admin_panel.py",
+      "line": 290,
+      "code": "new_username = st.text_input(\"Username\")",
+      "type": "INPUT_VALIDATION",
+      "severity": "MEDIUM",
+      "description": "User input may lack proper validation"
+    }
+  ],
+  "hardcoded_secrets": [
+    {
+      "file": "./db_utils_extended.py",
+      "line": 28,
+      "code": "password=\"password\",    # Replace with your passwo...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./db_utils_extended.py",
+      "line": 46,
+      "code": "password=\"password\",    # Replace with your passwo...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./sql_connection.py",
+      "line": 25,
+      "code": "password='password',...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./sql_connection.py",
+      "line": 396,
+      "code": "password='postgres',...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./sql_database_demo.py",
+      "line": 85,
+      "code": "password='password',...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./summary_report_generator.py",
+      "line": 38,
+      "code": "openai.api_key = \"sk-placeholder\"...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 706,
+      "code": "\"code\": \"password='password',...\",...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 714,
+      "code": "\"code\": \"password='postgres',...\",...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 722,
+      "code": "\"code\": \"password='password',...\",...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 738,
+      "code": "\"code\": \"\\\"code\\\": \\\"password='password',...\\\",......",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 746,
+      "code": "\"code\": \"\\\"code\\\": \\\"password='postgres',...\\\",......",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 754,
+      "code": "\"code\": \"\\\"code\\\": \\\"password='password',...\\\",......",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 762,
+      "code": "\"code\": \"\\\"code\\\": \\\"password='test123',...\\\",...\"...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 770,
+      "code": "\"code\": \"\\\"code\\\": \\\"password='any_password',...\\\"...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 778,
+      "code": "\"code\": \"\\\"code\\\": \\\"password='wrong_password',......",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 786,
+      "code": "\"code\": \"\\\"code\\\": \\\"password='test123',...\\\",...\"...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 866,
+      "code": "\"code\": \"password='test123',...\",...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 874,
+      "code": "\"code\": \"password='any_password',...\",...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 882,
+      "code": "\"code\": \"password='wrong_password',...\",...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./security_audit_details.json",
+      "line": 890,
+      "code": "\"code\": \"password='test123',...\",...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./govsight_copy/db_utils_extended.py",
+      "line": 28,
+      "code": "password=\"password\",    # Replace with your passwo...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./govsight_copy/db_utils_extended.py",
+      "line": 46,
+      "code": "password=\"password\",    # Replace with your passwo...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./modules/reports/original_summary_report_generator.py",
+      "line": 38,
+      "code": "openai.api_key = \"sk-placeholder\"...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./modules/security/source_protection.py",
+      "line": 226,
+      "code": "API_KEY = \"fake_api_key_12345\"...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./modules/testing/test_password_security.py",
+      "line": 40,
+      "code": "password = \"TestPassword123!\"...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./modules/testing/test_password_security.py",
+      "line": 53,
+      "code": "password = \"TestPassword123!\"...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./modules/testing/test_password_security.py",
+      "line": 70,
+      "code": "password = \"TestPassword123!\"...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./modules/testing/test_password_security.py",
+      "line": 77,
+      "code": "password = \"TestPassword123!\"...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./modules/testing/test_password_security.py",
+      "line": 78,
+      "code": "wrong_password = \"WrongPassword123!\"...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./modules/testing/test_enhanced_auth.py",
+      "line": 115,
+      "code": "password='test123',...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./modules/testing/test_enhanced_auth.py",
+      "line": 131,
+      "code": "password='any_password',...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./modules/testing/test_enhanced_auth.py",
+      "line": 147,
+      "code": "password='wrong_password',...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    },
+    {
+      "file": "./modules/testing/test_enhanced_auth.py",
+      "line": 166,
+      "code": "password='test123',...",
+      "type": "HARDCODED_SECRET",
+      "severity": "HIGH",
+      "description": "Potential hardcoded credential"
+    }
+  ],
+  "security_fixes_verification": {
+    "sql_injection_prevention": true,
+    "input_validation": false,
+    "parameterized_queries": true,
+    "security_module": true
+  },
+  "summary": {
+    "total_vulnerabilities": 118,
+    "sql_injection_count": 49,
+    "input_validation_count": 36,
+    "hardcoded_secrets_count": 33,
+    "security_score": 0
+  }
+}
