@@ -1,9 +1,17 @@
 name = "govsight"
+main = "worker/index.js"
 compatibility_date = "2026-07-01"
 
-# Cloudflare Workers serves the static front-door and self-contained tools
-# in public/ as a static-assets deployment (`npx wrangler deploy`).
-# The full Streamlit platform is containerized separately (see Dockerfile
-# and documentation/DEPLOYMENT.md).
+# The worker gates every request behind login before serving the static
+# application in public/. The full Streamlit platform is containerized
+# separately (see Dockerfile and documentation/DEPLOYMENT.md).
 [assets]
 directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+# Development defaults live in worker/index.js. For production, set real
+# values as secrets (they override the defaults):
+#   npx wrangler secret put GOVSIGHT_USER
+#   npx wrangler secret put GOVSIGHT_PASSWORD
+#   npx wrangler secret put SESSION_SECRET

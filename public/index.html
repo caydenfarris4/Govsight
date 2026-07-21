@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GovSight Financial Intelligence Platform</title>
+<title>GovSight Financial Analyzer</title>
 <style>
   :root {
     --navy: #12263a;
     --navy-2: #1d3a56;
     --accent: #2e6fa3;
-    --accent-light: #dbe9f5;
     --text: #22303c;
     --muted: #5b6b7a;
     --bg: #f5f7fa;
@@ -17,160 +16,274 @@
     --border: #dde4ea;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
     font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
-    line-height: 1.6;
-  }
-  header {
-    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
-    color: #fff;
-    padding: 3.5rem 1.5rem 3rem;
-    text-align: center;
-  }
-  header img {
-    height: 64px;
-    margin-bottom: 1.25rem;
-    background: #ffffff;
-    border-radius: 10px;
-    padding: 0.6rem 1.1rem;
-  }
-  header h1 { font-size: 2rem; font-weight: 600; letter-spacing: 0.01em; }
-  header p {
-    max-width: 640px;
-    margin: 0.75rem auto 0;
-    color: #c6d4e2;
-    font-size: 1.05rem;
-  }
-  main { max-width: 1080px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
-  .section-title {
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    margin-bottom: 1.25rem;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
-    gap: 1.25rem;
-    margin-bottom: 3rem;
-  }
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1.75rem;
     display: flex;
     flex-direction: column;
-    transition: box-shadow 0.15s ease, transform 0.15s ease;
   }
-  a.card { text-decoration: none; color: inherit; }
-  a.card:hover {
-    box-shadow: 0 6px 20px rgba(18, 38, 58, 0.12);
-    transform: translateY(-2px);
+  /* Top bar */
+  .topbar {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.65rem 1.25rem;
+    flex-shrink: 0;
   }
-  .card h2 { font-size: 1.2rem; font-weight: 600; color: var(--navy); margin-bottom: 0.5rem; }
-  .card p { font-size: 0.95rem; color: var(--muted); flex-grow: 1; }
-  .card .cta {
-    margin-top: 1.25rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--accent);
-  }
-  .badge {
-    display: inline-block;
-    font-size: 0.72rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    margin-bottom: 0.75rem;
-    width: fit-content;
-  }
-  .badge.live { background: #e2f2e8; color: #1e6b3c; }
-  .badge.backend { background: #fdeeda; color: #8a5a12; }
-  .platform {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 2rem;
-  }
-  .platform h2 { font-size: 1.25rem; color: var(--navy); margin-bottom: 0.75rem; }
-  .platform p { color: var(--muted); font-size: 0.95rem; margin-bottom: 1rem; }
-  .modules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
-  .module {
-    background: var(--accent-light);
-    border-radius: 8px;
-    padding: 1.1rem 1.25rem;
-  }
-  .module strong { display: block; color: var(--navy); margin-bottom: 0.25rem; }
-  .module span { font-size: 0.88rem; color: var(--muted); }
-  footer {
-    text-align: center;
-    padding: 2rem 1rem 2.5rem;
-    color: var(--muted);
+  .topbar img { height: 34px; background: #fff; border-radius: 6px; padding: 0.25rem 0.5rem; }
+  .topbar .title { font-weight: 600; font-size: 1.02rem; }
+  .topbar .org { font-size: 0.8rem; color: #b7c6d5; }
+  .topbar .spacer { flex-grow: 1; }
+  .topbar a.logout {
+    color: #dbe9f5;
+    text-decoration: none;
     font-size: 0.85rem;
-    border-top: 1px solid var(--border);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+  }
+  .topbar a.logout:hover { background: rgba(255, 255, 255, 0.1); }
+  main { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; }
+
+  /* Home */
+  .home { max-width: 1080px; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; width: 100%; }
+  .home h1 { font-size: 1.5rem; color: var(--navy); margin-bottom: 0.4rem; }
+  .home > p { color: var(--muted); margin-bottom: 2rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+  .mcard {
+    border-radius: 12px;
+    padding: 2rem 1.5rem;
+    color: #fff;
+    cursor: pointer;
+    text-align: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .mcard:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(18, 38, 58, 0.28); }
+  .mcard .kicker { font-size: 0.75rem; letter-spacing: 0.12em; opacity: 0.85; text-transform: uppercase; }
+  .mcard h2 { font-size: 1.5rem; margin: 0.4rem 0 0.35rem; }
+  .mcard .sub { font-size: 0.9rem; opacity: 0.95; margin-bottom: 1.25rem; }
+  .mcard .enter {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    padding: 0.45rem 1.3rem;
+    border-radius: 999px;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  /* Module view */
+  .module-view { display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
+  .module-head { color: #fff; padding: 1.1rem 1.5rem; }
+  .module-head .row { max-width: 1240px; margin: 0 auto; display: flex; align-items: baseline; gap: 0.9rem; }
+  .module-head a.back {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  .module-head a.back:hover { color: #fff; }
+  .module-head h1 { font-size: 1.35rem; }
+  .module-head .tag { font-size: 0.85rem; opacity: 0.9; }
+  .tabbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    flex-shrink: 0;
+  }
+  .tabbar .row { max-width: 1240px; margin: 0 auto; display: flex; }
+  .tabbar button {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 0.75rem 1rem;
+    font-size: 0.88rem;
+    font-family: inherit;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tabbar button.active { color: var(--navy); border-bottom-color: var(--accent); font-weight: 600; }
+  .tabbar button:hover { color: var(--navy); }
+  .panel { flex-grow: 1; min-height: 0; display: flex; flex-direction: column; }
+  .panel iframe { border: none; width: 100%; flex-grow: 1; background: #fff; }
+  .placeholder { max-width: 760px; margin: 3rem auto; padding: 0 1.5rem; text-align: center; }
+  .placeholder h2 { color: var(--navy); font-size: 1.3rem; margin-bottom: 0.75rem; }
+  .placeholder p { color: var(--muted); font-size: 0.95rem; line-height: 1.65; }
+  .placeholder .note {
+    display: inline-block;
+    margin-top: 1.5rem;
+    background: #fdeeda;
+    color: #8a5a12;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+  }
+  .placeholder ul {
+    text-align: left;
+    display: inline-block;
+    margin-top: 1.25rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.9;
   }
 </style>
 </head>
 <body>
-<header>
+<header class="topbar">
   <img src="assets/govsight_logo.png" alt="GovSight logo">
-  <h1>GovSight Financial Intelligence Platform</h1>
-  <p>Municipal financial analysis, scenario planning, and AI-driven insight for strategic decision-making.</p>
+  <div>
+    <div class="title">GovSight Financial Analyzer</div>
+    <div class="org">Organization: Spanish Fork</div>
+  </div>
+  <div class="spacer"></div>
+  <a class="logout" href="/api/logout">Logout</a>
 </header>
+<main id="app"></main>
 
-<main>
-  <div class="section-title">Interactive Planning Tools</div>
-  <div class="grid">
-    <a class="card" href="scenario-planner.html">
-      <span class="badge live">Available Now</span>
-      <h2>Scenario Planner</h2>
-      <p>Model multi-year funding scenarios with grant pipeline tracking, department reallocation analysis, expense planning with inflation, ROI and cost-benefit analytics, scenario comparison, and Monte Carlo risk simulation. Work is saved in your browser and scenarios can be shared via read-only links.</p>
-      <span class="cta">Open Scenario Planner</span>
-    </a>
-    <a class="card" href="investment-optimizer.html">
-      <span class="badge live">Available Now</span>
-      <h2>Municipal Investment Optimizer</h2>
-      <p>Interactive dashboard for optimizing municipal cash and investment portfolios across Treasuries, money market funds, CDARS/ICS networks, and state LGIPs, with real-time calculators and yield visualizations.</p>
-      <span class="cta">Open Investment Optimizer</span>
-    </a>
-    <a class="card" href="budget-playground.html">
-      <span class="badge backend">Requires API Connection</span>
-      <h2>Budget Playground</h2>
-      <p>Dynamic re-forecasting and scenario modeling across all non-payroll GL accounts: editable budget ledger, supplemental amendment tracking, YTD reforecast engine, and variance summaries. This tool loads live general-ledger data and requires a connection to the Budget Playground API.</p>
-      <span class="cta">Open Budget Playground</span>
-    </a>
-  </div>
+<script>
+const MODULES = {
+  navi: {
+    name: 'Navi',
+    kicker: 'GovSight Navi',
+    tagline: 'Navigation & Planning Hub',
+    color: '#2450b8',
+    tabs: [
+      { name: 'Scenario Planner', src: 'scenario-planner.html' },
+      { name: 'Economic Indicators',
+        desc: 'Live economic context for planning decisions: Federal Reserve (FRED) and Bureau of Economic Analysis indicators, demographics, and climate data for your region.' },
+      { name: 'Investment Optimizer', src: 'investment-optimizer.html' },
+      { name: 'Report Comparison',
+        desc: 'Side-by-side comparison of budget reports across fiscal years and scenarios, with variance highlighting.' },
+      { name: 'Risk Analysis',
+        desc: 'Monte Carlo simulation over budget scenarios to quantify funding risk and confidence intervals.' },
+      { name: 'Position-Based Budgeting',
+        desc: 'Excel-style multi-sheet personnel budgeting workbook: split cost-center allocations, multi-year budgets, vacancy management, union contract compliance, and audit trails.' },
+      { name: 'Budget Playground', src: 'budget-playground.html' },
+      { name: 'Predictive Analytics',
+        desc: 'Machine-learning forecasts over historical general-ledger data: trend projection, seasonality, and anomaly detection.' },
+    ],
+  },
+  mantis: {
+    name: 'Mantis',
+    kicker: 'GovSight Mantis',
+    tagline: 'AI Intelligence Hub',
+    color: '#4169e1',
+    tabs: [
+      { name: 'AI Chat',
+        desc: 'Conversational analysis of your financial data with dual-AI routing: one engine for financial analysis, data queries, grants, and GASB compliance; another for technical questions, with cross-check mode for second opinions.',
+        capabilities: [
+          'Natural language queries across all connected databases',
+          'Grant discovery and matching',
+          'Anomaly detection on transactions',
+          'GASB compliance checking',
+          'Secure document analysis',
+        ] },
+    ],
+  },
+  vatica: {
+    name: 'Vatica',
+    kicker: 'GovSight Vatica',
+    tagline: 'Departmental Insights & Reporting',
+    color: '#1c6e64',
+    tabs: [
+      { name: 'BI Sandbox',
+        desc: 'Self-serve analytics: natural-language questions over your data, an easy chart builder, and interactive dashboards across all connected databases.' },
+      { name: 'Historical Analysis',
+        desc: 'Multi-year trend analysis of revenues and expenditures with predictive forecasting.' },
+      { name: 'Department Insights',
+        desc: 'Per-department budget performance, forecast tools, and AI-generated insights.' },
+      { name: 'Transaction Analyzer',
+        desc: 'Drill into general-ledger transactions with advanced filtering and export.' },
+      { name: 'Balance Sheet',
+        desc: 'Balance sheet position reporting across funds.' },
+      { name: 'Google Sheets Export',
+        desc: 'Automated report exports to Google Sheets and Drive with scheduling.' },
+    ],
+  },
+};
 
-  <div class="section-title">Full Platform</div>
-  <div class="platform">
-    <h2>The GovSight Application Suite</h2>
-    <p>The complete platform is a server-hosted application providing authentication, multi-database connectivity, AI assistance, and reporting. It is organized into three modules, available when the platform backend is deployed:</p>
-    <div class="modules">
-      <div class="module">
-        <strong>Navi</strong>
-        <span>Position-based budgeting, budget playground, investment optimization, and payroll integration.</span>
-      </div>
-      <div class="module">
-        <strong>Mantis</strong>
-        <span>AI intelligence hub with natural language analysis, grant discovery, anomaly detection, and compliance checking.</span>
-      </div>
-      <div class="module">
-        <strong>Vatica</strong>
-        <span>Automated reporting, general ledger drill-down, regulatory data, and spreadsheet export.</span>
-      </div>
-    </div>
-  </div>
-</main>
+const app = document.getElementById('app');
 
-<footer>
-  GovSight Financial Intelligence Platform
-</footer>
+function esc(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderHome() {
+  let cards = '';
+  for (const key of Object.keys(MODULES)) {
+    const m = MODULES[key];
+    cards += `
+      <div class="mcard" style="background:${m.color}" onclick="location.hash='#/${key}/0'">
+        <div class="kicker">${esc(m.kicker)}</div>
+        <h2>${esc(m.name)}</h2>
+        <div class="sub">${esc(m.tagline)}</div>
+        <span class="enter">Enter ${esc(m.name)}</span>
+      </div>`;
+  }
+  app.innerHTML = `
+    <div class="home">
+      <h1>Welcome to GovSight Financial Analyzer</h1>
+      <p>Select a module below to access different analytical tools.</p>
+      <div class="cards">${cards}</div>
+    </div>`;
+}
+
+function renderModule(key, tabIndex) {
+  const m = MODULES[key];
+  if (!m) { location.hash = ''; return; }
+  const idx = Math.min(Math.max(tabIndex, 0), m.tabs.length - 1);
+  const tab = m.tabs[idx];
+
+  const tabButtons = m.tabs.map((t, i) =>
+    `<button class="${i === idx ? 'active' : ''}" onclick="location.hash='#/${key}/${i}'">${esc(t.name)}</button>`
+  ).join('');
+
+  let panel;
+  if (tab.src) {
+    panel = `<iframe src="${tab.src}" title="${esc(tab.name)}"></iframe>`;
+  } else {
+    const caps = tab.capabilities
+      ? `<ul>${tab.capabilities.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` : '';
+    panel = `
+      <div class="placeholder">
+        <h2>${esc(tab.name)}</h2>
+        <p>${esc(tab.desc)}</p>
+        ${caps}
+        <div><span class="note">Available when the GovSight platform backend is connected</span></div>
+      </div>`;
+  }
+
+  app.innerHTML = `
+    <div class="module-view">
+      <div class="module-head" style="background:${m.color}">
+        <div class="row">
+          <a class="back" href="#/">&#8592; Dashboard</a>
+          <h1>${esc(m.name)}</h1>
+          <span class="tag">${esc(m.tagline)}</span>
+        </div>
+      </div>
+      <nav class="tabbar"><div class="row">${tabButtons}</div></nav>
+      <div class="panel">${panel}</div>
+    </div>`;
+}
+
+function route() {
+  const parts = location.hash.replace(/^#\/?/, '').split('/');
+  if (parts[0] && MODULES[parts[0]]) {
+    renderModule(parts[0], parseInt(parts[1] || '0', 10) || 0);
+  } else {
+    renderHome();
+  }
+}
+
+window.addEventListener('hashchange', route);
+route();
+</script>
 </body>
 </html>

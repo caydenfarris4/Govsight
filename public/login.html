@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovSight - Sign In</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #12263a 0%, #1d3a56 100%);
+    color: #22303c;
+    padding: 1rem;
+  }
+  .card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 2.5rem 2.25rem;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  }
+  .brand { text-align: center; margin-bottom: 1.75rem; }
+  .brand img { height: 52px; }
+  .brand h1 { font-size: 1.15rem; font-weight: 600; color: #12263a; margin-top: 0.75rem; }
+  .brand p { font-size: 0.85rem; color: #5b6b7a; margin-top: 0.25rem; }
+  label { display: block; font-size: 0.85rem; font-weight: 600; color: #22303c; margin: 1rem 0 0.35rem; }
+  input {
+    width: 100%;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid #cfd8e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+  }
+  input:focus { border-color: #2e6fa3; box-shadow: 0 0 0 3px rgba(46, 111, 163, 0.15); }
+  button {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 0.7rem;
+    background: #1d3a56;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { background: #12263a; }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .error {
+    display: none;
+    margin-top: 1rem;
+    padding: 0.6rem 0.8rem;
+    background: #fdecea;
+    color: #a4271c;
+    border-radius: 8px;
+    font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <img src="assets/govsight_logo.png" alt="GovSight logo">
+    <h1>GovSight Financial Analyzer</h1>
+    <p>Municipal Financial Intelligence Platform</p>
+  </div>
+  <form id="login-form">
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button type="submit" id="submit-btn">Sign In</button>
+    <div class="error" id="error-box"></div>
+  </form>
+</div>
+<script>
+document.getElementById('login-form').addEventListener('submit', async function (e) {
+  e.preventDefault();
+  var btn = document.getElementById('submit-btn');
+  var errorBox = document.getElementById('error-box');
+  btn.disabled = true;
+  errorBox.style.display = 'none';
+  try {
+    var res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value,
+      }),
+    });
+    var data = await res.json();
+    if (data.ok) {
+      window.location.href = '/';
+      return;
+    }
+    errorBox.textContent = data.error || 'Sign in failed. Please try again.';
+    errorBox.style.display = 'block';
+  } catch (err) {
+    errorBox.textContent = 'Could not reach the server. Please try again.';
+    errorBox.style.display = 'block';
+  }
+  btn.disabled = false;
+});
+</script>
+</body>
+</html>
