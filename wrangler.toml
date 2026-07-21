@@ -1,7 +1,9 @@
 name = "govsight"
 compatibility_date = "2026-07-01"
 
-# Cloudflare Pages serves the static front-door and self-contained tools
-# assembled in public/. The full Streamlit platform is containerized
-# separately (see Dockerfile and documentation/DEPLOYMENT.md).
-pages_build_output_dir = "public"
+# Cloudflare Workers serves the static front-door and self-contained tools
+# in public/ as a static-assets deployment (`npx wrangler deploy`).
+# The full Streamlit platform is containerized separately (see Dockerfile
+# and documentation/DEPLOYMENT.md).
+[assets]
+directory = "./public"
