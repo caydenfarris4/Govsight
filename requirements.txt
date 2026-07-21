@@ -1,0 +1,47 @@
+# GovSight Financial Intelligence Platform - consolidated requirements
+# (source of truth: modules/requirements/*.txt)
+
+# Web frameworks (Streamlit UI + FastAPI backends for PBB and agent services)
+streamlit>=1.28.0
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+python-dateutil>=2.8.0
+
+# Database connectivity
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+
+# Visualization
+plotly>=5.15.0
+matplotlib>=3.7.0
+
+# AI and API integration
+openai>=1.0.0
+anthropic>=0.20.0
+requests>=2.31.0
+
+# Document processing
+fpdf2>=2.7.0
+xlsxwriter>=3.1.0
+
+# Security and utilities
+python-dotenv>=1.0.0
+cryptography>=41.0.0
+
+# Machine learning
+scikit-learn>=1.3.0
+
+# Optional database drivers (uncomment if those sources are configured)
+# mysql-connector-python>=8.0.0
+# pymssql>=2.2.0
+
+# Optional Google integration (uncomment when GCP services are enabled)
+# google-cloud-storage>=2.10.0
+# google-cloud-bigquery>=3.11.0
+# google-cloud-secret-manager>=2.16.0
+# gspread>=5.10.0
+# google-auth>=2.22.0

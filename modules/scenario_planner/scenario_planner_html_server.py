@@ -218,7 +218,13 @@ def get_api_base_url() -> str:
     """
     # Check if running in Replit deployment
     import os
-    
+
+    # Explicit override for non-Replit deployments (Docker, Cloud Run, etc.)
+    # where the browser-facing PBB API URL cannot be derived from the host.
+    explicit_url = os.getenv('PBB_API_URL')
+    if explicit_url:
+        return explicit_url.rstrip('/')
+
     # Check for deployment-specific environment variable
     repl_deployment = os.getenv('REPL_DEPLOYMENT')
     repl_slug = os.getenv('REPL_SLUG', 'govsight')

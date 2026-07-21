@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+
+# Local databases and runtime data
+databases/
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets and environment
+.env
+.env.*
+*.pem
+service-account*.json
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# Per-deployment encryption key (auto-generated at runtime)
+configs/security/.encryption_key
+
+# Runtime-generated state
+config/
+rag_indices/

@@ -1023,6 +1023,9 @@ if selected_tab == "Dashboard":
         
         if st.button("Enter Navi", key="navi_card", use_container_width=True, help="Access scenario planning and business intelligence tools"):
             st.session_state.selected_tab = "Navi"
+            # Clear the sidebar radio's widget state so it re-initializes from
+            # selected_tab; otherwise its stale value reverts the navigation
+            st.session_state.pop("main_navigation", None)
             st.rerun()
     
     with col2:
@@ -1041,6 +1044,7 @@ if selected_tab == "Dashboard":
         
         if st.button("Enter Mantis", key="mantis_card_btn", use_container_width=True, help="Access AI assistant and intelligence reporting"):
             st.session_state.selected_tab = "Mantis"
+            st.session_state.pop("main_navigation", None)
             st.rerun()
     
     with col3:
@@ -1059,6 +1063,7 @@ if selected_tab == "Dashboard":
         
         if st.button("Enter Vatica", key="vatica_card", use_container_width=True, help="Access comprehensive financial analysis and insights"):
             st.session_state.selected_tab = "Vatica"
+            st.session_state.pop("main_navigation", None)
             st.rerun()
     
 

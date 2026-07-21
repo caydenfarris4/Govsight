@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovSight Financial Intelligence Platform</title>
+<style>
+  :root {
+    --navy: #12263a;
+    --navy-2: #1d3a56;
+    --accent: #2e6fa3;
+    --accent-light: #dbe9f5;
+    --text: #22303c;
+    --muted: #5b6b7a;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --border: #dde4ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+    color: #fff;
+    padding: 3.5rem 1.5rem 3rem;
+    text-align: center;
+  }
+  header img {
+    height: 64px;
+    margin-bottom: 1.25rem;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 0.6rem 1.1rem;
+  }
+  header h1 { font-size: 2rem; font-weight: 600; letter-spacing: 0.01em; }
+  header p {
+    max-width: 640px;
+    margin: 0.75rem auto 0;
+    color: #c6d4e2;
+    font-size: 1.05rem;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 3rem 1.5rem 4rem; }
+  .section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 1.25rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 3rem;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  a.card { text-decoration: none; color: inherit; }
+  a.card:hover {
+    box-shadow: 0 6px 20px rgba(18, 38, 58, 0.12);
+    transform: translateY(-2px);
+  }
+  .card h2 { font-size: 1.2rem; font-weight: 600; color: var(--navy); margin-bottom: 0.5rem; }
+  .card p { font-size: 0.95rem; color: var(--muted); flex-grow: 1; }
+  .card .cta {
+    margin-top: 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    margin-bottom: 0.75rem;
+    width: fit-content;
+  }
+  .badge.live { background: #e2f2e8; color: #1e6b3c; }
+  .badge.backend { background: #fdeeda; color: #8a5a12; }
+  .platform {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 2rem;
+  }
+  .platform h2 { font-size: 1.25rem; color: var(--navy); margin-bottom: 0.75rem; }
+  .platform p { color: var(--muted); font-size: 0.95rem; margin-bottom: 1rem; }
+  .modules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+  .module {
+    background: var(--accent-light);
+    border-radius: 8px;
+    padding: 1.1rem 1.25rem;
+  }
+  .module strong { display: block; color: var(--navy); margin-bottom: 0.25rem; }
+  .module span { font-size: 0.88rem; color: var(--muted); }
+  footer {
+    text-align: center;
+    padding: 2rem 1rem 2.5rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<header>
+  <img src="assets/govsight_logo.png" alt="GovSight logo">
+  <h1>GovSight Financial Intelligence Platform</h1>
+  <p>Municipal financial analysis, scenario planning, and AI-driven insight for strategic decision-making.</p>
+</header>
+
+<main>
+  <div class="section-title">Interactive Planning Tools</div>
+  <div class="grid">
+    <a class="card" href="scenario-planner.html">
+      <span class="badge live">Available Now</span>
+      <h2>Scenario Planner</h2>
+      <p>Model multi-year funding scenarios with grant pipeline tracking, department reallocation analysis, expense planning with inflation, ROI and cost-benefit analytics, scenario comparison, and Monte Carlo risk simulation. Work is saved in your browser and scenarios can be shared via read-only links.</p>
+      <span class="cta">Open Scenario Planner</span>
+    </a>
+    <a class="card" href="investment-optimizer.html">
+      <span class="badge live">Available Now</span>
+      <h2>Municipal Investment Optimizer</h2>
+      <p>Interactive dashboard for optimizing municipal cash and investment portfolios across Treasuries, money market funds, CDARS/ICS networks, and state LGIPs, with real-time calculators and yield visualizations.</p>
+      <span class="cta">Open Investment Optimizer</span>
+    </a>
+    <a class="card" href="budget-playground.html">
+      <span class="badge backend">Requires API Connection</span>
+      <h2>Budget Playground</h2>
+      <p>Dynamic re-forecasting and scenario modeling across all non-payroll GL accounts: editable budget ledger, supplemental amendment tracking, YTD reforecast engine, and variance summaries. This tool loads live general-ledger data and requires a connection to the Budget Playground API.</p>
+      <span class="cta">Open Budget Playground</span>
+    </a>
+  </div>
+
+  <div class="section-title">Full Platform</div>
+  <div class="platform">
+    <h2>The GovSight Application Suite</h2>
+    <p>The complete platform is a server-hosted application providing authentication, multi-database connectivity, AI assistance, and reporting. It is organized into three modules, available when the platform backend is deployed:</p>
+    <div class="modules">
+      <div class="module">
+        <strong>Navi</strong>
+        <span>Position-based budgeting, budget playground, investment optimization, and payroll integration.</span>
+      </div>
+      <div class="module">
+        <strong>Mantis</strong>
+        <span>AI intelligence hub with natural language analysis, grant discovery, anomaly detection, and compliance checking.</span>
+      </div>
+      <div class="module">
+        <strong>Vatica</strong>
+        <span>Automated reporting, general ledger drill-down, regulatory data, and spreadsheet export.</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  GovSight Financial Intelligence Platform
+</footer>
+</body>
+</html>
