@@ -36,3 +36,6 @@ configs/security/.encryption_key
 # Runtime-generated state
 config/
 rag_indices/
+
+# Wrangler local dev state
+.wrangler/
