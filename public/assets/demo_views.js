@@ -900,6 +900,56 @@
       }).join('');
   };
 
+  // Composite hub: sub-view toggle rendering existing views or iframes.
+  function renderHub(el, subs, storageKey) {
+    let active = null;
+    try { active = sessionStorage.getItem(storageKey); } catch (e) { /* ignore */ }
+    if (!subs.some(function (s) { return s.id === active; })) active = subs[0].id;
+
+    const draw = function () {
+      el.innerHTML =
+        '<div style="display:flex;gap:8px;margin-bottom:14px">' +
+        subs.map(function (s) {
+          const on = s.id === active;
+          return '<button data-sub="' + s.id + '" style="padding:7px 16px;border-radius:99px;' +
+            'font-size:13px;font-weight:600;cursor:pointer;border:1px solid ' +
+            (on ? '#12263a' : '#cfd8e0') + ';background:' + (on ? '#12263a' : '#fff') +
+            ';color:' + (on ? '#fff' : '#5b6b7a') + '">' + esc(s.label) + '</button>';
+        }).join('') + '</div>' +
+        '<div id="hub-body"></div>';
+      el.querySelectorAll('[data-sub]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          active = btn.getAttribute('data-sub');
+          try { sessionStorage.setItem(storageKey, active); } catch (e) { /* ignore */ }
+          draw();
+        });
+      });
+      const host = document.getElementById('hub-body');
+      const sub = subs.find(function (s) { return s.id === active; });
+      if (sub.iframe) {
+        host.innerHTML = '<iframe src="' + sub.iframe + '" title="' + esc(sub.label) +
+          '" style="width:100%;height:1150px;border:none;background:#fff;border-radius:10px"></iframe>';
+      } else {
+        sub.render(host);
+      }
+    };
+    draw();
+  }
+
+  views.budgetHub = function (el) {
+    renderHub(el, [
+      { id: 'playground', label: 'Ledger & Scenarios', iframe: 'budget-playground.html' },
+      { id: 'forecast', label: 'Revenue Forecast', render: function (host) { views.predictive(host); } },
+    ], 'gs_hub_budget');
+  };
+
+  views.treasuryHub = function (el) {
+    renderHub(el, [
+      { id: 'cashflow', label: 'Cash Flow', render: function (host) { views.cashflow(host); } },
+      { id: 'optimizer', label: 'Investment Optimizer', iframe: 'investment-optimizer.html' },
+    ], 'gs_hub_treasury');
+  };
+
   window.DEMO_VIEWS = {
     load: loadData,
     render: function (name, container) {

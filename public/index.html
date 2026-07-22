@@ -156,16 +156,22 @@ const MODULES = {
     kicker: 'GovSight Navi',
     tagline: 'Navigation & Planning Hub',
     color: '#2450b8',
+    // Focused four-tab layout. Scenario Planner stays first and prominent
+    // (the market differentiator vs. budget-book competitors). Market
+    // Context renders as a subdued secondary link. Phase-2 tabs are
+    // commented out, not deleted - restore any line to bring it back.
+    // Their capabilities remain reachable: comparison and Monte Carlo live
+    // inside the Scenario Planner; forecasting lives in Budget > Revenue
+    // Forecast and Treasury > Cash Flow.
     tabs: [
       { name: 'Scenario Planner', src: 'scenario-planner.html' },
-      { name: 'Economic Indicators', view: 'econ' },
-      { name: 'Investment Optimizer', src: 'investment-optimizer.html' },
-      { name: 'Cash Flow', view: 'cashflow' },
-      { name: 'Report Comparison', view: 'reportComparison' },
-      { name: 'Risk Analysis', view: 'risk' },
-      { name: 'Position-Based Budgeting', view: 'pbb' },
-      { name: 'Budget Playground', src: 'budget-playground.html' },
-      { name: 'Predictive Analytics', view: 'predictive' },
+      { name: 'Budget', view: 'budgetHub' },
+      { name: 'Personnel', view: 'pbb' },
+      { name: 'Treasury', view: 'treasuryHub' },
+      { name: 'Market Context', view: 'econ', secondary: true },
+      // { name: 'Report Comparison', view: 'reportComparison' },
+      // { name: 'Risk Analysis', view: 'risk' },
+      // { name: 'Predictive Analytics', view: 'predictive' },
     ],
   },
   mantis: {
@@ -236,9 +242,11 @@ function renderModule(key, tabIndex) {
   const idx = Math.min(Math.max(tabIndex, 0), m.tabs.length - 1);
   const tab = m.tabs[idx];
 
-  const tabButtons = m.tabs.map((t, i) =>
-    `<button class="${i === idx ? 'active' : ''}" onclick="location.hash='#/${key}/${i}'">${esc(t.name)}</button>`
-  ).join('');
+  const tabButtons = m.tabs.map((t, i) => {
+    const cls = (i === idx ? 'active' : '') + (t.secondary ? ' secondary' : '');
+    const style = t.secondary ? 'margin-left:auto;font-size:0.78rem;opacity:0.75;' : '';
+    return `<button class="${cls}" style="${style}" onclick="location.hash='#/${key}/${i}'">${esc(t.name)}</button>`;
+  }).join('');
 
   let panel;
   if (tab.src) {

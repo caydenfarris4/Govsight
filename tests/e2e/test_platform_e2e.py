@@ -148,7 +148,8 @@ class TestNaviCashFlow:
         login(page)
         page.get_by_role("button", name="Enter Navi").click()
         assert wait_for_text(page, "Navigation & Planning Hub"), "Navi did not load"
-        page.get_by_role("tab", name="Cash Flow").first.click()
+        # Cash Flow is the default sub-tab inside the consolidated Treasury tab
+        page.get_by_role("tab", name="Treasury").first.click()
         assert wait_for_text(page, "Lowest projected balance", timeout_s=60)
         body = page.inner_text("body")
         # Seasonal mode proves the demo monthly history is linked

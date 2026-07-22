@@ -55,137 +55,96 @@ def render_navi_module(org: str = "cityA", org_display_name: str = "City A"):
     </div>
     """, unsafe_allow_html=True)
     
-    # Create tabs for different functions within Navi module
-    tab1, tab2, tab3, tab_cash, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-        "Scenario Planner",
-        "Economic Indicators",
-        "Investment Optimizer",
-        "Cash Flow",
-        "Report Comparison",
-        "Risk Analysis",
-        "Position-Based Budgeting",
-        "Budget Playground",
-        "Predictive Analytics"
-    ])
+    # ── Navi tab structure ────────────────────────────────────────────────
+    # Focused four-tab layout: Scenario Planner stays first and prominent
+    # (the market differentiator), then the three core money workflows.
+    # Phase-2 tabs are hidden, not removed - flip SHOW_PHASE2_TABS to True
+    # to restore them. Their capabilities remain reachable today:
+    #   - Report Comparison and Risk Analysis live inside the Scenario
+    #     Planner (Scenario Comparison and Monte Carlo tabs)
+    #   - Predictive Analytics forecasting is covered by Budget Playground
+    #     reforecasting and the Treasury cash flow projection
+    #   - Economic Indicators & Demographics returns as its own tab when
+    #     re-enabled
+    SHOW_PHASE2_TABS = False
 
-    with tab_cash:
-        try:
-            from modules.treasury.cash_flow_ui import render_cash_flow_forecast
-            render_cash_flow_forecast(org, org_display_name)
-        except Exception as cash_exc:
-            st.error(f"Cash Flow Forecast unavailable: {cash_exc}")
-    
-    with tab1:
+    tab_labels = ["Scenario Planner", "Budget", "Personnel", "Treasury"]
+    if SHOW_PHASE2_TABS:
+        tab_labels += ["Economic Indicators", "Report Comparison",
+                       "Risk Analysis", "Predictive Analytics"]
+    tabs = st.tabs(tab_labels)
+
+    with tabs[0]:
         render_scenario_planner_html()
-    
-    with tab2:
-        st.markdown("### Economic Indicators & Demographics Dashboard")
-        st.markdown("Real-time economic data from FRED and BEA, plus demographic insights for informed budget planning")
-        
-        # Create sub-tabs for Economic Indicators and Demographics
-        econ_tab1, econ_tab2 = st.tabs(["Economic Indicators", "Demographics & Climate"])
-        
-        with econ_tab1:
-            try:
-                # Import ML integration for economic indicators
-                from modules.bi_sandbox.ml_integration import render_economic_indicators_tab
-                render_economic_indicators_tab()
-            except ImportError as e:
-                st.error(f"Economic indicators module not available: {e}")
-                st.info("External data connectors are being initialized...")
-        
-        with econ_tab2:
-            try:
-                # Import demographics integration
-                from modules.navi.demographics_integration import DemographicsIntegration
-                demo_engine = DemographicsIntegration()
-                demo_engine.render_demographics_dashboard()
-            except ImportError as e:
-                st.error(f"Demographics module not available: {e}")
-                st.info("Demographics integration is being initialized...")
-            except Exception as e:
-                st.error(f"Error loading demographics: {e}")
-                st.info("Demographics includes population, zoning, and climate data analysis")
-    
-    with tab3:
-        st.markdown("### Municipal Investment Optimizer")
-        st.markdown("Optimize cash reserves through safe, accredited investment opportunities")
-        
-        try:
-            # Use HTML/TypeScript version for enhanced functionality
-            from .investment_optimizer_html_server import render_investment_optimizer_html
-            render_investment_optimizer_html()
-        except ImportError as e:
-            st.error(f"Investment Optimizer module not available: {e}")
-            st.info("Treasury and investment data APIs are being initialized...")
-        except Exception as e:
-            st.error(f"Error loading Investment Optimizer: {e}")
-            st.info("Investment optimizer provides Treasury rates, CDARS/ICS options, and yield comparisons")
-    
-    with tab4:
-        st.markdown("### Scenario Report Comparison")
-        st.markdown("Compare multiple scenarios and generate comprehensive comparison reports")
-        
-        try:
-            from .report_comparison import render_report_comparison_interface
-            render_report_comparison_interface()
-        except ImportError as e:
-            st.error(f"Report comparison module not available: {e}")
-            st.info("Please ensure all dependencies are installed")
-    
-    with tab5:
-        st.markdown("### Advanced Risk Analysis")
-        st.markdown("Monte Carlo simulation for comprehensive project risk assessment")
-        render_monte_carlo_simulator()
-    
-    with tab6:
+
+    with tabs[1]:
+        render_budget_playground_tab()
+
+    with tabs[2]:
         st.markdown("### Position-Based Budgeting Workbook")
-        st.markdown("Multi-sheet budgeting system with GL mapping, split allocations, and ERP export")
-        
+        st.markdown("Multi-sheet personnel budgeting with GL mapping, split allocations, and ERP export")
+
         # The enhanced multi-sheet PBB is the supported implementation; the
         # legacy spreadsheet (pbb_spreadsheet.py) is dormant and no longer
         # reachable from the UI
-        st.markdown("*Enterprise-grade PBB with multi-year planning and payroll integration*")
-
         try:
             render_enhanced_pbb()
         except Exception as e:
             st.error(f"Error loading Position-Based Budgeting: {str(e)}")
             st.info("Please ensure payroll database connection is configured in Admin Panel.")
-            st.markdown("""
-            **Enhanced PBB Features:**
-            - Multi-sheet workbook (Production + Sandbox sheets)
-            - GL account mapping for ERP integration
-            - Split allocations across funds/cost centers
-            - Multi-year budgeting (FY 2024-2026)
-            - Vacancy management and savings tracking
-            - Grant-funded position tracking with expiration alerts
-            - Step/grade progression with auto-calculation
-            - Benefit package configuration
-            - Smart payroll sync with manual override
-            - CSV export by GL account for ERP import
-            - Quick actions for COLA, merit increases, bulk edits
-            - Position history audit trail
-            """)
-    
-    with tab7:
-        render_budget_playground_tab()
 
-    with tab8:
-        st.markdown("### Predictive Analytics Engine")
-        st.markdown("Advanced ML-powered forecasting and budget optimization")
-        
-        try:
-            # Import predictive analytics from admin module
-            import sys
-            import os
-            sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-            from modules.admin.predictive_analytics_engine import get_predictive_analytics_engine
-            analytics_engine = get_predictive_analytics_engine()
-            analytics_engine.render_predictive_analytics_dashboard()
-        except ImportError:
-            st.error("Predictive Analytics Engine not available - module loading")
-            st.info("Advanced ML analytics requires all dependencies to be loaded")
-        except Exception as e:
-            st.error(f"Error loading Predictive Analytics Engine: {e}")
-            st.info("Predictive analytics includes forecasting, budget optimization, and ML-driven insights")
+    with tabs[3]:
+        # Treasury: one workflow in two steps - how much cash can be
+        # invested and for how long (Cash Flow), then in what instruments
+        # (Investment Optimizer)
+        treasury_flow, treasury_invest = st.tabs(["Cash Flow", "Investment Optimizer"])
+        with treasury_flow:
+            try:
+                from modules.treasury.cash_flow_ui import render_cash_flow_forecast
+                render_cash_flow_forecast(org, org_display_name)
+            except Exception as cash_exc:
+                st.error(f"Cash Flow Forecast unavailable: {cash_exc}")
+        with treasury_invest:
+            st.markdown("### Municipal Investment Optimizer")
+            try:
+                from .investment_optimizer_html_server import render_investment_optimizer_html
+                render_investment_optimizer_html()
+            except Exception as e:
+                st.error(f"Error loading Investment Optimizer: {e}")
+
+    if SHOW_PHASE2_TABS:
+        with tabs[4]:
+            st.markdown("### Economic Indicators & Demographics Dashboard")
+            econ_tab1, econ_tab2 = st.tabs(["Economic Indicators", "Demographics & Climate"])
+            with econ_tab1:
+                try:
+                    from modules.bi_sandbox.ml_integration import render_economic_indicators_tab
+                    render_economic_indicators_tab()
+                except ImportError as e:
+                    st.error(f"Economic indicators module not available: {e}")
+            with econ_tab2:
+                try:
+                    from modules.navi.demographics_integration import DemographicsIntegration
+                    DemographicsIntegration().render_demographics_dashboard()
+                except Exception as e:
+                    st.error(f"Error loading demographics: {e}")
+
+        with tabs[5]:
+            st.markdown("### Scenario Report Comparison")
+            try:
+                from .report_comparison import render_report_comparison_interface
+                render_report_comparison_interface()
+            except ImportError as e:
+                st.error(f"Report comparison module not available: {e}")
+
+        with tabs[6]:
+            st.markdown("### Advanced Risk Analysis")
+            render_monte_carlo_simulator()
+
+        with tabs[7]:
+            st.markdown("### Predictive Analytics Engine")
+            try:
+                from modules.admin.predictive_analytics_engine import get_predictive_analytics_engine
+                get_predictive_analytics_engine().render_predictive_analytics_dashboard()
+            except Exception as e:
+                st.error(f"Error loading Predictive Analytics Engine: {e}")
