@@ -3,11 +3,36 @@ Investment Opportunities Aggregator
 Combines data from all financial data sources to provide comprehensive investment options
 """
 
+import json
+import os
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, date
 import pandas as pd
 from .treasury_api import get_treasury_api
 from .money_market_api import get_money_market_api
+
+# Finance staff maintain current LGIP/CDARS/ICS/MMF rates here (these products
+# have no public APIs). Each entry carries as_of so staleness is visible.
+MANUAL_RATES_PATH = os.path.join("configs", "application", "investment_rates.json")
+STALE_AFTER_DAYS_MANUAL = 35   # LGIP rates publish monthly
+STALE_AFTER_DAYS_LIVE = 7
+
+
+def _load_manual_rates() -> Dict[str, Any]:
+    try:
+        with open(MANUAL_RATES_PATH, "r") as fh:
+            return json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _days_old(as_of: Optional[str]) -> Optional[int]:
+    if not as_of:
+        return None
+    try:
+        return (date.today() - datetime.strptime(as_of[:10], "%Y-%m-%d").date()).days
+    except ValueError:
+        return None
 
 class InvestmentAggregator:
     """
@@ -57,13 +82,22 @@ class InvestmentAggregator:
         # Add CDARS/ICS opportunities (manual - always add warning)
         cdars_opps = self._get_cdars_ics_opportunities()
         opportunities.extend(cdars_opps)
-        warnings.append("CDARS/ICS rates are illustrative examples. Contact your bank partner for current rates and availability.")
+        if any(not o.get("as_of") for o in cdars_opps):
+            warnings.append("Some CDARS/ICS rates are template values that staff have not entered yet - update them in configs/application/investment_rates.json.")
         
         # Add LGIP opportunities (manual - always add warning)
         lgip_opps = self._get_lgip_opportunities()
         opportunities.extend(lgip_opps)
-        warnings.append("State LGIP rates are illustrative examples. Contact your state treasury for current rates.")
+        if any(not o.get("as_of") for o in lgip_opps):
+            warnings.append("Some LGIP rates are template values that staff have not entered yet - update them in configs/application/investment_rates.json.")
         
+        # Stamp freshness on every opportunity so the UI can badge staleness
+        for opp in opportunities:
+            age = _days_old(opp.get('as_of'))
+            limit = STALE_AFTER_DAYS_LIVE if opp.get('is_live_data') else STALE_AFTER_DAYS_MANUAL
+            opp['age_days'] = age
+            opp['stale'] = age is None or age > limit
+
         # Sort by rate (highest first)
         opportunities.sort(key=lambda x: x.get('rate', 0), reverse=True)
         
@@ -81,127 +115,57 @@ class InvestmentAggregator:
             "errors": errors,
             "total_count": len(opportunities),
             "live_data_count": sum(1 for opp in opportunities if opp.get('is_live_data', False)),
-            "estimated_data_count": sum(1 for opp in opportunities if not opp.get('is_live_data', True))
+            "estimated_data_count": sum(1 for opp in opportunities if not opp.get('is_live_data', True)),
+            "stale_count": sum(1 for opp in opportunities if opp.get('stale')),
+            "generated_at": datetime.now().isoformat()
         }
     
     def _get_cdars_ics_opportunities(self) -> List[Dict[str, Any]]:
+        """CDARS/ICS opportunities from the staff-maintained rate config.
+
+        These products have no public rate API; a treasurer gets rates from
+        their bank partner. Staff record them (with the date) in
+        configs/application/investment_rates.json and the UI shows exactly
+        how old each figure is.
         """
-        Get CDARS/ICS investment opportunities
-        Note: Rates are illustrative - would come from bank partner API in production
-        """
-        return [
-            {
-                "name": "CDARS CD - 3 Month",
-                "provider": "IntraFi Network (CDARS)",
-                "type": "Certificate of Deposit",
-                "rate": 5.25,  # Example rate
-                "term_days": 90,
-                "term_display": "3 months",
-                "minimum": 250000,
-                "safety_rating": "FDIC Insured",
-                "fdic_insured": True,
-                "government_backed": False,
-                "liquidity": "Low (penalty for early withdrawal)",
-                "source": "⚠️ ESTIMATED - CDARS Network - Contact your bank for current rates",
-                "last_updated": datetime.now().isoformat(),
-                "notes": "Multi-million FDIC insurance through network of 3,000+ banks",
-                "is_live_data": False
-            },
-            {
-                "name": "CDARS CD - 6 Month",
-                "provider": "IntraFi Network (CDARS)",
-                "type": "Certificate of Deposit",
-                "rate": 5.35,  # Example rate
-                "term_days": 182,
-                "term_display": "6 months",
-                "minimum": 250000,
-                "safety_rating": "FDIC Insured",
-                "fdic_insured": True,
-                "government_backed": False,
-                "liquidity": "Low (penalty for early withdrawal)",
-                "source": "⚠️ ESTIMATED - CDARS Network - Contact your bank for current rates",
-                "last_updated": datetime.now().isoformat(),
-                "notes": "Multi-million FDIC insurance through network of 3,000+ banks",
-                "is_live_data": False
-            },
-            {
-                "name": "CDARS CD - 12 Month",
-                "provider": "IntraFi Network (CDARS)",
-                "type": "Certificate of Deposit",
-                "rate": 5.45,  # Example rate
-                "term_days": 365,
-                "term_display": "12 months",
-                "minimum": 250000,
-                "safety_rating": "FDIC Insured",
-                "fdic_insured": True,
-                "government_backed": False,
-                "liquidity": "Low (penalty for early withdrawal)",
-                "source": "⚠️ ESTIMATED - CDARS Network - Contact your bank for current rates",
-                "last_updated": datetime.now().isoformat(),
-                "notes": "Multi-million FDIC insurance through network of 3,000+ banks",
-                "is_live_data": False
-            },
-            {
-                "name": "ICS Money Market",
-                "provider": "IntraFi Network (ICS)",
-                "type": "Money Market Account",
-                "rate": 5.05,  # Example rate
-                "term_days": 1,
-                "term_display": "Daily liquidity",
-                "minimum": 250000,
-                "safety_rating": "FDIC Insured",
-                "fdic_insured": True,
-                "government_backed": False,
-                "liquidity": "High (daily access)",
-                "source": "⚠️ ESTIMATED - ICS Network - Contact your bank for current rates",
-                "last_updated": datetime.now().isoformat(),
-                "notes": "Multi-million FDIC insurance with daily liquidity",
-                "is_live_data": False
-            }
-        ]
-    
+        return self._opportunities_from_config("cdars_ics")
+
     def _get_lgip_opportunities(self) -> List[Dict[str, Any]]:
-        """
-        Get Local Government Investment Pool opportunities
-        Note: Rates are illustrative - would vary by state
-        """
-        return [
-            {
-                "name": "State LGIP - Liquid Pool",
-                "provider": "State Investment Pool",
-                "type": "Local Government Investment Pool",
-                "rate": 5.15,  # Example rate
-                "term_days": 1,
-                "term_display": "Daily liquidity",
-                "minimum": 100000,
-                "safety_rating": "AAA/AAAm",
-                "fdic_insured": False,
-                "government_backed": False,
-                "liquidity": "Daily",
-                "source": "⚠️ ESTIMATED - State Treasury - Contact for current rates",
+        """State LGIP opportunities from the staff-maintained rate config."""
+        return self._opportunities_from_config("lgip")
+
+    def _opportunities_from_config(self, section: str) -> List[Dict[str, Any]]:
+        config = _load_manual_rates()
+        entries = config.get(section, [])
+        opportunities = []
+        for entry in entries:
+            as_of = entry.get("as_of")
+            entered_by = entry.get("entered_by", "")
+            if as_of:
+                source = f"Entered by staff {as_of}" + (f" ({entered_by})" if entered_by else "")
+            else:
+                source = "TEMPLATE VALUE - not yet entered by staff; do not rely on this rate"
+            opportunities.append({
+                "name": entry.get("name", "Unnamed"),
+                "provider": entry.get("provider", ""),
+                "type": entry.get("type", ""),
+                "rate": float(entry.get("rate", 0)),
+                "term_days": int(entry.get("term_days", 1)),
+                "term_display": entry.get("term_display", ""),
+                "minimum": entry.get("minimum", 0),
+                "safety_rating": entry.get("safety_rating", ""),
+                "fdic_insured": bool(entry.get("fdic_insured", False)),
+                "government_backed": bool(entry.get("government_backed", False)),
+                "liquidity": entry.get("liquidity", ""),
+                "source": source,
+                "as_of": as_of,
                 "last_updated": datetime.now().isoformat(),
-                "notes": "State-regulated investment pool for local governments",
-                "is_live_data": False
-            },
-            {
-                "name": "State LGIP - Term Pool",
-                "provider": "State Investment Pool",
-                "type": "Local Government Investment Pool",
-                "rate": 5.30,  # Example rate
-                "term_days": 180,
-                "term_display": "6 months",
-                "minimum": 250000,
-                "safety_rating": "AAA",
-                "fdic_insured": False,
-                "government_backed": False,
-                "liquidity": "Low (term commitment)",
-                "source": "⚠️ ESTIMATED - State Treasury - Contact for current rates",
-                "last_updated": datetime.now().isoformat(),
-                "notes": "Higher rates for term commitment",
-                "is_live_data": False
-            }
-        ]
-    
+                "notes": entry.get("notes", ""),
+                "is_live_data": False,
+                "is_manual_entry": True,
+            })
+        return opportunities
+
     def calculate_investment_return(
         self, 
         opportunity: Dict[str, Any], 

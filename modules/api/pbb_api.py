@@ -1940,6 +1940,65 @@ async def bp_apply_supplementals(scenario_id: str):
 
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Investment rates and portfolio tracking
+# ─────────────────────────────────────────────────────────────────────────────
+
+class HoldingRequest(BaseModel):
+    instrument_type: str
+    description: str
+    principal: float
+    rate: float
+    purchase_date: str
+    maturity_date: Optional[str] = None
+    fund: Optional[str] = ""
+    notes: Optional[str] = ""
+
+
+@app.get("/api/investment/rates")
+def get_investment_rates():
+    """Aggregated investment opportunities with per-rate freshness flags."""
+    try:
+        from modules.financial_data.investment_aggregator import get_investment_aggregator
+        return get_investment_aggregator().get_all_opportunities()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Rate aggregation error: {e}")
+
+
+@app.get("/api/portfolio")
+def list_portfolio(include_inactive: bool = False):
+    from modules.financial_data.portfolio_manager import get_portfolio_manager
+    return {"holdings": get_portfolio_manager().list_holdings(include_inactive)}
+
+
+@app.post("/api/portfolio")
+def add_portfolio_holding(holding: HoldingRequest):
+    from modules.financial_data.portfolio_manager import get_portfolio_manager
+    holding_id = get_portfolio_manager().add_holding(holding.dict())
+    return {"id": holding_id}
+
+
+@app.put("/api/portfolio/{holding_id}")
+def update_portfolio_holding(holding_id: int, data: Dict[str, Any]):
+    from modules.financial_data.portfolio_manager import get_portfolio_manager
+    get_portfolio_manager().update_holding(holding_id, data)
+    return {"ok": True}
+
+
+@app.delete("/api/portfolio/{holding_id}")
+def delete_portfolio_holding(holding_id: int):
+    from modules.financial_data.portfolio_manager import get_portfolio_manager
+    get_portfolio_manager().delete_holding(holding_id)
+    return {"ok": True}
+
+
+@app.get("/api/portfolio/analytics")
+def portfolio_analytics(idle_cash: float = 0.0, benchmark_rate: Optional[float] = None):
+    from modules.financial_data.portfolio_manager import get_portfolio_manager
+    return get_portfolio_manager().analytics(idle_cash=idle_cash,
+                                             benchmark_rate=benchmark_rate)
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

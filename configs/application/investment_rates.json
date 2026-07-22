@@ -1,0 +1,87 @@
+{
+  "_instructions": "Staff-maintained rates for products without public APIs. When you confirm a rate with your bank partner or state treasury, update 'rate', set 'as_of' to that date (YYYY-MM-DD), and put your name in 'entered_by'. Entries with as_of=null are templates and are flagged as unreliable in the UI.",
+  "cdars_ics": [
+    {
+      "name": "CDARS CD - 3 Month",
+      "provider": "IntraFi Network (CDARS)",
+      "type": "Certificate of Deposit",
+      "rate": 4.0,
+      "term_days": 90,
+      "term_display": "3 months",
+      "minimum": 250000,
+      "safety_rating": "FDIC Insured",
+      "fdic_insured": true,
+      "government_backed": false,
+      "liquidity": "Low (penalty for early withdrawal)",
+      "notes": "Multi-million FDIC insurance through network of 3,000+ banks",
+      "as_of": null,
+      "entered_by": ""
+    },
+    {
+      "name": "CDARS CD - 6 Month",
+      "provider": "IntraFi Network (CDARS)",
+      "type": "Certificate of Deposit",
+      "rate": 4.05,
+      "term_days": 182,
+      "term_display": "6 months",
+      "minimum": 250000,
+      "safety_rating": "FDIC Insured",
+      "fdic_insured": true,
+      "government_backed": false,
+      "liquidity": "Low (penalty for early withdrawal)",
+      "notes": "Multi-million FDIC insurance through network of 3,000+ banks",
+      "as_of": null,
+      "entered_by": ""
+    },
+    {
+      "name": "CDARS CD - 12 Month",
+      "provider": "IntraFi Network (CDARS)",
+      "type": "Certificate of Deposit",
+      "rate": 4.15,
+      "term_days": 365,
+      "term_display": "12 months",
+      "minimum": 250000,
+      "safety_rating": "FDIC Insured",
+      "fdic_insured": true,
+      "government_backed": false,
+      "liquidity": "Low (penalty for early withdrawal)",
+      "notes": "Multi-million FDIC insurance through network of 3,000+ banks",
+      "as_of": null,
+      "entered_by": ""
+    },
+    {
+      "name": "ICS Money Market",
+      "provider": "IntraFi Network (ICS)",
+      "type": "Money Market Account",
+      "rate": 4.0,
+      "term_days": 1,
+      "term_display": "Daily liquidity",
+      "minimum": 250000,
+      "safety_rating": "FDIC Insured",
+      "fdic_insured": true,
+      "government_backed": false,
+      "liquidity": "High (daily access)",
+      "notes": "Multi-million FDIC insurance with daily liquidity",
+      "as_of": null,
+      "entered_by": ""
+    }
+  ],
+  "lgip": [
+    {
+      "name": "State LGIP - Liquid Pool (Utah PTIF)",
+      "provider": "Utah Public Treasurers' Investment Fund",
+      "type": "Local Government Investment Pool",
+      "rate": 5.0,
+      "term_days": 1,
+      "term_display": "Daily liquidity",
+      "minimum": 0,
+      "safety_rating": "State-regulated",
+      "fdic_insured": false,
+      "government_backed": false,
+      "liquidity": "Daily",
+      "notes": "PTIF publishes its rate monthly at treasurer.utah.gov - update this entry when it posts",
+      "as_of": null,
+      "entered_by": ""
+    }
+  ]
+}

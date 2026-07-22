@@ -10,7 +10,7 @@ import requests
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import pandas as pd
-from functools import lru_cache
+from modules.financial_data.ttl_cache import ttl_cache
 
 class TreasuryAPI:
     """
@@ -27,7 +27,7 @@ class TreasuryAPI:
             'Accept': 'application/json'
         })
     
-    @lru_cache(maxsize=10)
+    @ttl_cache(ttl_seconds=3600)
     def get_treasury_rates(self, days_back: int = 30) -> pd.DataFrame:
         """
         Get recent Treasury Bill rates (4-week, 8-week, 13-week, 26-week, 52-week)
@@ -68,7 +68,7 @@ class TreasuryAPI:
             print(f"Error fetching Treasury rates: {e}")
             return pd.DataFrame()
     
-    @lru_cache(maxsize=5)
+    @ttl_cache(ttl_seconds=3600)
     def get_latest_treasury_rates(self) -> Dict[str, float]:
         """
         Get most recent Treasury Bill rates as a dictionary
@@ -93,7 +93,7 @@ class TreasuryAPI:
         
         return rates
     
-    @lru_cache(maxsize=10)
+    @ttl_cache(ttl_seconds=3600)
     def get_treasury_yield_curve(self, days_back: int = 7) -> pd.DataFrame:
         """
         Get Treasury Constant Maturity Rates (Yield Curve)
@@ -133,6 +133,52 @@ class TreasuryAPI:
             print(f"Error fetching yield curve: {e}")
             return pd.DataFrame()
     
+    @ttl_cache(ttl_seconds=3600)
+    def get_auction_bill_rates(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Latest T-Bill auction results from TreasuryDirect (keyless, official).
+
+        Unlike the avg_interest_rates series (average rate on ALL outstanding
+        federal debt), auction results are the yields a purchaser actually
+        locks in, which is what a municipal treasurer compares against.
+
+        Returns:
+            Dict keyed by term ("4-Week", "13-Week", ...) with the most
+            recent auction's investment rate (coupon-equivalent yield) and
+            auction date.
+        """
+        url = "https://www.treasurydirect.gov/TA_WS/securities/auctioned"
+        try:
+            resp = self.session.get(
+                url, params={"type": "Bill", "days": 60, "format": "json"},
+                timeout=10)
+            resp.raise_for_status()
+            securities = resp.json()
+        except Exception as e:
+            print(f"Error fetching TreasuryDirect auction rates: {e}")
+            return {}
+
+        latest: Dict[str, Dict[str, Any]] = {}
+        for sec in securities if isinstance(securities, list) else []:
+            term = sec.get("securityTerm", "")
+            rate_raw = sec.get("highInvestmentRate") or sec.get("averageMedianInvestmentRate")
+            auction_date = (sec.get("auctionDate") or "")[:10]
+            if not term or not rate_raw:
+                continue
+            try:
+                rate = float(rate_raw)
+            except (TypeError, ValueError):
+                continue
+            existing = latest.get(term)
+            if existing is None or auction_date > existing["auction_date"]:
+                latest[term] = {
+                    "rate": rate,
+                    "auction_date": auction_date,
+                    "cusip": sec.get("cusip", ""),
+                    "issue_date": (sec.get("issueDate") or "")[:10],
+                }
+        return latest
+
     def get_investment_opportunities(self) -> Dict[str, Any]:
         """
         Get current Treasury investment opportunities formatted for dashboard
@@ -140,58 +186,53 @@ class TreasuryAPI:
         Returns:
             Dict with opportunities list and status information
         """
-        rates = self.get_latest_treasury_rates()
-        
-        opportunities = []
-        status = "success"
-        message = None
-        
-        if not rates:
-            status = "api_error"
-            message = "Unable to fetch live Treasury rates from US Treasury API. Please try again later."
-            return {
-                "status": status,
-                "message": message,
-                "opportunities": opportunities,
-                "data_source": "US Treasury Fiscal Data API",
-                "is_live": False
-            }
-        
-        # Map Treasury securities to investment opportunities
-        security_mapping = {
-            "Treasury Bills - 4 Week": {"term": "4 weeks", "term_days": 28, "type": "T-Bill"},
-            "Treasury Bills - 8 Week": {"term": "8 weeks", "term_days": 56, "type": "T-Bill"},
-            "Treasury Bills - 13 Week": {"term": "13 weeks", "term_days": 91, "type": "T-Bill"},
-            "Treasury Bills - 26 Week": {"term": "26 weeks", "term_days": 182, "type": "T-Bill"},
-            "Treasury Bills - 52 Week": {"term": "52 weeks", "term_days": 365, "type": "T-Bill"},
+        term_days_map = {
+            "4-Week": 28, "8-Week": 56, "13-Week": 91,
+            "17-Week": 119, "26-Week": 182, "52-Week": 364,
         }
-        
-        for security, rate in rates.items():
-            if security in security_mapping:
-                info = security_mapping[security]
-                opportunities.append({
-                    "name": f"US Treasury {info['type']} - {info['term']}",
-                    "provider": "US Treasury",
-                    "type": "Government Security",
-                    "rate": rate,
-                    "term_days": info['term_days'],
-                    "term_display": info['term'],
-                    "minimum": 100,  # Treasury bills start at $100
-                    "safety_rating": "AAA",
-                    "fdic_insured": False,
-                    "government_backed": True,
-                    "liquidity": "High",
-                    "source": "US Treasury Fiscal Data API",
-                    "last_updated": datetime.now().isoformat(),
-                    "is_live_data": True
-                })
-        
+
+        opportunities = []
+
+        # Primary source: actual auction results (purchasable yields)
+        auction_rates = self.get_auction_bill_rates()
+        for term, info in sorted(auction_rates.items(),
+                                 key=lambda kv: term_days_map.get(kv[0], 999)):
+            if term not in term_days_map:
+                continue
+            opportunities.append({
+                "name": f"US Treasury T-Bill - {term.replace('-', ' ').lower()}",
+                "provider": "US Treasury",
+                "type": "Government Security",
+                "rate": info["rate"],
+                "term_days": term_days_map[term],
+                "term_display": term.replace("-", " ").lower(),
+                "minimum": 100,
+                "safety_rating": "AAA",
+                "fdic_insured": False,
+                "government_backed": True,
+                "liquidity": "High",
+                "source": "TreasuryDirect auction results",
+                "as_of": info["auction_date"],
+                "last_updated": datetime.now().isoformat(),
+                "is_live_data": True
+            })
+
+        if opportunities:
+            return {
+                "status": "success",
+                "message": None,
+                "opportunities": opportunities,
+                "data_source": "TreasuryDirect auction results",
+                "is_live": True
+            }
+
+        # No fabricated fallback: report the failure honestly
         return {
-            "status": status,
-            "message": message,
-            "opportunities": opportunities,
-            "data_source": "US Treasury Fiscal Data API",
-            "is_live": True
+            "status": "api_error",
+            "message": "Unable to fetch live Treasury auction rates. No estimated rates are substituted.",
+            "opportunities": [],
+            "data_source": "TreasuryDirect",
+            "is_live": False
         }
     
     def calculate_treasury_return(self, principal: float, rate: float, days: int) -> Dict[str, float]:
