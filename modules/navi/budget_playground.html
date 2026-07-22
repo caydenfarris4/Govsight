@@ -125,6 +125,269 @@ tr.subtotal-row td{background:#fafafa;font-weight:700;border-top:2px solid #e0e0
 </head>
 <body>
 <div id="root"></div>
+<script>
+// ── Local fallback API ──────────────────────────────────────────────────────
+// When the Budget Playground backend is unreachable (static hosting), the
+// full app runs against the bundled demo ledger with localStorage
+// persistence. The real API is always preferred when it responds.
+(function () {
+  'use strict';
+  const LS_KEY = 'gs_bp_local_v1';
+  let demoAccounts = null;
+  let demoMonthly = null;
+  let localMode = false;
+
+  function uuid() {
+    return 'L-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
+  }
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY)) || { scenarios: {}, supplementals: [] }; }
+    catch (e) { return { scenarios: {}, supplementals: [] }; }
+  }
+  function saveStore(s) { localStorage.setItem(LS_KEY, JSON.stringify(s)); }
+
+  function ensureDemoData() {
+    if (demoAccounts) return Promise.resolve();
+    return fetch('demo/demo_data.json').then(function (r) {
+      if (!r.ok) throw new Error('demo data unavailable');
+      return r.json();
+    }).then(function (d) {
+      demoAccounts = d.accounts.filter(function (a) {
+        return !/-(5100|5200)$/.test(a.account_number);
+      }).map(function (a) {
+        return { account_number: a.account_number, account_name: a.account_name,
+                 account_type: a.account_type, department: a.department,
+                 fund: a.fund, budget_amount: a.budget_amount, ytd_actual: a.ytd_actual };
+      });
+      demoMonthly = d.monthly_actuals;
+      const store = loadStore();
+      if (!Object.keys(store.scenarios).length) {
+        const id = uuid();
+        store.scenarios[id] = {
+          meta: { id: id, name: 'Adopted Budget FY 2026',
+                  description: 'Original adopted budget - do not delete',
+                  fiscal_year: 2026, created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(), is_locked: 0 },
+          lines: {},
+        };
+        saveStore(store);
+      }
+    });
+  }
+
+  function mergedLines(entry) {
+    return demoAccounts.map(function (a) {
+      const l = entry.lines[a.account_number];
+      return Object.assign({}, a, {
+        revised_budget: l && l.revised_budget != null ? l.revised_budget : a.budget_amount,
+        forecast_yr2: l && l.forecast_yr2 != null ? l.forecast_yr2 : a.budget_amount,
+        forecast_yr3: l && l.forecast_yr3 != null ? l.forecast_yr3 : a.budget_amount,
+        note: l && l.note || '', has_override: !!l,
+      });
+    });
+  }
+
+  function showLocalBanner() {
+    if (document.getElementById('bp-local-banner')) return;
+    const div = document.createElement('div');
+    div.id = 'bp-local-banner';
+    div.style.cssText = 'background:#e8eef7;color:#24508f;padding:8px 16px;font-size:12px;font-weight:600';
+    div.textContent = 'DEMO MODE - the platform API is not connected, so edits run against the bundled demo ledger and save in this browser only.';
+    document.body.insertBefore(div, document.body.firstChild);
+  }
+
+  function seasonality(fyStart) {
+    const startMonth = fyStart === 'January' ? 1 : 7;
+    const types = {};
+    demoAccounts.forEach(function (a) { types[a.account_number] = a.account_type; });
+    const perAcct = {};
+    demoMonthly.forEach(function (m) {
+      if (!(m.account_number in types)) return;
+      const acct = perAcct[m.account_number] = perAcct[m.account_number] || {};
+      const yr = acct[m.fiscal_year] = acct[m.fiscal_year] || new Array(12).fill(0);
+      yr[(m.month - startMonth + 12) % 12] += m.actual;
+    });
+    const byAccount = {}, typeAccum = {};
+    Object.keys(perAcct).forEach(function (acctNo) {
+      const shares = new Array(12).fill(0);
+      let n = 0;
+      Object.values(perAcct[acctNo]).forEach(function (months) {
+        const total = months.reduce(function (s, v) { return s + Math.abs(v); }, 0);
+        if (total <= 0) return;
+        n++;
+        let cum = 0;
+        for (let i = 0; i < 12; i++) { cum += Math.abs(months[i]); shares[i] += cum / total; }
+      });
+      if (!n) return;
+      const curve = shares.map(function (s) { return s / n; });
+      byAccount[acctNo] = curve;
+      const t = types[acctNo] || 'Expense';
+      const acc = typeAccum[t] = typeAccum[t] || { sum: new Array(12).fill(0), n: 0 };
+      for (let i = 0; i < 12; i++) acc.sum[i] += curve[i];
+      acc.n++;
+    });
+    const byType = {};
+    Object.keys(typeAccum).forEach(function (t) {
+      byType[t] = typeAccum[t].sum.map(function (v) { return v / typeAccum[t].n; });
+    });
+    return { available: Object.keys(byAccount).length > 0, byAccount: byAccount, byType: byType };
+  }
+
+  function localApi(url, opts) {
+    const method = (opts && opts.method || 'GET').toUpperCase();
+    const body = opts && opts.body ? JSON.parse(opts.body) : {};
+    const path = url.slice(url.indexOf('/api') + 4);
+    return ensureDemoData().then(function () {
+      localMode = true;
+      showLocalBanner();
+      const store = loadStore();
+      let m;
+      if (path === '/accounts') return demoAccounts;
+      if (path === '/scenarios' && method === 'GET') {
+        return Object.values(store.scenarios).map(function (s) { return s.meta; })
+          .sort(function (a, b) { return a.created_at.localeCompare(b.created_at); });
+      }
+      if (path === '/scenarios' && method === 'POST') {
+        if (!body.name) throw new Error('name is required');
+        const id = uuid();
+        const now = new Date().toISOString();
+        const lines = body.copy_from_id && store.scenarios[body.copy_from_id]
+          ? JSON.parse(JSON.stringify(store.scenarios[body.copy_from_id].lines)) : {};
+        store.scenarios[id] = { meta: { id: id, name: body.name,
+          description: body.description || '', fiscal_year: body.fiscal_year || 2026,
+          created_at: now, updated_at: now, is_locked: 0 }, lines: lines };
+        saveStore(store);
+        return store.scenarios[id].meta;
+      }
+      if ((m = path.match(/^\/scenarios\/([^/]+)$/))) {
+        const entry = store.scenarios[m[1]];
+        if (!entry) throw new Error('Scenario not found');
+        if (method === 'GET') return Object.assign({}, entry.meta, { lines: mergedLines(entry) });
+        if (method === 'PUT') {
+          ['name', 'description', 'fiscal_year', 'is_locked'].forEach(function (k) {
+            if (body[k] !== undefined) entry.meta[k] = body[k];
+          });
+          entry.meta.updated_at = new Date().toISOString();
+          saveStore(store);
+          return entry.meta;
+        }
+        if (method === 'DELETE') {
+          if (entry.meta.is_locked) throw new Error('Scenario is locked');
+          delete store.scenarios[m[1]];
+          saveStore(store);
+          return { ok: true };
+        }
+      }
+      if ((m = path.match(/^\/scenarios\/([^/]+)\/lines$/)) && method === 'PUT') {
+        const entry = store.scenarios[m[1]];
+        if (!entry) throw new Error('Scenario not found');
+        if (entry.meta.is_locked) throw new Error('Scenario is locked');
+        (Array.isArray(body) ? body : []).forEach(function (l) {
+          entry.lines[l.account_number] = {
+            revised_budget: l.revised_budget, forecast_yr2: l.forecast_yr2,
+            forecast_yr3: l.forecast_yr3, note: l.note || '' };
+        });
+        entry.meta.updated_at = new Date().toISOString();
+        saveStore(store);
+        return { ok: true, updated: (body || []).length };
+      }
+      if ((m = path.match(/^\/scenarios\/([^/]+)\/apply-supplementals$/)) && method === 'POST') {
+        const entry = store.scenarios[m[1]];
+        if (!entry) throw new Error('Scenario not found');
+        let applied = 0;
+        store.supplementals.forEach(function (s) {
+          if (s.scenario_id === m[1] && s.status === 'approved' && !s.applied && s.account_number) {
+            const line = entry.lines[s.account_number] || {};
+            const base = line.revised_budget != null ? line.revised_budget
+              : (demoAccounts.find(function (a) { return a.account_number === s.account_number; }) || {}).budget_amount || 0;
+            entry.lines[s.account_number] = Object.assign({}, line, {
+              revised_budget: base + s.amount,
+              note: ((line.note || '') + ' [Supplemental applied]').trim() });
+            s.applied = true;
+            applied++;
+          }
+        });
+        saveStore(store);
+        return { applied: applied };
+      }
+      if (path.indexOf('/supplementals') === 0) {
+        if (method === 'GET') {
+          const q = url.indexOf('scenario_id=') >= 0 ? url.split('scenario_id=')[1].split('&')[0] : null;
+          return store.supplementals.filter(function (s) { return !q || s.scenario_id === q; });
+        }
+        if (method === 'POST') {
+          const s = Object.assign({ id: uuid(), status: 'pending',
+            submitted_at: new Date().toISOString(), applied: false }, body);
+          store.supplementals.push(s);
+          saveStore(store);
+          return s;
+        }
+        if ((m = path.match(/^\/supplementals\/([^/]+)$/))) {
+          const idx = store.supplementals.findIndex(function (s) { return s.id === m[1]; });
+          if (idx < 0) throw new Error('Supplemental not found');
+          if (method === 'PUT') {
+            Object.assign(store.supplementals[idx], body,
+              body.status ? { reviewed_at: new Date().toISOString() } : {});
+            saveStore(store);
+            return store.supplementals[idx];
+          }
+          if (method === 'DELETE') {
+            store.supplementals.splice(idx, 1);
+            saveStore(store);
+            return { ok: true };
+          }
+        }
+      }
+      if (path.indexOf('/seasonality') === 0) {
+        return seasonality(url.indexOf('fyStart=January') >= 0 ? 'January' : 'July');
+      }
+      throw new Error('Local API: unsupported ' + method + ' ' + path);
+    });
+  }
+
+  window.gsBpRequest = function (url, opts) {
+    if (localMode) return localApi(url, opts);
+    const ctrl = new AbortController();
+    const t = setTimeout(function () { ctrl.abort(); }, 3500);
+    return fetch(url, Object.assign({}, opts, {
+      signal: ctrl.signal,
+      headers: Object.assign({ 'Content-Type': 'application/json' }, (opts || {}).headers || {}),
+    })).then(function (r) {
+      clearTimeout(t);
+      if (!r.ok) return r.json().then(function (e) { throw new Error(e.detail || e.error || 'Request failed'); });
+      return r.json();
+    }).catch(function (err) {
+      clearTimeout(t);
+      if (err && err.message && err.message.indexOf('required') >= 0) throw err;
+      return localApi(url, opts);
+    });
+  };
+
+  window.gsBpExportCsv = function (base, activeId) {
+    if (!localMode) { window.open(base + '/scenarios/' + activeId + '/export.csv', '_blank'); return; }
+    ensureDemoData().then(function () {
+      const store = loadStore();
+      const entry = store.scenarios[activeId];
+      if (!entry) return;
+      const lines = mergedLines(entry);
+      const rows = [['account_number', 'account_name', 'account_type', 'department',
+                     'adopted_budget', 'ytd_actual', 'revised_budget', 'forecast_yr2', 'forecast_yr3', 'note']];
+      lines.forEach(function (l) {
+        rows.push([l.account_number, l.account_name, l.account_type, l.department,
+                   l.budget_amount, l.ytd_actual, l.revised_budget, l.forecast_yr2, l.forecast_yr3,
+                   '"' + String(l.note || '').replace(/"/g, '""') + '"']);
+      });
+      const blob = new Blob([rows.map(function (r) { return r.join(','); }).join('\n')],
+                            { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (entry.meta.name || 'scenario').replace(/[^a-z0-9]+/gi, '_') + '.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+  };
+})();
+</script>
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
@@ -135,7 +398,7 @@ const BASE = API + '/api';
 const fc  = (n) => typeof n === 'number' ? '$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}) + (n < 0 ? ' CR' : '') : '—';
 const fp  = (n) => typeof n === 'number' ? (n >= 0 ? '+' : '') + n.toFixed(1) + '%' : '—';
 const fv  = (n) => { if (!n && n!==0) return '—'; return (n>=0?'+':'') + '$' + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}); };
-const req = (url, opts={}) => fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers||{}) } }).then(r => r.ok ? r.json() : r.json().then(e => { throw new Error(e.detail || e.error || 'Request failed'); }));
+const req = (url, opts={}) => window.gsBpRequest(url, opts);
 
 // ── Main App ─────────────────────────────────────────────────────────────────
 function App() {
@@ -189,7 +452,7 @@ function App() {
 
     const exportCSV = () => {
         if (!activeId) return;
-        window.open(BASE + '/scenarios/' + activeId + '/export.csv', '_blank');
+        window.gsBpExportCsv(BASE, activeId);
     };
 
     return (

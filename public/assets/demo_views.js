@@ -361,34 +361,178 @@
   };
 
   views.pbb = function (el) {
-    const depts = ['All departments'].concat(Array.from(new Set(DATA.positions.map(function (p) { return p.department; }))));
-    el.innerHTML = demoBanner() +
-      '<div style="margin-bottom:12px"><select id="pbb-dept" style="padding:7px 10px;border:1px solid #cfd8e0;border-radius:6px">' +
-      depts.map(function (d) { return '<option>' + esc(d) + '</option>'; }).join('') + '</select></div>' +
-      '<div id="pbb-body"></div>';
-    const render = function () {
-      const sel = document.getElementById('pbb-dept').value;
-      const positions = DATA.positions.filter(function (p) { return sel === 'All departments' || p.department === sel; });
-      const loaded = function (p) { return p.annual_salary * (1 + p.benefits_pct); };
-      const totalLoaded = positions.reduce(function (s, p) { return s + loaded(p) * p.fte; }, 0);
-      const vacant = positions.filter(function (p) { return p.status === 'Vacant'; });
-      const vacancySavings = vacant.reduce(function (s, p) { return s + loaded(p) * 0.5; }, 0);
-      document.getElementById('pbb-body').innerHTML =
-        kpiRow([kpi('Budgeted positions', positions.length),
-                kpi('Total loaded cost', fcM(totalLoaded), 'salary + benefits'),
-                kpi('Vacant positions', vacant.length),
-                kpi('Est. vacancy savings', fcM(vacancySavings), 'half-year assumption')]) +
-        card('Position Budget Detail',
-          table(['Position', 'Department', 'FTE', 'Salary', 'Benefits', 'Loaded Cost', 'Status'],
-            positions.map(function (p) {
-              return [esc(p.title), esc(p.department), p.fte.toFixed(1), fc(p.annual_salary),
-                (p.benefits_pct * 100).toFixed(0) + '%', fc(loaded(p)),
-                p.status === 'Vacant'
-                  ? '<span style="background:#fdeeda;color:#8a5a12;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700">VACANT</span>'
-                  : '<span style="background:#e2f2e8;color:#1e6b3c;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700">FILLED</span>'];
-            }), { rightAlign: [2, 3, 4, 5] }));
+    // Excel-style position budgeting workbook: edit cells, test assumptions,
+    // compare against the adopted baseline, save the sandbox locally.
+    const LS = 'gs_pbb_sandbox_v1';
+    const baseline = DATA.positions.map(function (p) {
+      return { position_id: p.position_id, title: p.title, department: p.department,
+               fte: p.fte, salary: p.annual_salary, benefits: p.benefits_pct * 100,
+               status: p.status, start_month: 1 };
+    });
+    let rows;
+    try { rows = JSON.parse(localStorage.getItem(LS)) || null; } catch (e) { rows = null; }
+    if (!rows) rows = JSON.parse(JSON.stringify(baseline));
+    let assume = { cola: 3.0, benefitsInfl: 0.0, vacancyFactor: 50 };
+    try { assume = Object.assign(assume, JSON.parse(localStorage.getItem(LS + '_assume')) || {}); }
+    catch (e) { /* defaults */ }
+
+    const loadedCost = function (r, a) {
+      const salary = r.salary * (1 + a.cola / 100);
+      const benefits = (r.benefits + a.benefitsInfl) / 100;
+      let proration = 1.0;
+      if (r.status === 'New Hire') proration = (13 - Math.min(12, Math.max(1, r.start_month))) / 12;
+      if (r.status === 'Vacant') proration = 1 - a.vacancyFactor / 100;
+      return r.fte * salary * (1 + benefits) * proration;
     };
-    document.getElementById('pbb-dept').addEventListener('change', render);
+    const baselineTotal = baseline.reduce(function (s, r) {
+      return s + loadedCost(r, { cola: 0, benefitsInfl: 0, vacancyFactor: 0 });
+    }, 0);
+
+    const baseMap = {};
+    baseline.forEach(function (r) { baseMap[r.position_id] = r; });
+    const isDirty = function (r) {
+      const b = baseMap[r.position_id];
+      return !b || b.fte !== r.fte || b.salary !== r.salary ||
+             b.benefits !== r.benefits || b.status !== r.status ||
+             (r.status === 'New Hire' && r.start_month !== b.start_month);
+    };
+
+    const num = function (v, dp) { return Number(v).toLocaleString('en-US', { maximumFractionDigits: dp || 0 }); };
+    const cellStyle = 'width:100%;border:1px solid transparent;background:transparent;padding:5px 6px;' +
+                      'font-size:13px;text-align:right;border-radius:4px';
+
+    function render() {
+      const total = rows.reduce(function (s, r) { return s + loadedCost(r, assume); }, 0);
+      const byDept = {};
+      rows.forEach(function (r) { byDept[r.department] = (byDept[r.department] || 0) + loadedCost(r, assume); });
+      const vacantSavings = rows.filter(function (r) { return r.status === 'Vacant'; })
+        .reduce(function (s, r) { return s + loadedCost(r, { cola: assume.cola, benefitsInfl: assume.benefitsInfl, vacancyFactor: 0 }) - loadedCost(r, assume); }, 0);
+
+      let grid = '<div style="overflow-x:auto"><table id="pbb-grid" style="width:100%;border-collapse:collapse;font-size:13px;background:#fff">';
+      grid += '<thead><tr>' + ['Position', 'Department', 'FTE', 'Base Salary', 'Benefits %', 'Status', 'Start Mo', 'Loaded Cost', ''].map(function (h, i) {
+        return '<th style="text-align:' + (i >= 2 && i <= 7 ? 'right' : 'left') + ';padding:8px;border-bottom:2px solid #dde4ea;color:#5b6b7a;font-size:12px;position:sticky;top:0;background:#fff">' + h + '</th>';
+      }).join('') + '</tr></thead><tbody>';
+      const depts = Array.from(new Set(rows.map(function (r) { return r.department; })));
+      depts.forEach(function (dept) {
+        grid += '<tr><td colspan="7" style="background:#eef3f8;padding:6px 8px;font-weight:700;color:#12263a;font-size:12px">' + esc(dept) + '</td>' +
+          '<td style="background:#eef3f8;text-align:right;padding:6px 8px;font-weight:700;font-size:12px" class="dept-total" data-dept="' + esc(dept) + '">$' + num(byDept[dept]) + '</td><td style="background:#eef3f8"></td></tr>';
+        rows.forEach(function (r, idx) {
+          if (r.department !== dept) return;
+          const dirty = isDirty(r);
+          const bg = dirty ? 'background:#fff8e1;' : '';
+          grid += '<tr data-idx="' + idx + '"' + (dirty ? ' class="dirty"' : '') + '>' +
+            '<td style="padding:2px 4px;' + bg + '"><input data-f="title" value="' + esc(r.title) + '" style="' + cellStyle + ';text-align:left;font-weight:600"></td>' +
+            '<td style="padding:2px 8px;font-size:12px;color:#5b6b7a;' + bg + '">' + esc(r.department) + '</td>' +
+            '<td style="padding:2px 4px;' + bg + '"><input data-f="fte" type="number" step="0.25" min="0" value="' + r.fte + '" style="' + cellStyle + '"></td>' +
+            '<td style="padding:2px 4px;' + bg + '"><input data-f="salary" type="number" step="1000" min="0" value="' + r.salary + '" style="' + cellStyle + '"></td>' +
+            '<td style="padding:2px 4px;' + bg + '"><input data-f="benefits" type="number" step="0.5" min="0" value="' + r.benefits + '" style="' + cellStyle + '"></td>' +
+            '<td style="padding:2px 4px;' + bg + '"><select data-f="status" style="' + cellStyle + ';text-align:left">' +
+              ['Filled', 'Vacant', 'New Hire'].map(function (s) {
+                return '<option' + (r.status === s ? ' selected' : '') + '>' + s + '</option>';
+              }).join('') + '</select></td>' +
+            '<td style="padding:2px 4px;' + bg + '"><input data-f="start_month" type="number" min="1" max="12" value="' + r.start_month + '" ' +
+              (r.status === 'New Hire' ? '' : 'disabled') + ' style="' + cellStyle + '"></td>' +
+            '<td class="loaded" style="padding:5px 8px;text-align:right;font-weight:600;' + bg + '">$' + num(loadedCost(r, assume)) + '</td>' +
+            '<td style="padding:2px 4px;text-align:center"><button data-remove="' + idx + '" title="Remove position" style="border:none;background:none;color:#a4271c;cursor:pointer;font-weight:700">&times;</button></td></tr>';
+        });
+      });
+      grid += '</tbody></table></div>';
+
+      el.innerHTML = demoBanner() +
+        card('Workbook Assumptions',
+          '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end">' +
+          '<label style="font-size:12px;color:#5b6b7a">COLA %<input id="pbb-cola" type="number" step="0.25" value="' + assume.cola + '" style="display:block;width:90px;padding:6px 8px;border:1px solid #cfd8e0;border-radius:6px;margin-top:3px"></label>' +
+          '<label style="font-size:12px;color:#5b6b7a">Benefits inflation (pp)<input id="pbb-binfl" type="number" step="0.25" value="' + assume.benefitsInfl + '" style="display:block;width:90px;padding:6px 8px;border:1px solid #cfd8e0;border-radius:6px;margin-top:3px"></label>' +
+          '<label style="font-size:12px;color:#5b6b7a">Vacancy savings %<input id="pbb-vac" type="number" step="5" min="0" max="100" value="' + assume.vacancyFactor + '" style="display:block;width:90px;padding:6px 8px;border:1px solid #cfd8e0;border-radius:6px;margin-top:3px"></label>' +
+          '<button id="pbb-add" style="background:#1d3a56;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Add Position</button>' +
+          '<button id="pbb-save" style="background:#1e6b3c;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Save Sandbox</button>' +
+          '<button id="pbb-reset" style="background:#fff;color:#a4271c;border:1px solid #a4271c;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Reset to Baseline</button>' +
+          '<button id="pbb-export" style="background:#fff;color:#12263a;border:1px solid #cfd8e0;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Export CSV</button>' +
+          '<span id="pbb-msg" style="font-size:12px;color:#1e6b3c;font-weight:600"></span></div>',
+          'edit any cell - totals and the baseline delta update live; changed cells highlight') +
+        '<div id="pbb-kpis">' + kpiRow([
+          kpi('Positions', rows.length),
+          kpi('Total loaded cost', '<span id="pbb-total">' + fcM(total) + '</span>', 'with assumptions applied'),
+          kpi('vs adopted baseline', '<span id="pbb-delta">' + (total >= baselineTotal ? '+' : '') + fcM(total - baselineTotal) + '</span>'),
+          kpi('Vacancy savings', '<span id="pbb-vacsave">' + fcM(vacantSavings) + '</span>')]) + '</div>' +
+        card('Position Workbook', grid);
+
+      const recalcTotals = function () {
+        const total2 = rows.reduce(function (s, r) { return s + loadedCost(r, assume); }, 0);
+        const byDept2 = {};
+        rows.forEach(function (r) { byDept2[r.department] = (byDept2[r.department] || 0) + loadedCost(r, assume); });
+        document.getElementById('pbb-total').textContent = fcM(total2);
+        document.getElementById('pbb-delta').textContent = (total2 >= baselineTotal ? '+' : '') + fcM(total2 - baselineTotal);
+        const vs = rows.filter(function (r) { return r.status === 'Vacant'; })
+          .reduce(function (s, r) { return s + loadedCost(r, { cola: assume.cola, benefitsInfl: assume.benefitsInfl, vacancyFactor: 0 }) - loadedCost(r, assume); }, 0);
+        document.getElementById('pbb-vacsave').textContent = fcM(vs);
+        el.querySelectorAll('.dept-total').forEach(function (td) {
+          td.textContent = '$' + num(byDept2[td.getAttribute('data-dept')] || 0);
+        });
+        el.querySelectorAll('tr[data-idx]').forEach(function (tr) {
+          const r = rows[parseInt(tr.getAttribute('data-idx'), 10)];
+          tr.querySelector('.loaded').textContent = '$' + num(loadedCost(r, assume));
+        });
+      };
+
+      el.querySelectorAll('tr[data-idx] input, tr[data-idx] select').forEach(function (input) {
+        input.addEventListener('input', function () {
+          const idx = parseInt(input.closest('tr').getAttribute('data-idx'), 10);
+          const f = input.getAttribute('data-f');
+          rows[idx][f] = (f === 'title' || f === 'status') ? input.value : parseFloat(input.value) || 0;
+          if (f === 'status') { render(); return; }   // toggles start-month cell
+          recalcTotals();
+        });
+      });
+      el.querySelectorAll('[data-remove]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          rows.splice(parseInt(btn.getAttribute('data-remove'), 10), 1);
+          render();
+        });
+      });
+      ['cola:cola', 'binfl:benefitsInfl', 'vac:vacancyFactor'].forEach(function (spec) {
+        const parts = spec.split(':');
+        document.getElementById('pbb-' + parts[0]).addEventListener('input', function (e) {
+          assume[parts[1]] = parseFloat(e.target.value) || 0;
+          recalcTotals();
+        });
+      });
+      document.getElementById('pbb-add').addEventListener('click', function () {
+        rows.push({ position_id: 'NEW-' + Date.now(), title: 'New Position',
+                    department: rows.length ? rows[rows.length - 1].department : 'Administration',
+                    fte: 1.0, salary: 60000, benefits: 32, status: 'New Hire', start_month: 7 });
+        render();
+      });
+      document.getElementById('pbb-save').addEventListener('click', function () {
+        localStorage.setItem(LS, JSON.stringify(rows));
+        localStorage.setItem(LS + '_assume', JSON.stringify(assume));
+        document.getElementById('pbb-msg').textContent = 'Sandbox saved.';
+        setTimeout(function () {
+          const msg = document.getElementById('pbb-msg');
+          if (msg) msg.textContent = '';
+        }, 2500);
+      });
+      document.getElementById('pbb-reset').addEventListener('click', function () {
+        rows = JSON.parse(JSON.stringify(baseline));
+        assume = { cola: 3.0, benefitsInfl: 0.0, vacancyFactor: 50 };
+        localStorage.removeItem(LS);
+        localStorage.removeItem(LS + '_assume');
+        render();
+      });
+      document.getElementById('pbb-export').addEventListener('click', function () {
+        const out = [['position', 'department', 'fte', 'base_salary', 'benefits_pct', 'status', 'start_month', 'loaded_cost']];
+        rows.forEach(function (r) {
+          out.push(['"' + r.title.replace(/"/g, '""') + '"', r.department, r.fte, r.salary,
+                    r.benefits, r.status, r.start_month, Math.round(loadedCost(r, assume))]);
+        });
+        const blob = new Blob([out.map(function (r) { return r.join(','); }).join('\n')], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'pbb_sandbox.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+    }
     render();
   };
 
