@@ -72,15 +72,10 @@ else:
     org_theme_color = org_config.get("theme_color", "#0066cc")
 
 # Password Authentication - Automatic login from query parameter
-# Add a query parameter for auto-login
-auto_login = st.query_params.get("auth", None)
-
+# Authentication state. A URL parameter must never grant access — the
+# previous ?auth=true shortcut was an authentication bypass.
 if "authenticated" not in st.session_state:
-    if auto_login == "true":
-        # Auto login if auth=true is in the URL
-        st.session_state.authenticated = True
-    else:
-        st.session_state.authenticated = False
+    st.session_state.authenticated = False
 
 # Check if authentication is required
 if not st.session_state.authenticated and "login_password" in org_config:

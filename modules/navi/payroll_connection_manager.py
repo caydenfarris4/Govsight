@@ -306,11 +306,11 @@ def render_payroll_connection_status():
     
     if status["connected"]:
         if status["type"] == "sqlite":
-            # Connection status display removed for cleaner UI
+            st.success("Connected to payroll database (SQLite)")
         elif status["type"] == "sqlserver":
-            # Connection status display removed for cleaner UI
+            st.success("Connected to payroll database (SQL Server)")
     else:
-        # Warning status removed for cleaner UI
+        st.warning("No payroll database connection configured")
         if status["error"]:
             st.error(f"Error: {status['error']}")
     

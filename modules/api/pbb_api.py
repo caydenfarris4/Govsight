@@ -200,17 +200,10 @@ class BudgetResponse(BaseModel):
 class CalculationRequest(BaseModel):
     rows: List[BudgetRow]
 
-# Global settings for calculations
-GLOBAL_SETTINGS = {
-    'pay_periods': 26,
-    'fica_pct': 0.062,
-    'medicare_pct': 0.0145,
-    'retirement_pct': 0.12,
-    'unemployment_pct': 0.003,
-    'workers_comp_pct': 0.005,
-    'fica_wage_base': 160200,
-    'unemployment_base': 7000
-}
+# Global settings for calculations — canonical rates shared with the
+# Streamlit PBB engine so both surfaces compute identical budgets
+from modules.navi.payroll_rates import DEFAULT_PAYROLL_RATES
+GLOBAL_SETTINGS = dict(DEFAULT_PAYROLL_RATES)
 
 def get_db_connection():
     """Get database connection"""
@@ -1088,6 +1081,10 @@ async def run_monte_carlo(params: MonteCarloParams):
         return {
             "success": True,
             "distribution": [float(x) for x in net_positions[:100]],  # Return sample for visualization
+            "histogram": {
+                "bins": [float((bins[i] + bins[i + 1]) / 2) for i in range(len(hist))],
+                "frequencies": [int(x) for x in hist]
+            },
             "statistics": {
                 "mean": float(mean_net),
                 "stdDev": float(std_net),

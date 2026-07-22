@@ -708,14 +708,14 @@ def render_department_insights(org: str = "cityA", org_display_name: str = "City
                                 dept_name_to_query = selected_dept
                     
                     # Use explicit column selection and single quotes for the department name
-                    gl_query = f"""
+                    gl_query = """
                         SELECT 
                             Department, Fund, FiscalYear, Month, 
                             Budget, Actual, AccountCode, AccountName 
                         FROM DepartmentPerformance 
-                        WHERE Department = '{dept_name_to_query}'
+                        WHERE Department = ?
                     """
-                    gl_data = pd.read_sql_query(gl_query, conn)
+                    gl_data = pd.read_sql_query(gl_query, conn, params=(dept_name_to_query,))
                     conn.close()
                     
                     # Debug info (only show in debug mode)
@@ -949,78 +949,6 @@ def render_department_insights(org: str = "cityA", org_display_name: str = "City
                             height=400
                         )
                         
-                        with filter_columns[1]:
-                            # Budget range filter
-                            budget_min = float(filterable_data["Budget"].min())
-                            budget_max = float(filterable_data["Budget"].max())
-                            if budget_min != budget_max:
-                                budget_range = st.slider(
-                                    "Budget Range",
-                                    min_value=budget_min,
-                                    max_value=budget_max,
-                                    value=(budget_min, budget_max),
-                                    key=f"gl_budget_filter_{selected_dept}"
-                                )
-                                filterable_data = filterable_data[
-                                    (filterable_data["Budget"] >= budget_range[0]) & 
-                                    (filterable_data["Budget"] <= budget_range[1])
-                                ]
-                        
-                        with filter_columns[2]:
-                            # Variance filter
-                            variance_min = float(filterable_data["Variance"].min())
-                            variance_max = float(filterable_data["Variance"].max())
-                            if variance_min != variance_max:
-                                variance_range = st.slider(
-                                    "Variance Range",
-                                    min_value=variance_min,
-                                    max_value=variance_max,
-                                    value=(variance_min, variance_max),
-                                    key=f"gl_variance_filter_{selected_dept}"
-                                )
-                                filterable_data = filterable_data[
-                                    (filterable_data["Variance"] >= variance_range[0]) & 
-                                    (filterable_data["Variance"] <= variance_range[1])
-                                ]
-                        
-                        with filter_columns[3]:
-                            # Variance percentage filter
-                            var_pct_min = float(filterable_data["Variance%"].min())
-                            var_pct_max = float(filterable_data["Variance%"].max())
-                            if var_pct_min != var_pct_max:
-                                var_pct_range = st.slider(
-                                    "Variance % Range",
-                                    min_value=var_pct_min,
-                                    max_value=var_pct_max,
-                                    value=(var_pct_min, var_pct_max),
-                                    key=f"gl_var_pct_filter_{selected_dept}"
-                                )
-                                filterable_data = filterable_data[
-                                    (filterable_data["Variance%"] >= var_pct_range[0]) & 
-                                    (filterable_data["Variance%"] <= var_pct_range[1])
-                                ]
-                        
-                        # Format the filtered data
-                        display_df = filterable_data.copy()
-                        display_df["Budget"] = display_df["Budget"].apply(lambda x: format_currency(x))
-                        display_df["Actual"] = display_df["Actual"].apply(lambda x: format_currency(x))
-                        display_df["Variance"] = display_df["Variance"].apply(lambda x: format_currency(x))
-                        display_df["Variance%"] = display_df["Variance%"].apply(lambda x: format_percentage(x))
-                        
-                        # Show the data with Excel-style filtering
-                        st.data_editor(
-                            display_df,
-                            use_container_width=True,
-                            hide_index=True,
-                            disabled=True,
-                            height=400,
-                            column_config={
-                                "Budget": st.column_config.NumberColumn(format="$%.2f"),
-                                "Actual": st.column_config.NumberColumn(format="$%.2f"),
-                                "Variance": st.column_config.NumberColumn(format="$%.2f"),
-                                "Variance%": st.column_config.NumberColumn(format="%.1f%%")
-                            }
-                        )
                         
                         # Add download button for GL account data
                         csv = account_summary.to_csv(index=False).encode("utf-8")
@@ -1116,22 +1044,22 @@ def render_department_insights(org: str = "cityA", org_display_name: str = "City
                                             dept_name_to_query = selected_dept
                                 
                                 # For the new schema, we need to use DepartmentName
-                                gl_query = f"""
-                                    SELECT 
-                                        DepartmentName as Department, 
-                                        FundName as Fund, 
-                                        FiscalYear, 
-                                        AccountCode, 
+                                gl_query = """
+                                    SELECT
+                                        DepartmentName as Department,
+                                        FundName as Fund,
+                                        FiscalYear,
+                                        AccountCode,
                                         AccountName,
                                         AccountType,
                                         Mask,
-                                        SUM(Budget) as Budget, 
+                                        SUM(Budget) as Budget,
                                         SUM(Actual) as Actual
                                     FROM DepartmentPerformance
-                                    WHERE DepartmentName = '{dept_name_to_query}'
+                                    WHERE DepartmentName = ?
                                     GROUP BY DepartmentName, FundName, FiscalYear, AccountCode, AccountName, AccountType, Mask
                                 """
-                                gl_df = pd.read_sql_query(gl_query, conn)
+                                gl_df = pd.read_sql_query(gl_query, conn, params=(dept_name_to_query,))
                                 
                                 # Check if we got data
                                 if not gl_df.empty:
@@ -1224,14 +1152,14 @@ def render_department_insights(org: str = "cityA", org_display_name: str = "City
                                             dept_name_to_query = selected_dept
                                     
                                     # Use the existing query for old schema
-                                    gl_query = f"""
-                                        SELECT Department, Fund, FiscalYear, AccountCode, AccountName, 
+                                    gl_query = """
+                                        SELECT Department, Fund, FiscalYear, AccountCode, AccountName,
                                                SUM(Budget) as Budget, SUM(Actual) as Actual
                                         FROM DepartmentPerformance
-                                        WHERE Department = '{dept_name_to_query}'
+                                        WHERE Department = ?
                                         GROUP BY Department, Fund, FiscalYear, AccountCode, AccountName
                                     """
-                                    gl_df = pd.read_sql_query(gl_query, conn)
+                                    gl_df = pd.read_sql_query(gl_query, conn, params=(dept_name_to_query,))
                                     
                                     # Continue with existing functionality
                                     if not gl_df.empty:

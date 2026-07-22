@@ -2537,12 +2537,34 @@ function MonteCarloTab() {
     const [error, setError]     = useState('');
     const chartRef = useRef(null); const chartInst = useRef(null);
 
+    const buildHistogram = (samples, binCount = 20) => {
+        // Client-side fallback when the backend sends raw samples only
+        if (!samples || !samples.length) return null;
+        const lo = Math.min(...samples), hi = Math.max(...samples);
+        const width = (hi - lo) / binCount || 1;
+        const frequencies = new Array(binCount).fill(0);
+        samples.forEach(v => {
+            const i = Math.min(binCount - 1, Math.floor((v - lo) / width));
+            frequencies[i]++;
+        });
+        const bins = frequencies.map((_, i) => lo + width * (i + 0.5));
+        return { bins, frequencies };
+    };
+
     const run = async () => {
         setLoading(true); setError('');
         try {
             const r = await api.runMonteCarlo(params);
-            setResults(r);
-            if (r.distribution) drawChart(r.distribution);
+            // Normalize the backend response shape for rendering
+            const norm = {
+                mean: r.statistics?.mean ?? r.mean ?? 0,
+                standardDeviation: r.statistics?.stdDev ?? r.standardDeviation ?? 0,
+                percentiles: r.netPosition?.net ?? r.percentiles ?? {},
+                probability: r.probability,
+            };
+            setResults(norm);
+            const hist = r.histogram || buildHistogram(r.distribution);
+            if (hist) drawChart(hist);
         } catch (e) {
             setError('Simulation failed — check that all fields are filled in correctly.');
         } finally { setLoading(false); }

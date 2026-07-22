@@ -1063,145 +1063,145 @@ def render_historical_analysis(org: str = "cityA", org_display_name: str = "City
                 except Exception as e:
                     st.error(f"Error generating enhanced report: {str(e)}")
             
-            # Variance Analysis
-            st.subheader("Variance Analysis")
-            
-            # Calculate variance for each department and fiscal year
-            variance_df = filtered_df.copy()
-            variance_df["Variance"] = variance_df["Budget"] - variance_df["Actual"]
-            variance_df["Variance%"] = (variance_df["Variance"] / variance_df["Budget"]) * 100
-            
-            # Group by department to get overall variance
-            dept_variance = variance_df.groupby("Department").agg({
-                "Budget": "sum",
-                "Actual": "sum",
-                "Variance": "sum"
-            }).reset_index()
-            
-            # Calculate percentage variance
-            dept_variance["Variance%"] = (dept_variance["Variance"] / dept_variance["Budget"]) * 100
-            
-            # Sort by absolute variance percentage
-            dept_variance = dept_variance.sort_values(by="Variance%", ascending=False)
-            
-            # Create a bar chart for variance by department
-            try:
-                fig3 = px.bar(
-                    dept_variance,
-                    y="Department",
-                    x="Variance%",
-                    orientation="h",
-                    title="Budget Variance by Department (%)",
-                    color="Variance%",
-                    color_continuous_scale=["red", "white", "green"],
-                    range_color=[-20, 20],
-                    text="Variance%"
-                )
-                
-                fig3.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
-                fig3.update_layout(height=500)
-                
-                st.plotly_chart(fig3, use_container_width=True, key="dept_variance_chart")
-            except Exception:
-                st.error("Could not create variance chart. Please check your data.")
-            
-            # Display detailed variance table
-            st.subheader("Detailed Variance Analysis")
-            
-            # Format the table for display
-            display_variance = dept_variance.copy()
-            display_variance["Budget"] = display_variance["Budget"].apply(lambda x: format_currency(x))
-            display_variance["Actual"] = display_variance["Actual"].apply(lambda x: format_currency(x))
-            display_variance["Variance"] = display_variance["Variance"].apply(lambda x: format_currency(x))
-            display_variance["Variance%"] = display_variance["Variance%"].apply(lambda x: f"{x:.2f}%")
-            
-            st.dataframe(display_variance, use_container_width=True)
-            
-            # Export data option
-            st.download_button(
-                label="Download Variance Data as CSV",
-                data=dept_variance.to_csv(index=False),
-                file_name=f"{org_display_name}_variance_analysis.csv",
-                mime="text/csv"
+        # Variance Analysis
+        st.subheader("Variance Analysis")
+        
+        # Calculate variance for each department and fiscal year
+        variance_df = filtered_df.copy()
+        variance_df["Variance"] = variance_df["Budget"] - variance_df["Actual"]
+        variance_df["Variance%"] = (variance_df["Variance"] / variance_df["Budget"]) * 100
+        
+        # Group by department to get overall variance
+        dept_variance = variance_df.groupby("Department").agg({
+            "Budget": "sum",
+            "Actual": "sum",
+            "Variance": "sum"
+        }).reset_index()
+        
+        # Calculate percentage variance
+        dept_variance["Variance%"] = (dept_variance["Variance"] / dept_variance["Budget"]) * 100
+        
+        # Sort by absolute variance percentage
+        dept_variance = dept_variance.sort_values(by="Variance%", ascending=False)
+        
+        # Create a bar chart for variance by department
+        try:
+            fig3 = px.bar(
+                dept_variance,
+                y="Department",
+                x="Variance%",
+                orientation="h",
+                title="Budget Variance by Department (%)",
+                color="Variance%",
+                color_continuous_scale=["red", "white", "green"],
+                range_color=[-20, 20],
+                text="Variance%"
             )
             
-            # Add Phase 2 Reporting Integration
-            st.markdown("---")
+            fig3.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+            fig3.update_layout(height=500)
             
-            # Prepare analysis results for reporting
-            analysis_results = {
-                'period': f"{min(selected_years)} - {max(selected_years)}" if selected_years else "All Years",
-                'summary': f"Analysis of {org_display_name} budget data showing {format_percentage(underspent_pct)} underspent",
-                'executive_summary': f"{org_display_name} has a total budget of {format_currency(total_budget)} with actual spending of {format_currency(total_actual)}",
-                'recommendations': "Continue monitoring budget utilization and identify opportunities for reallocation.",
-                'key_findings': f"Overall underspending of {format_currency(total_underspent)} ({format_percentage(underspent_pct)})"
+            st.plotly_chart(fig3, use_container_width=True, key="dept_variance_chart")
+        except Exception:
+            st.error("Could not create variance chart. Please check your data.")
+        
+        # Display detailed variance table
+        st.subheader("Detailed Variance Analysis")
+        
+        # Format the table for display
+        display_variance = dept_variance.copy()
+        display_variance["Budget"] = display_variance["Budget"].apply(lambda x: format_currency(x))
+        display_variance["Actual"] = display_variance["Actual"].apply(lambda x: format_currency(x))
+        display_variance["Variance"] = display_variance["Variance"].apply(lambda x: format_currency(x))
+        display_variance["Variance%"] = display_variance["Variance%"].apply(lambda x: f"{x:.2f}%")
+        
+        st.dataframe(display_variance, use_container_width=True)
+        
+        # Export data option
+        st.download_button(
+            label="Download Variance Data as CSV",
+            data=dept_variance.to_csv(index=False),
+            file_name=f"{org_display_name}_variance_analysis.csv",
+            mime="text/csv"
+        )
+        
+        # Add Phase 2 Reporting Integration
+        st.markdown("---")
+        
+        # Prepare analysis results for reporting
+        analysis_results = {
+            'period': f"{min(selected_years)} - {max(selected_years)}" if selected_years else "All Years",
+            'summary': f"Analysis of {org_display_name} budget data showing {format_percentage(underspent_pct)} underspent",
+            'executive_summary': f"{org_display_name} has a total budget of {format_currency(total_budget)} with actual spending of {format_currency(total_actual)}",
+            'recommendations': "Continue monitoring budget utilization and identify opportunities for reallocation.",
+            'key_findings': f"Overall underspending of {format_currency(total_underspent)} ({format_percentage(underspent_pct)})"
+        }
+        
+        # Add export options using centralized Phase 2 reporting
+        if REPORTS_INTEGRATION_AVAILABLE and vatica_reports:
+            vatica_reports.add_historical_analysis_export(filtered_df, analysis_results)
+        else:
+            # If integration not available, show direct message
+            st.warning("Phase 2 reporting integration is initializing. Please refresh the page if export options don't appear.")
+            # Provide basic CSV fallback
+            st.download_button(
+                label="📥 Download CSV (Basic)",
+                data=filtered_df.to_csv(index=False),
+                file_name=f"historical_analysis_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv"
+            )
+        
+        # Custom SQL Query Section
+        st.subheader("Custom Data Analysis")
+        
+        with st.expander("Run Custom SQL Query", expanded=False):
+            st.markdown("""
+            Write your own SQL query to analyze budget data. Use the table `DepartmentPerformance` with columns:
+            - Department
+            - Fund
+            - FiscalYear
+            - Budget
+            - Actual
+            - Month
+            - Organization
+            """)
+            
+            # Sample queries
+            sample_queries = {
+                "Department Totals": "SELECT Department, SUM(Budget) as TotalBudget, SUM(Actual) as TotalSpent, SUM(Budget - Actual) as Variance FROM DepartmentPerformance GROUP BY Department ORDER BY TotalBudget DESC",
+                "Year over Year": "SELECT FiscalYear, SUM(Budget) as YearlyBudget, SUM(Actual) as YearlySpent FROM DepartmentPerformance GROUP BY FiscalYear",
+                "Fund Analysis": "SELECT Fund, SUM(Budget) as TotalBudget, SUM(Actual) as TotalSpent FROM DepartmentPerformance GROUP BY Fund ORDER BY TotalBudget DESC",
+                "Top Underspent": "SELECT Department, SUM(Budget) as TotalBudget, SUM(Actual) as TotalSpent, SUM(Budget - Actual) as Underspent FROM DepartmentPerformance GROUP BY Department ORDER BY Underspent DESC LIMIT 5"
             }
             
-            # Add export options using centralized Phase 2 reporting
-            if REPORTS_INTEGRATION_AVAILABLE and vatica_reports:
-                vatica_reports.add_historical_analysis_export(filtered_df, analysis_results)
-            else:
-                # If integration not available, show direct message
-                st.warning("Phase 2 reporting integration is initializing. Please refresh the page if export options don't appear.")
-                # Provide basic CSV fallback
-                st.download_button(
-                    label="📥 Download CSV (Basic)",
-                    data=filtered_df.to_csv(index=False),
-                    file_name=f"historical_analysis_{datetime.now().strftime('%Y%m%d')}.csv",
-                    mime="text/csv"
-                )
+            selected_sample = st.selectbox("Sample Queries", list(sample_queries.keys()))
+            custom_query = st.text_area("SQL Query", value=sample_queries[selected_sample], height=100)
             
-            # Custom SQL Query Section
-            st.subheader("Custom Data Analysis")
-            
-            with st.expander("Run Custom SQL Query", expanded=False):
-                st.markdown("""
-                Write your own SQL query to analyze budget data. Use the table `DepartmentPerformance` with columns:
-                - Department
-                - Fund
-                - FiscalYear
-                - Budget
-                - Actual
-                - Month
-                - Organization
-                """)
-                
-                # Sample queries
-                sample_queries = {
-                    "Department Totals": "SELECT Department, SUM(Budget) as TotalBudget, SUM(Actual) as TotalSpent, SUM(Budget - Actual) as Variance FROM DepartmentPerformance GROUP BY Department ORDER BY TotalBudget DESC",
-                    "Year over Year": "SELECT FiscalYear, SUM(Budget) as YearlyBudget, SUM(Actual) as YearlySpent FROM DepartmentPerformance GROUP BY FiscalYear",
-                    "Fund Analysis": "SELECT Fund, SUM(Budget) as TotalBudget, SUM(Actual) as TotalSpent FROM DepartmentPerformance GROUP BY Fund ORDER BY TotalBudget DESC",
-                    "Top Underspent": "SELECT Department, SUM(Budget) as TotalBudget, SUM(Actual) as TotalSpent, SUM(Budget - Actual) as Underspent FROM DepartmentPerformance GROUP BY Department ORDER BY Underspent DESC LIMIT 5"
-                }
-                
-                selected_sample = st.selectbox("Sample Queries", list(sample_queries.keys()))
-                custom_query = st.text_area("SQL Query", value=sample_queries[selected_sample], height=100)
-                
-                if st.button("Run Query"):
-                    if custom_query:
-                        try:
-                            # Execute the query
-                            results = run_dashboard_query(custom_query, org=org)
+            if st.button("Run Query"):
+                if custom_query:
+                    try:
+                        # Execute the query
+                        results = run_dashboard_query(custom_query, org=org)
+                        
+                        if results:
+                            # Convert to DataFrame
+                            results_df = pd.DataFrame(results)
                             
-                            if results:
-                                # Convert to DataFrame
-                                results_df = pd.DataFrame(results)
-                                
-                                # Display the results
-                                st.subheader("Query Results")
-                                st.dataframe(results_df, use_container_width=True)
-                                
-                                # Option to download results
-                                st.download_button(
-                                    label="Download Results as CSV",
-                                    data=results_df.to_csv(index=False),
-                                    file_name="custom_query_results.csv",
-                                    mime="text/csv"
-                                )
-                            else:
-                                st.warning("The query returned no results.")
-                        except Exception as e:
-                            st.error(f"Error executing query: {e}")
+                            # Display the results
+                            st.subheader("Query Results")
+                            st.dataframe(results_df, use_container_width=True)
+                            
+                            # Option to download results
+                            st.download_button(
+                                label="Download Results as CSV",
+                                data=results_df.to_csv(index=False),
+                                file_name="custom_query_results.csv",
+                                mime="text/csv"
+                            )
+                        else:
+                            st.warning("The query returned no results.")
+                    except Exception as e:
+                        st.error(f"Error executing query: {e}")
     else:
         st.error("No historical data available. Please check the database connection settings.")
         st.markdown("""

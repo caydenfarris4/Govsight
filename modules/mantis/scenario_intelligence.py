@@ -28,7 +28,7 @@ class ScenarioIntelligence:
     
     def get_all_scenarios(self, limit: int = 20) -> List[Dict]:
         """Get all saved scenarios with comprehensive details"""
-        conn = self.get_database_connection()
+        conn = self.get_connection()
         if not conn:
             return []
         

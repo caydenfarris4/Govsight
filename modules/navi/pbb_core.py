@@ -22,19 +22,12 @@ class PBBCore:
         
     def _get_default_settings(self) -> Dict[str, Any]:
         """Default global settings for calculations"""
+        from modules.navi.payroll_rates import DEFAULT_PAYROLL_RATES
         current_year = date.today().year
         return {
             'year_start': date(current_year, 1, 1),
             'year_end': date(current_year, 12, 31),
-            'pay_periods': 26,
-            'fica_pct': 0.062,
-            'fica_wage_base': 160200,
-            'medicare_pct': 0.0145,
-            'retirement_pct': 0.10,
-            'unemployment_pct': 0.006,
-            'unemployment_base': 15000,
-            'workers_comp_pct': 0.012,
-            'std_benefits_pct': 0.18
+            **DEFAULT_PAYROLL_RATES,
         }
     
     def _load_employees_data(self) -> pd.DataFrame:

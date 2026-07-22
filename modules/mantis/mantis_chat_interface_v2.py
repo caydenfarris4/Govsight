@@ -302,7 +302,10 @@ Try asking something like:
                     try:
                         result = asyncio.run(orchestrator.process_message(
                             user_input,
-                            {'session_id': st.session_state.mantis_session_id}
+                            context={
+                                'uploaded_files': st.session_state.uploaded_file_data,
+                            },
+                            session_id=st.session_state.mantis_session_id
                         ))
                         
                         # Add assistant response

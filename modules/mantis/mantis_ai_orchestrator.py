@@ -2323,13 +2323,9 @@ BEHAVIOR GUIDELINES:
             
             # Since assess_grant_eligibility doesn't exist, use intelligent matching
             # to find and analyze the grant
-            matching_result = self.grant_intelligence.intelligent_grant_matching(
-                municipal_profile=organization_profile,
-                category_filter=None
+            grants = self.grant_intelligence.intelligent_grant_matching(
+                municipal_profile=organization_profile
             )
-            
-            # Find the specific grant
-            grants = matching_result.get('matching_grants', [])
             target_grant = None
             for grant in grants:
                 if grant.grant_id == grant_id:
