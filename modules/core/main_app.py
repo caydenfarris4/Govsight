@@ -923,6 +923,22 @@ with st.sidebar:
     username = user.get('username', 'Unknown')
     user_role = user.get('role', 'viewer')
     st.success(f"Logged in as: {username} ({user_role})")
+
+    # Demo data: when the admin signs in, make sure a complete linked demo
+    # dataset exists so every module is exercisable immediately. Idempotent;
+    # runs once per session.
+    if username == 'admin_user' and not st.session_state.get('demo_data_checked'):
+        try:
+            from modules.services.demo_data import ensure_demo_data
+            demo_status = ensure_demo_data()
+            st.session_state['demo_data_checked'] = True
+            st.caption(
+                f"Demo data ready: {demo_status['gl_accounts']} GL accounts, "
+                f"{demo_status['monthly_actuals']} monthly actuals, "
+                f"{demo_status['canonical_transactions']} transactions")
+        except Exception as demo_exc:
+            st.session_state['demo_data_checked'] = True
+            st.caption(f"Demo data check failed: {demo_exc}")
     
     # Add a logout button
     if st.button("Logout", use_container_width=True):
@@ -933,6 +949,18 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # Apply navigation requested by dashboard buttons BEFORE the radio is
+    # instantiated: setting the widget's state here (legal pre-instantiation)
+    # keeps the sidebar radio and selected_tab authoritative and in sync.
+    # The previous approach (deleting the widget key) left the frontend
+    # holding the stale value, which reverted navigation on the next
+    # interaction anywhere in the app.
+    if 'pending_nav' in st.session_state:
+        pending = st.session_state.pop('pending_nav')
+        if pending in allowed_tabs:
+            st.session_state.selected_tab = pending
+            st.session_state.main_navigation = pending
+
     # When a radio button is selected, update the session state
     selected_sidebar_tab = st.radio(
         "Navigation", 
@@ -1022,10 +1050,7 @@ if selected_tab == "Dashboard":
         """, unsafe_allow_html=True)
         
         if st.button("Enter Navi", key="navi_card", use_container_width=True, help="Access scenario planning and business intelligence tools"):
-            st.session_state.selected_tab = "Navi"
-            # Clear the sidebar radio's widget state so it re-initializes from
-            # selected_tab; otherwise its stale value reverts the navigation
-            st.session_state.pop("main_navigation", None)
+            st.session_state['pending_nav'] = "Navi"
             st.rerun()
     
     with col2:
@@ -1043,8 +1068,7 @@ if selected_tab == "Dashboard":
         """, unsafe_allow_html=True)
         
         if st.button("Enter Mantis", key="mantis_card_btn", use_container_width=True, help="Access AI assistant and intelligence reporting"):
-            st.session_state.selected_tab = "Mantis"
-            st.session_state.pop("main_navigation", None)
+            st.session_state['pending_nav'] = "Mantis"
             st.rerun()
     
     with col3:
@@ -1062,10 +1086,26 @@ if selected_tab == "Dashboard":
         """, unsafe_allow_html=True)
         
         if st.button("Enter Vatica", key="vatica_card", use_container_width=True, help="Access comprehensive financial analysis and insights"):
-            st.session_state.selected_tab = "Vatica"
-            st.session_state.pop("main_navigation", None)
+            st.session_state['pending_nav'] = "Vatica"
             st.rerun()
-    
+
+    # Direct admin access from the main page for administrators
+    if user_role == "admin":
+        st.markdown("---")
+        admin_col1, admin_col2, admin_col3 = st.columns([1, 2, 1])
+        with admin_col2:
+            st.markdown("""
+            <div style="text-align: center; padding: 1.25rem; background: #1d3a56; border-radius: 12px;
+                        box-shadow: 0 6px 18px rgba(18, 38, 58, 0.25); margin-bottom: 0.5rem;">
+                <h3 style="color: white; margin: 0; font-family: 'Poppins', sans-serif; font-weight: 600;">Administration</h3>
+                <p style="color: rgba(255,255,255,0.85); margin: 6px 0 0 0; font-size: 0.9rem;">User management, ERP connections, AI data mapping, and system settings</p>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("Open Admin Settings", key="admin_card", use_container_width=True,
+                         help="Manage users, data sources, and system configuration"):
+                st.session_state['pending_nav'] = "Admin Panel"
+                st.rerun()
+
 
 elif selected_tab == "Navi":
     # Apply anti-scraping protection for navigation and planning data
