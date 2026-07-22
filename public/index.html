@@ -146,6 +146,8 @@
 </header>
 <main id="app"></main>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script src="assets/demo_views.js"></script>
 <script>
 const MODULES = {
   navi: {
@@ -155,18 +157,14 @@ const MODULES = {
     color: '#2450b8',
     tabs: [
       { name: 'Scenario Planner', src: 'scenario-planner.html' },
-      { name: 'Economic Indicators',
-        desc: 'Live economic context for planning decisions: Federal Reserve (FRED) and Bureau of Economic Analysis indicators, demographics, and climate data for your region.' },
+      { name: 'Economic Indicators', view: 'econ' },
       { name: 'Investment Optimizer', src: 'investment-optimizer.html' },
-      { name: 'Report Comparison',
-        desc: 'Side-by-side comparison of budget reports across fiscal years and scenarios, with variance highlighting.' },
-      { name: 'Risk Analysis',
-        desc: 'Monte Carlo simulation over budget scenarios to quantify funding risk and confidence intervals.' },
-      { name: 'Position-Based Budgeting',
-        desc: 'Excel-style multi-sheet personnel budgeting workbook: split cost-center allocations, multi-year budgets, vacancy management, union contract compliance, and audit trails.' },
+      { name: 'Cash Flow', view: 'cashflow' },
+      { name: 'Report Comparison', view: 'reportComparison' },
+      { name: 'Risk Analysis', view: 'risk' },
+      { name: 'Position-Based Budgeting', view: 'pbb' },
       { name: 'Budget Playground', src: 'budget-playground.html' },
-      { name: 'Predictive Analytics',
-        desc: 'Machine-learning forecasts over historical general-ledger data: trend projection, seasonality, and anomaly detection.' },
+      { name: 'Predictive Analytics', view: 'predictive' },
     ],
   },
   mantis: {
@@ -175,6 +173,7 @@ const MODULES = {
     tagline: 'AI Intelligence Hub',
     color: '#4169e1',
     tabs: [
+      { name: 'Ledger Insights', view: 'mantisDemo' },
       { name: 'AI Chat',
         desc: 'Conversational analysis of your financial data with dual-AI routing: one engine for financial analysis, data queries, grants, and GASB compliance; another for technical questions, with cross-check mode for second opinions.',
         capabilities: [
@@ -192,18 +191,14 @@ const MODULES = {
     tagline: 'Departmental Insights & Reporting',
     color: '#1c6e64',
     tabs: [
-      { name: 'BI Sandbox',
-        desc: 'Self-serve analytics: natural-language questions over your data, an easy chart builder, and interactive dashboards across all connected databases.' },
-      { name: 'Historical Analysis',
-        desc: 'Multi-year trend analysis of revenues and expenditures with predictive forecasting.' },
-      { name: 'Department Insights',
-        desc: 'Per-department budget performance, forecast tools, and AI-generated insights.' },
-      { name: 'Transaction Analyzer',
-        desc: 'Drill into general-ledger transactions with advanced filtering and export.' },
-      { name: 'Balance Sheet',
-        desc: 'Balance sheet position reporting across funds.' },
+      { name: 'BI Sandbox', view: 'bi' },
+      { name: 'Historical Analysis', view: 'historical' },
+      { name: 'Department Insights', view: 'deptInsights' },
+      { name: 'Transaction Analyzer', view: 'transactions' },
+      { name: 'Balance Sheet', view: 'balance' },
+      { name: 'Monthly Close', view: 'close' },
       { name: 'Google Sheets Export',
-        desc: 'Automated report exports to Google Sheets and Drive with scheduling.' },
+        desc: 'Automated report exports to Google Sheets and Drive with scheduling. Requires the platform backend with Google service-account credentials.' },
     ],
   },
 };
@@ -247,6 +242,8 @@ function renderModule(key, tabIndex) {
   let panel;
   if (tab.src) {
     panel = `<iframe src="${tab.src}" title="${esc(tab.name)}"></iframe>`;
+  } else if (tab.view) {
+    panel = `<div id="view-host" style="padding:20px;max-width:1240px;margin:0 auto;width:100%"></div>`;
   } else {
     const caps = tab.capabilities
       ? `<ul>${tab.capabilities.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` : '';
@@ -269,8 +266,11 @@ function renderModule(key, tabIndex) {
         </div>
       </div>
       <nav class="tabbar"><div class="row">${tabButtons}</div></nav>
-      <div class="panel">${panel}</div>
+      <div class="panel" style="${tab.view ? 'overflow-y:auto;background:#f5f7fa' : ''}">${panel}</div>
     </div>`;
+  if (tab.view && window.DEMO_VIEWS) {
+    window.DEMO_VIEWS.render(tab.view, document.getElementById('view-host'));
+  }
 }
 
 function route() {
