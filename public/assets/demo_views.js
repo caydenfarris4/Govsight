@@ -653,40 +653,13 @@
   };
 
   views.bi = function (el) {
-    el.innerHTML = demoBanner() +
-      '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">' +
-      '<select id="bi-dim" style="padding:7px 10px;border:1px solid #cfd8e0;border-radius:6px">' +
-      '<option value="department">By department</option><option value="fund">By fund</option><option value="account_type">By account type</option></select>' +
-      '<select id="bi-measure" style="padding:7px 10px;border:1px solid #cfd8e0;border-radius:6px">' +
-      '<option value="budget_amount">Budget</option><option value="ytd_actual">YTD actual</option><option value="variance">Variance</option></select></div>' +
-      card('Breakdown', canvasBox('bi-chart', 320)) + '<div id="bi-table"></div>';
-    const render = function () {
-      const dim = document.getElementById('bi-dim').value;
-      const measure = document.getElementById('bi-measure').value;
-      const agg = {};
-      DATA.accounts.forEach(function (a) {
-        if (dim === 'department' && a.account_type !== 'Expense') return;
-        const key = dim === 'fund'
-          ? (DATA.funds.find(function (f) { return f.code === a.fund; }) || { name: a.fund }).name
-          : a[dim];
-        const val = measure === 'variance' ? a.budget_amount - a.ytd_actual : a[measure];
-        agg[key] = (agg[key] || 0) + val;
-      });
-      const entries = Object.entries(agg).sort(function (a, b) { return b[1] - a[1]; });
-      makeChart('bi-chart', { type: 'bar', data: {
-        labels: entries.map(function (e) { return e[0]; }),
-        datasets: [{ label: measure, data: entries.map(function (e) { return e[1]; }),
-          backgroundColor: '#2e6fa3' }] },
-        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { ticks: { callback: function (v) { return fcM(v); } } } } } });
-      document.getElementById('bi-table').innerHTML = card('Values',
-        table([dim, 'Amount'], entries.map(function (e) { return [esc(e[0]), fc(e[1])]; }),
-          { rightAlign: [1] }));
-    };
-    document.getElementById('bi-dim').addEventListener('change', render);
-    document.getElementById('bi-measure').addEventListener('change', render);
-    render();
+    el.innerHTML = demoBanner() + '<div id="bi-root"></div>';
+    if (window.BI_SANDBOX) {
+      window.BI_SANDBOX.render(document.getElementById('bi-root'), DATA);
+    } else {
+      document.getElementById('bi-root').innerHTML =
+        '<div style="padding:30px;color:#a4271c">Analytics builder failed to load.</div>';
+    }
   };
 
   views.historical = function (el) {
