@@ -44,7 +44,37 @@
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   };
 
+  // Live platform access: inside the SPA the unified backend is
+  // same-origin and window.GOVSIGHT_API_URL is set; the static demo app
+  // has no backend and every view falls back to its in-browser model.
+  function platformGet(path) {
+    if (typeof window === 'undefined' || !window.GOVSIGHT_API_URL) {
+      return Promise.reject(new Error('platform backend not available'));
+    }
+    return fetch(path, { credentials: 'same-origin' }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  function onPlatform() {
+    return !!(typeof window !== 'undefined' && window.GOVSIGHT_API_URL);
+  }
+
+  function engineBadge(live) {
+    return live
+      ? '<span style="background:#e2f2e8;color:#1e6b3c;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">PLATFORM ENGINE</span>'
+      : '<span style="background:#eef2f6;color:#5b6b7a;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">IN-BROWSER MODEL</span>';
+  }
+
   function demoBanner() {
+    const liveSections = DATA && DATA.meta && DATA.meta.live_sections;
+    if (liveSections && liveSections.indexOf('accounts') >= 0) {
+      const org = (DATA.meta.organization || 'your organization');
+      return '<div style="background:#e2f2e8;color:#1e6b3c;padding:8px 14px;border-radius:8px;' +
+             'font-size:12px;font-weight:600;margin-bottom:14px">LIVE DATA - served by the GovSight ' +
+             'platform for ' + esc(org) + ' (' + liveSections.join(', ') + ').</div>';
+    }
     return '<div style="background:#e8eef7;color:#24508f;padding:8px 14px;border-radius:8px;' +
            'font-size:12px;font-weight:600;margin-bottom:14px">DEMO DATA - a complete sample city ' +
            '(3 fiscal years, 3,100+ transactions). Connect your ERP through the platform backend to see live figures.</div>';
@@ -409,14 +439,18 @@
     try { assume = Object.assign(assume, JSON.parse(localStorage.getItem(LS + '_assume')) || {}); }
     catch (e) { /* defaults */ }
 
-    const loadedCost = function (r, a) {
-      const salary = r.salary * (1 + a.cola / 100);
-      const benefits = (r.benefits + a.benefitsInfl) / 100;
+    // Loaded cost in budget-year N (1 = next budget year). COLA and
+    // benefits inflation compound; new-hire proration and vacancy
+    // savings apply to year 1 only (positions assumed filled after).
+    const loadedCostYear = function (r, a, n) {
+      const salary = r.salary * Math.pow(1 + a.cola / 100, n);
+      const benefits = (r.benefits + a.benefitsInfl * n) / 100;
       let proration = 1.0;
-      if (r.status === 'New Hire') proration = (13 - Math.min(12, Math.max(1, r.start_month))) / 12;
-      if (r.status === 'Vacant') proration = 1 - a.vacancyFactor / 100;
+      if (n === 1 && r.status === 'New Hire') proration = (13 - Math.min(12, Math.max(1, r.start_month))) / 12;
+      if (n === 1 && r.status === 'Vacant') proration = 1 - a.vacancyFactor / 100;
       return r.fte * salary * (1 + benefits) * proration;
     };
+    const loadedCost = function (r, a) { return loadedCostYear(r, a, 1); };
     const baselineTotal = baseline.reduce(function (s, r) {
       return s + loadedCost(r, { cola: 0, benefitsInfl: 0, vacancyFactor: 0 });
     }, 0);
@@ -471,6 +505,64 @@
       });
       grid += '</tbody></table></div>';
 
+      // Multi-year outlook: compounded COLA / benefits inflation per dept
+      const fyBase = DATA.meta.current_fiscal_year;
+      const outlookYears = [1, 2, 3];
+      const buildOutlookCard = function () {
+      const outlookByDept = {};
+      rows.forEach(function (r) {
+        const d = outlookByDept[r.department] = outlookByDept[r.department] || [0, 0, 0];
+        outlookYears.forEach(function (n, i) { d[i] += loadedCostYear(r, assume, n); });
+      });
+      const outlookTotals = [0, 0, 0];
+      Object.values(outlookByDept).forEach(function (d) {
+        d.forEach(function (v, i) { outlookTotals[i] += v; });
+      });
+      return card('Multi-Year Personnel Outlook',
+        table(['Department'].concat(outlookYears.map(function (n) { return 'FY' + (fyBase + n); }))
+              .concat(['3-yr growth']),
+          Object.entries(outlookByDept).sort(function (a, b) { return b[1][0] - a[1][0]; })
+            .map(function (e) {
+              const growth = e[1][0] > 0 ? (e[1][2] / e[1][0] - 1) * 100 : 0;
+              return [esc(e[0])].concat(e[1].map(function (v) { return fc(v); }))
+                .concat(['<span style="font-weight:700">' + (growth >= 0 ? '+' : '') + growth.toFixed(1) + '%</span>']);
+            })
+            .concat([['<strong>Total</strong>'].concat(outlookTotals.map(function (v) { return '<strong>' + fc(v) + '</strong>'; }))
+              .concat(['<strong>' + (outlookTotals[0] > 0 ? ((outlookTotals[2] / outlookTotals[0] - 1) * 100).toFixed(1) : '0.0') + '%</strong>'])]),
+          { rightAlign: [1, 2, 3, 4] }),
+        'COLA and benefits inflation compound; vacancy savings and new-hire proration apply to FY' + (fyBase + 1) + ' only');
+      };
+
+      // GL reconciliation: modeled cost vs adopted personnel budget
+      // (salaries -5100 / benefits -5200 object codes) per department
+      const buildGlCard = function (deptTotals) {
+      const glByDept = {};
+      DATA.accounts.forEach(function (a) {
+        if (!/-(5100|5200)$/.test(a.account_number)) return;
+        glByDept[a.department] = (glByDept[a.department] || 0) + a.budget_amount;
+      });
+      const glDepts = Array.from(new Set(Object.keys(glByDept).concat(Object.keys(deptTotals))));
+      let glBudgetTotal = 0, glModelTotal = 0;
+      const glRows = glDepts.map(function (d) {
+        const budget = glByDept[d] || 0, model = deptTotals[d] || 0, varc = model - budget;
+        glBudgetTotal += budget; glModelTotal += model;
+        const pct = budget > 0 ? varc / budget * 100 : 0;
+        return [esc(d), fc(budget), fc(model),
+          '<span style="font-weight:700;color:' + (varc > 0 ? '#a4271c' : '#1e6b3c') + '">' +
+          (varc >= 0 ? '+' : '') + fc(varc) + '</span>',
+          budget > 0 ? (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%' : 'no GL budget'];
+      }).sort(function (a, b) { return a[0] < b[0] ? -1 : 1; });
+      glRows.push(['<strong>Total</strong>', '<strong>' + fc(glBudgetTotal) + '</strong>',
+        '<strong>' + fc(glModelTotal) + '</strong>',
+        '<strong style="color:' + (glModelTotal - glBudgetTotal > 0 ? '#a4271c' : '#1e6b3c') + '">' +
+        (glModelTotal - glBudgetTotal >= 0 ? '+' : '') + fc(glModelTotal - glBudgetTotal) + '</strong>',
+        '<strong>' + (glBudgetTotal > 0 ? (((glModelTotal - glBudgetTotal) / glBudgetTotal * 100) >= 0 ? '+' : '') + ((glModelTotal - glBudgetTotal) / glBudgetTotal * 100).toFixed(1) : '0.0') + '%</strong>']);
+      return card('GL Personnel Budget Reconciliation',
+        table(['Department', 'Adopted personnel budget', 'Modeled loaded cost', 'Variance', '%'],
+          glRows, { rightAlign: [1, 2, 3, 4] }),
+        'adopted budget = salaries (object 5100) + benefits (object 5200) accounts in the general ledger');
+      };
+
       el.innerHTML = demoBanner() +
         card('Workbook Assumptions',
           '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end">' +
@@ -488,7 +580,9 @@
           kpi('Total loaded cost', '<span id="pbb-total">' + fcM(total) + '</span>', 'with assumptions applied'),
           kpi('vs adopted baseline', '<span id="pbb-delta">' + (total >= baselineTotal ? '+' : '') + fcM(total - baselineTotal) + '</span>'),
           kpi('Vacancy savings', '<span id="pbb-vacsave">' + fcM(vacantSavings) + '</span>')]) + '</div>' +
-        card('Position Workbook', grid);
+        card('Position Workbook', grid) +
+        '<div id="pbb-outlook">' + buildOutlookCard() + '</div>' +
+        '<div id="pbb-gl">' + buildGlCard(byDept) + '</div>';
 
       const recalcTotals = function () {
         const total2 = rows.reduce(function (s, r) { return s + loadedCost(r, assume); }, 0);
@@ -506,6 +600,8 @@
           const r = rows[parseInt(tr.getAttribute('data-idx'), 10)];
           tr.querySelector('.loaded').textContent = '$' + num(loadedCost(r, assume));
         });
+        byId('pbb-outlook').innerHTML = buildOutlookCard();
+        byId('pbb-gl').innerHTML = buildGlCard(byDept2);
       };
 
       el.querySelectorAll('tr[data-idx] input, tr[data-idx] select').forEach(function (input) {
@@ -618,9 +714,42 @@
         '<div id="cf-stats" style="margin-top:12px"></div>') +
       card('Projected Cash Balance vs Operating Floor', canvasBox('cf-chart', 320),
         'receipts and disbursements follow each type\'s historical monthly seasonality');
+    const drawProjection = function (labels, receipts, disb, balances, floor, engine) {
+      const minBal = Math.min.apply(null, balances);
+      const minMonth = labels[balances.indexOf(minBal)];
+      const investable = function (n) {
+        return Math.max(0, Math.min.apply(null, balances.slice(0, n).map(function (b) { return b - floor; })));
+      };
+      const below = labels.filter(function (_, i) { return balances[i] < floor; });
+      byId('cf-stats').innerHTML =
+        '<div style="margin-bottom:8px">' + engineBadge(engine) + '</div>' +
+        kpiRow([kpi('Lowest balance', fcM(minBal), minMonth),
+                kpi('Months below floor', below.length, below.slice(0, 3).join(', ')),
+                kpi('Investable 90 days', fcM(investable(3))),
+                kpi('Investable 12 months', fcM(investable(12)))]);
+      makeChart('cf-chart', { type: 'bar', data: { labels: labels, datasets: [
+        { type: 'bar', label: 'Receipts', data: receipts, backgroundColor: '#2e7d32' },
+        { type: 'bar', label: 'Disbursements', data: disb, backgroundColor: '#c62828' },
+        { type: 'line', label: 'Ending balance', data: balances, borderColor: '#12263a', tension: 0.25 },
+        { type: 'line', label: 'Operating floor', data: labels.map(function () { return floor; }),
+          borderColor: '#8a5a12', borderDash: [6, 4], pointRadius: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false,
+          scales: { y: { ticks: { callback: function (v) { return fcM(v); } } } } } });
+    };
     const run = function () {
       const start = parseFloat(byId('cf-bal').value) || 0;
       const floor = parseFloat(byId('cf-floor').value) || 0;
+      // The platform's CashFlowEngine is the source of truth when the
+      // backend is reachable; the in-browser model mirrors its method.
+      platformGet('/api/data/cash-flow?starting_balance=' + start + '&policy_floor=' + floor)
+        .then(function (proj) {
+          drawProjection(proj.months, proj.receipts,
+            proj.disbursements.map(function (d) { return -Math.abs(d); }),
+            proj.ending_balance, floor, true);
+        })
+        .catch(function () { runLocal(start, floor); });
+    };
+    const runLocal = function (start, floor) {
       const revShares = seasonalShares('Revenue'), expShares = seasonalShares('Expense');
       const annualRev = DATA.accounts.filter(function (a) { return a.account_type === 'Revenue'; })
         .reduce(function (s, a) { return s + a.budget_amount; }, 0);
@@ -635,25 +764,7 @@
         balances.push(bal); receipts.push(r); disb.push(-d);
         mo++; if (mo > 12) { mo = 1; y++; }
       }
-      const minBal = Math.min.apply(null, balances);
-      const minMonth = labels[balances.indexOf(minBal)];
-      const investable = function (n) {
-        return Math.max(0, Math.min.apply(null, balances.slice(0, n).map(function (b) { return b - floor; })));
-      };
-      const below = labels.filter(function (_, i) { return balances[i] < floor; });
-      byId('cf-stats').innerHTML =
-        kpiRow([kpi('Lowest balance', fcM(minBal), minMonth),
-                kpi('Months below floor', below.length, below.slice(0, 3).join(', ')),
-                kpi('Investable 90 days', fcM(investable(3))),
-                kpi('Investable 12 months', fcM(investable(12)))]);
-      makeChart('cf-chart', { type: 'bar', data: { labels: labels, datasets: [
-        { type: 'bar', label: 'Receipts', data: receipts, backgroundColor: '#2e7d32' },
-        { type: 'bar', label: 'Disbursements', data: disb, backgroundColor: '#c62828' },
-        { type: 'line', label: 'Ending balance', data: balances, borderColor: '#12263a', tension: 0.25 },
-        { type: 'line', label: 'Operating floor', data: labels.map(function () { return floor; }),
-          borderColor: '#8a5a12', borderDash: [6, 4], pointRadius: 0 }] },
-        options: { responsive: true, maintainAspectRatio: false,
-          scales: { y: { ticks: { callback: function (v) { return fcM(v); } } } } } });
+      drawProjection(labels, receipts, disb, balances, floor, false);
     };
     byId('cf-run').addEventListener('click', run);
     run();
@@ -670,14 +781,19 @@
   };
 
   views.historical = function (el) {
-    const years = [2024, 2025, 2026];
+    const allYears = Array.from(new Set(DATA.monthly_actuals.map(function (m) { return m.fiscal_year; }))).sort();
+    const years = allYears.slice(-3);
+    const cur = DATA.meta.current_fiscal_year;
+    const prior = years.length > 1 ? years[years.length - 2] : cur;
+    const elapsed = DATA.meta.months_elapsed + ' months';
     const rev = years.map(function (fy) { return annualTotals('Revenue', fy); });
     const exp = years.map(function (fy) { return annualTotals('Expense', fy); });
+    const iPrior = years.indexOf(prior), iCur = years.indexOf(cur);
     el.innerHTML = demoBanner() +
-      kpiRow([kpi('FY2025 revenue', fcM(rev[1])), kpi('FY2025 expenditures', fcM(exp[1])),
-              kpi('FY2026 YTD revenue', fcM(rev[2]), '6 months'), kpi('FY2026 YTD spend', fcM(exp[2]), '6 months')]) +
+      kpiRow([kpi('FY' + prior + ' revenue', fcM(rev[iPrior])), kpi('FY' + prior + ' expenditures', fcM(exp[iPrior])),
+              kpi('FY' + cur + ' YTD revenue', fcM(rev[iCur]), elapsed), kpi('FY' + cur + ' YTD spend', fcM(exp[iCur]), elapsed)]) +
       card('Revenue vs Expenditures by Fiscal Year', canvasBox('ha-chart', 300),
-        'FY2026 is six months elapsed') +
+        'FY' + cur + ' is ' + elapsed + ' elapsed') +
       '<div id="ha-var"></div>';
     makeChart('ha-chart', { type: 'bar', data: { labels: years.map(String), datasets: [
       { label: 'Revenue', data: rev, backgroundColor: '#2e7d32' },
@@ -690,19 +806,52 @@
       const d = deptRows[a.department] = deptRows[a.department] || { budget: 0, actual: 0 };
       d.budget += a.budget_amount; d.actual += a.ytd_actual;
     });
-    byId('ha-var').innerHTML = card('FY2026 Department Budget vs YTD Actual',
+    const onPace = DATA.meta.months_elapsed / 12 * 100;
+    byId('ha-var').innerHTML = card('FY' + cur + ' Department Budget vs YTD Actual',
       table(['Department', 'Annual Budget', 'YTD Actual', '% Used'],
         Object.entries(deptRows).sort(function (a, b) { return b[1].budget - a[1].budget; })
           .map(function (e) {
             const pct = e[1].budget ? e[1].actual / e[1].budget * 100 : 0;
             return [esc(e[0]), fc(e[1].budget), fc(e[1].actual),
-              '<span style="font-weight:700;color:' + (pct > 58 ? '#a4271c' : pct < 40 ? '#8a5a12' : '#1e6b3c') + '">' +
+              '<span style="font-weight:700;color:' + (pct > onPace + 8 ? '#a4271c' : pct < onPace - 10 ? '#8a5a12' : '#1e6b3c') + '">' +
               pct.toFixed(1) + '%</span>'];
           }), { rightAlign: [1, 2, 3] }),
-      'six months elapsed - roughly 50% is on pace');
+      elapsed + ' elapsed - roughly ' + onPace.toFixed(0) + '% is on pace');
   };
 
   views.deptInsights = function (el) {
+    // Prefer the platform's pacing engine (per-department historical
+    // spend shares); fall back to the in-browser aggregate model.
+    platformGet('/api/data/pacing').then(function (resp) {
+      if (!resp.available) throw new Error(resp.reason || 'pacing unavailable');
+      const rows = resp.rows;
+      const flagged = rows.filter(function (r) { return r.Flag; });
+      el.innerHTML = demoBanner() +
+        '<div style="margin-bottom:10px">' + engineBadge(true) +
+        ' <span style="font-size:12px;color:#5b6b7a">FY' + resp.fiscal_year +
+        ' through month ' + resp.through_month + '</span></div>' +
+        (flagged.length ? flagged.map(function (r) {
+          const over = r.Flag === 'OVER PACE';
+          return '<div style="background:' + (over ? '#fdecea' : '#fdeeda') + ';color:' + (over ? '#a4271c' : '#8a5a12') +
+            ';padding:10px 14px;border-radius:8px;margin-bottom:8px;font-size:13px"><strong>' +
+            r.Flag + ':</strong> ' + esc(r.Department) + ' has spent ' + r['% Spent'].toFixed(1) +
+            '% of budget vs its own historical ' + r['Typical % by Now'].toFixed(1) + '% by this point (' +
+            (r['Deviation (pp)'] > 0 ? '+' : '') + r['Deviation (pp)'].toFixed(1) + ' pp). Projected full year: ' +
+            fcM(r['Projected Full Year']) + ' vs budget ' + fcM(r['Annual Budget']) + '.</div>';
+        }).join('') : '<div style="background:#e2f2e8;color:#1e6b3c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px">All departments are pacing within threshold of their own historical pattern.</div>') +
+        card('Department Pacing vs Own Historical Pattern',
+          table(['Department', 'Annual Budget', 'YTD Actual', '% Spent', 'Typical % by now', 'Deviation', 'Projected vs Budget'],
+            rows.map(function (r) {
+              return [esc(r.Department), fc(r['Annual Budget']), fc(r['YTD Actual']),
+                r['% Spent'].toFixed(1) + '%', r['Typical % by Now'].toFixed(1) + '%',
+                '<span style="font-weight:700;color:' + (r.Flag ? '#a4271c' : '#1e6b3c') + '">' +
+                (r['Deviation (pp)'] > 0 ? '+' : '') + r['Deviation (pp)'].toFixed(1) + ' pp</span>',
+                (r['Projected vs Budget'] >= 0 ? '+' : '') + fcM(r['Projected vs Budget'])];
+            }), { rightAlign: [1, 2, 3, 4, 5, 6] }));
+    }).catch(function () { deptInsightsLocal(el); });
+  };
+
+  function deptInsightsLocal(el) {
     const expShares = seasonalShares('Expense');
     const expectedShare = expShares.slice(0, DATA.meta.months_elapsed)
       .reduce(function (s, v) { return s + v; }, 0);
@@ -719,6 +868,7 @@
     }).sort(function (a, b) { return Math.abs(b.dev) - Math.abs(a.dev); });
     const flagged = rows.filter(function (r) { return Math.abs(r.dev) > 8; });
     el.innerHTML = demoBanner() +
+      '<div style="margin-bottom:10px">' + engineBadge(false) + '</div>' +
       (flagged.length ? flagged.map(function (r) {
         const over = r.dev > 0;
         return '<div style="background:' + (over ? '#fdecea' : '#fdeeda') + ';color:' + (over ? '#a4271c' : '#8a5a12') +
@@ -736,7 +886,7 @@
               '<span style="font-weight:700;color:' + (Math.abs(r.dev) > 8 ? '#a4271c' : '#1e6b3c') + '">' +
               (r.dev > 0 ? '+' : '') + r.dev.toFixed(1) + ' pp</span>'];
           }), { rightAlign: [1, 2, 3, 4, 5] }));
-  };
+  }
 
   views.transactions = function (el) {
     const depts = ['All'].concat(DATA.departments);
@@ -820,13 +970,55 @@
   };
 
   views.close = function (el) {
+    // Latest month with activity is the close period
+    const latestDate = DATA.transactions.reduce(function (m, t) {
+      return t.date > m ? t.date : m;
+    }, '0000-00-00');
+    const month = latestDate.slice(0, 7);
+    const monthName = new Date(month + '-15').toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    const colors = { high: ['#fdecea', '#a4271c'], medium: ['#fdeeda', '#8a5a12'],
+                     info: ['#e8eef7', '#24508f'] };
     el.innerHTML = demoBanner() +
-      card('Monthly Close Review - June 2026',
+      card('Monthly Close Review - ' + monthName,
         '<button id="close-run" style="background:#1d3a56;color:#fff;border:none;border-radius:8px;padding:9px 22px;font-weight:600;cursor:pointer">Run close review</button>' +
         '<div id="close-out" style="margin-top:14px"></div>',
-        'unusual amounts, duplicates, and split-purchase patterns');
+        'unusual amounts, duplicates, split-purchase patterns, and restricted-fund activity');
+
+    const renderReport = function (reviewed, findings, engine, skipped) {
+      byId('close-out').innerHTML =
+        '<div style="margin-bottom:8px">' + engineBadge(engine) +
+        (skipped && skipped.length ? ' <span style="font-size:11.5px;color:#8a5a12">Skipped: ' + skipped.map(esc).join(', ') + '</span>' : '') +
+        '</div>' +
+        kpiRow([kpi('Transactions reviewed', reviewed.toLocaleString()),
+                kpi('High-priority findings', findings.filter(function (f) { return f[0] === 'high'; }).length),
+                kpi('Total findings', findings.length)]) +
+        (findings.length ? findings.map(function (f) {
+          const c = colors[f[0]] || colors.info;
+          return '<div style="background:' + c[0] + ';color:' + c[1] +
+            ';padding:10px 14px;border-radius:8px;margin-bottom:8px;font-size:13px"><strong>' +
+            f[1] + ':</strong> ' + f[2] + '</div>';
+        }).join('') : '<div style="background:#e2f2e8;color:#1e6b3c;padding:10px 14px;border-radius:8px;font-size:13px">No exceptions found.</div>');
+    };
+
     byId('close-run').addEventListener('click', function () {
-      const month = '2026-06';
+      // The platform's MonthlyCloseAssistant runs the full check suite
+      // (including fund-restriction policy); fall back to the in-browser
+      // checks when there is no backend.
+      const y = parseInt(month.slice(0, 4), 10), mo = parseInt(month.slice(5, 7), 10);
+      platformGet('/api/data/close-review?year=' + y + '&month=' + mo)
+        .then(function (report) {
+          const labels = { unusual_amount: 'Unusual amount',
+                           possible_duplicate: 'Possible duplicate payment',
+                           threshold_hugging: 'Split-purchase pattern',
+                           restricted_fund_activity: 'Restricted fund activity' };
+          renderReport(report.transaction_count, report.findings.map(function (f) {
+            return [f.severity, labels[f.check] || esc(f.check), esc(f.message)];
+          }), true, report.checks_skipped);
+        })
+        .catch(function () { runLocalClose(); });
+    });
+
+    const runLocalClose = function () {
       const current = DATA.transactions.filter(function (t) { return t.date.slice(0, 7) === month; });
       const history = DATA.transactions.filter(function (t) { return t.date.slice(0, 7) < month; });
       const findings = [];
@@ -871,17 +1063,8 @@
             fc(e[1].reduce(function (s, t) { return s + t.amount; }, 0)) + ') - review for split purchasing.']);
         }
       });
-      const colors = { high: ['#fdecea', '#a4271c'], medium: ['#fdeeda', '#8a5a12'] };
-      byId('close-out').innerHTML =
-        kpiRow([kpi('Transactions reviewed', current.length.toLocaleString()),
-                kpi('High-priority findings', findings.filter(function (f) { return f[0] === 'high'; }).length),
-                kpi('Total findings', findings.length)]) +
-        (findings.length ? findings.map(function (f) {
-          return '<div style="background:' + colors[f[0]][0] + ';color:' + colors[f[0]][1] +
-            ';padding:10px 14px;border-radius:8px;margin-bottom:8px;font-size:13px"><strong>' +
-            f[1] + ':</strong> ' + f[2] + '</div>';
-        }).join('') : '<div style="background:#e2f2e8;color:#1e6b3c;padding:10px 14px;border-radius:8px;font-size:13px">No exceptions found.</div>');
-    });
+      renderReport(current.length, findings, false);
+    };
   };
 
   views.mantisDemo = function (el) {

@@ -25,6 +25,7 @@ router = APIRouter(prefix="/api/data", tags=["data"],
                    dependencies=[Depends(require_user)])
 
 CANONICAL_DB = os.path.join("databases", "core", "govsight_all_in_one_data.db")
+PAYROLL_DB = os.path.join("databases", "payroll_city_payroll_demo (1).db")
 DEMO_JSON = os.path.join("public", "demo", "demo_data.json")
 
 
@@ -42,6 +43,42 @@ def _demo_defaults() -> Dict[str, Any]:
             return json.load(fh)
     except Exception:
         return {}
+
+
+def _live_positions() -> Optional[List[Dict[str, Any]]]:
+    """Positions from the connected payroll system, in the bundle's shape.
+    The loaded-benefits rate comes from the canonical payroll rates so the
+    Personnel workbook matches the PBB calculation engine."""
+    if not os.path.exists(PAYROLL_DB):
+        return None
+    try:
+        from modules.navi.payroll_rates import DEFAULT_PAYROLL_RATES as rates
+        benefits_pct = round(
+            rates["std_benefits_pct"] + rates["retirement_pct"]
+            + rates["fica_pct"] + rates["medicare_pct"]
+            + rates["unemployment_pct"] + rates["workers_comp_pct"], 4)
+        conn = sqlite3.connect(PAYROLL_DB)
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            """SELECT e.EmployeeID AS id, e.Position AS title,
+                      e.Department AS department, e.FTE AS fte,
+                      COALESCE(AVG(ph.GrossPay) * :periods, 0) AS annual
+               FROM Employees e
+               LEFT JOIN PaycheckHeaders ph ON ph.EmployeeID = e.EmployeeID
+               WHERE e.Position IS NOT NULL
+               GROUP BY e.EmployeeID, e.Position, e.Department, e.FTE""",
+            {"periods": rates["pay_periods"]}).fetchall()
+        conn.close()
+        out = [{
+            "position_id": str(r["id"]), "title": r["title"],
+            "department": r["department"] or "Unassigned",
+            "fte": float(r["fte"] or 1.0),
+            "annual_salary": round(float(r["annual"]), 2),
+            "benefits_pct": benefits_pct, "status": "Filled",
+        } for r in rows if float(r["annual"] or 0) > 0]
+        return out or None
+    except Exception:
+        return None
 
 
 @router.get("/bundle")
@@ -94,8 +131,17 @@ def data_bundle():
         bundle["transactions"] = demo.get("transactions", [])
         sources["transactions"] = "sample"
 
+    # Positions come from the payroll system when one is connected
+    live_positions = _live_positions()
+    if live_positions:
+        bundle["positions"] = live_positions
+        sources["positions"] = "live"
+    else:
+        bundle["positions"] = demo.get("positions", [])
+        sources["positions"] = "sample"
+
     # Sections with no live pipeline yet ship bundled defaults, labeled
-    for key in ("balance_sheet", "positions", "scenarios", "economic",
+    for key in ("balance_sheet", "scenarios", "economic",
                 "funds", "departments", "city"):
         bundle[key] = demo.get(key, [] if key != "city" else {})
         sources[key] = "sample"
