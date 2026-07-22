@@ -110,8 +110,11 @@ def _infer_type(val: Any) -> str:
         return "number"
     for fmt in _DATE_FORMATS:
         try:
-            datetime.strptime(s, fmt)
-            return "date"
+            parsed = datetime.strptime(s, fmt)
+            # Reject implausible years: account numbers like 10-20-5300
+            # would otherwise parse as dates (year 5300)
+            if 1990 <= parsed.year <= 2100:
+                return "date"
         except ValueError:
             continue
     return "string"
@@ -446,7 +449,9 @@ class TransformExecutor:
         s = str(raw).strip()
         for fmt in _DATE_FORMATS:
             try:
-                return datetime.strptime(s, fmt).strftime("%Y-%m-%d")
+                parsed = datetime.strptime(s, fmt)
+                if 1990 <= parsed.year <= 2100:
+                    return parsed.strftime("%Y-%m-%d")
             except ValueError:
                 continue
         raise ValueError(f"unparseable date: {s!r}")
