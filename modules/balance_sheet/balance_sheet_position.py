@@ -24,10 +24,11 @@ from datetime import datetime
 from typing import Dict, Any, List
 
 from modules.database.db_connection import (
-    get_db_path_for_org, 
+    get_db_path_for_org,
     execute_query,
-    format_currency, 
-    format_percentage
+    format_currency,
+    format_percentage,
+    load_org_data
 )
 
 # Import the mask parser for account parsing
@@ -187,15 +188,23 @@ def render_balance_sheet_position(org: str = "cityA", org_display_name: str = "C
         
         # Calculate net position and metrics
         net_position = total_assets - total_liabilities
-        current_ratio = total_assets / total_liabilities if total_liabilities > 0 else float('inf')
+        assets_to_liabilities = total_assets / total_liabilities if total_liabilities > 0 else float('inf')
         net_position_ratio = net_position / total_assets if total_assets > 0 else 0
-        
-        # Display metrics
+
+        # Display metrics. Note: this is total assets / total liabilities, NOT
+        # an accounting current ratio (that needs current-asset/current-
+        # liability classification the chart of accounts doesn't provide yet),
+        # so it is labeled for what it is.
         st.metric("Total Assets", format_currency(total_assets))
         st.metric("Total Liabilities", format_currency(total_liabilities))
         st.metric("Fund Balance / Net Position", format_currency(total_fund_balance if total_fund_balance > 0 else net_position))
-        st.metric("Current Ratio", f"{current_ratio:.2f}")
+        st.metric("Assets-to-Liabilities", "n/a" if assets_to_liabilities == float('inf') else f"{assets_to_liabilities:.2f}",
+                  help="Total assets divided by total liabilities (not a current ratio)")
         st.metric("Net Position Ratio", format_percentage(net_position_ratio * 100))
+
+    # Reserve adequacy vs policy (GFOA best practice: unrestricted fund
+    # balance of at least two months of regular operating expenditures)
+    render_reserve_monitoring(org, total_fund_balance if total_fund_balance > 0 else net_position)
         
     # Detailed Balance Sheet Table
     st.subheader("Detailed Balance Sheet")
@@ -346,3 +355,63 @@ def load_balance_sheet_data(db_path):
     except Exception as e:
         st.error(f"Error loading balance sheet data: {e}")
         return pd.DataFrame()
+
+
+def render_reserve_monitoring(org: str, fund_balance: float):
+    """Reserve adequacy: fund balance in months of spending vs policy floor."""
+    st.subheader("Reserve Adequacy")
+    import json
+
+    months_floor = 2.0
+    try:
+        with open("configs/application/reserve_policy.json") as fh:
+            months_floor = float(json.load(fh).get("months_of_expenditures_floor", 2.0))
+    except Exception:
+        pass
+
+    try:
+        df = load_org_data(org)
+    except Exception:
+        df = None
+    if df is None or df.empty or "Actual" not in df.columns:
+        st.info("Reserve adequacy needs operating expenditure data from the "
+                "general ledger; connect it to see months-of-spending coverage.")
+        return
+
+    latest_year = df["FiscalYear"].max() if "FiscalYear" in df.columns else None
+    year_df = df[df["FiscalYear"] == latest_year] if latest_year is not None else df
+    annual_expenditures = float(year_df["Actual"].sum())
+    if annual_expenditures <= 0:
+        st.info("No expenditure actuals found for the latest fiscal year.")
+        return
+
+    monthly_spend = annual_expenditures / 12.0
+    months_coverage = fund_balance / monthly_spend if monthly_spend else 0.0
+    pct_of_annual = fund_balance / annual_expenditures * 100.0
+    days_cash = fund_balance / (annual_expenditures / 365.0)
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Fund balance coverage", f"{months_coverage:.1f} months",
+              help="Fund balance divided by average monthly expenditures")
+    c2.metric("Percent of annual spend", f"{pct_of_annual:.1f}%",
+              help="GFOA recommends no less than two months (~16.7%)")
+    c3.metric("Days cash on hand", f"{days_cash:,.0f}")
+
+    if months_coverage < months_floor:
+        st.error(
+            f"Reserves cover {months_coverage:.1f} months of spending - below "
+            f"the policy floor of {months_floor:.1f} months. GFOA recommends "
+            f"at least two months of regular operating expenditures in "
+            f"unrestricted fund balance.")
+    elif months_coverage < months_floor * 1.25:
+        st.warning(
+            f"Reserves cover {months_coverage:.1f} months - above the "
+            f"{months_floor:.1f}-month floor but with little cushion.")
+    else:
+        st.success(
+            f"Reserves cover {months_coverage:.1f} months of spending, above "
+            f"the {months_floor:.1f}-month policy floor.")
+    st.caption(
+        f"Based on FY {latest_year} expenditures of "
+        f"{format_currency(annual_expenditures)}. Set the policy floor in "
+        f"configs/application/reserve_policy.json.")
