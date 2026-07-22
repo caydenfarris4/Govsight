@@ -37,6 +37,15 @@ class AutomatedReportScheduler:
         self.report_queue = queue.Queue()
         self.scheduler_thread = None
         self.is_running = False
+        # Durability: re-arm persisted schedules so they survive restarts.
+        # Previously jobs were only registered at creation time, so every
+        # saved schedule silently stopped firing after a process restart.
+        for report in self.scheduled_reports:
+            if report.get('enabled', True):
+                try:
+                    self._schedule_report(report)
+                except Exception:
+                    pass
     
     def _load_scheduled_reports(self) -> List[Dict]:
         """Load scheduled reports from configuration"""
@@ -158,6 +167,33 @@ class AutomatedReportScheduler:
         
         return next_run.isoformat()
     
+
+    def _load_real_department_data(self):
+        """Department budget/actual from the canonical GL store; None when
+        unavailable so callers can label sample output honestly."""
+        import sqlite3
+        db_path = os.path.join("databases", "core", "govsight_all_in_one_data.db")
+        if not os.path.exists(db_path):
+            return None
+        try:
+            conn = sqlite3.connect(db_path)
+            try:
+                df = pd.read_sql_query(
+                    """SELECT department AS Department,
+                              SUM(budget_amount) AS Budget,
+                              SUM(ytd_actual) AS Actual
+                       FROM gl_accounts WHERE account_type='Expense'
+                       GROUP BY department ORDER BY Budget DESC""", conn)
+            finally:
+                conn.close()
+            if df.empty:
+                return None
+            df["Variance"] = df["Budget"] - df["Actual"]
+            df["Variance %"] = (df["Variance"] / df["Budget"] * 100).round(1)
+            return df
+        except Exception:
+            return None
+
     def _schedule_report(self, report: Dict):
         """Schedule a report for execution"""
         frequency = report['frequency']
@@ -259,13 +295,19 @@ class AutomatedReportScheduler:
         """Generate monthly financial summary report"""
         try:
             # Load financial data (mock data for demonstration)
-            data = pd.DataFrame({
-                'Department': ['IT', 'HR', 'Finance', 'Operations', 'Marketing'],
-                'Budget': [100000, 80000, 90000, 150000, 70000],
-                'Actual': [95000, 82000, 88000, 145000, 75000],
-                'Variance': [5000, -2000, 2000, 5000, -5000],
-                'Variance %': [5.0, -2.5, 2.2, 3.3, -7.1]
-            })
+            data = self._load_real_department_data()
+            if data is None:
+                # Labeled sample fallback; the report title carries the label
+                report['data_source_label'] = 'SAMPLE DATA'
+                data = pd.DataFrame({
+                    'Department': ['IT', 'HR', 'Finance', 'Operations', 'Marketing'],
+                    'Budget': [100000, 80000, 90000, 150000, 70000],
+                    'Actual': [95000, 82000, 88000, 145000, 75000],
+                    'Variance': [5000, -2000, 2000, 5000, -5000],
+                    'Variance %': [5.0, -2.5, 2.2, 3.3, -7.1]
+                })
+            else:
+                report['data_source_label'] = 'Canonical GL store'
             
             # Apply filters if specified
             if report.get('filters'):
@@ -335,14 +377,22 @@ class AutomatedReportScheduler:
     def _generate_budget_variance(self, report: Dict) -> Dict[str, Any]:
         """Generate budget variance report"""
         try:
-            # Load budget data
-            data = pd.DataFrame({
-                'Account': ['Revenue', 'Salaries', 'Operations', 'Capital', 'Other'],
-                'Budget YTD': [500000, 300000, 100000, 50000, 25000],
-                'Actual YTD': [480000, 310000, 95000, 48000, 27000],
-                'Variance': [-20000, -10000, 5000, 2000, -2000],
-                'Variance %': [-4.0, -3.3, 5.0, 4.0, -8.0]
-            })
+            # Load budget data from the canonical GL store when available
+            real = self._load_real_department_data()
+            if real is not None:
+                data = real.rename(columns={
+                    'Department': 'Account', 'Budget': 'Budget YTD',
+                    'Actual': 'Actual YTD'})
+                report['data_source_label'] = 'Canonical GL store'
+            else:
+                report['data_source_label'] = 'SAMPLE DATA'
+                data = pd.DataFrame({
+                    'Account': ['Revenue', 'Salaries', 'Operations', 'Capital', 'Other'],
+                    'Budget YTD': [500000, 300000, 100000, 50000, 25000],
+                    'Actual YTD': [480000, 310000, 95000, 48000, 27000],
+                    'Variance': [-20000, -10000, 5000, 2000, -2000],
+                    'Variance %': [-4.0, -3.3, 5.0, 4.0, -8.0]
+                })
             
             # Flag significant variances
             threshold = report.get('thresholds', {}).get('variance_percent', 5.0)
@@ -400,13 +450,18 @@ class AutomatedReportScheduler:
             departments = report.get('filters', {}).get('departments', 
                          ['IT', 'HR', 'Finance', 'Operations', 'Marketing'])
             
-            data = pd.DataFrame({
-                'Department': departments,
-                'Budget Utilization': np.random.uniform(70, 100, len(departments)),
-                'Efficiency Score': np.random.uniform(60, 95, len(departments)),
-                'Project Completion': np.random.uniform(75, 100, len(departments)),
-                'Staff Productivity': np.random.uniform(70, 90, len(departments))
-            })
+            data = self._load_real_department_data()
+            if data is None:
+                report['data_source_label'] = 'SAMPLE DATA'
+                data = pd.DataFrame({
+                    'Department': ['IT', 'HR', 'Finance', 'Operations'],
+                    'Budget': [100000, 80000, 90000, 150000],
+                    'Actual': [95000, 82000, 88000, 145000],
+                    'Variance': [5000, -2000, 2000, 5000],
+                    'Variance %': [5.0, -2.5, 2.2, 3.3]
+                })
+            else:
+                report['data_source_label'] = 'Canonical GL store'
             
             # Calculate overall score
             data['Overall Score'] = data[['Budget Utilization', 'Efficiency Score', 
