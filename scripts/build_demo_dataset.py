@@ -308,7 +308,46 @@ def main():
         econ["fed_funds"].append(round(5.35 - 1.1 * (i / 35), 2))
         econ["local_permits"].append(int(52 + 14 * math.sin((i % 12) / 12 * 2 * math.pi - 1.2) + rng.randint(-6, 6)))
 
+    # City of record: drives the localized demographics/zoning/climate views.
+    # Live Census and NWS pulls use these codes; the fallback values mirror
+    # the platform's government_api_connector defaults.
+    city = {
+        "name": "Spanish Fork",
+        "state": "Utah",
+        "state_abbr": "UT",
+        "state_fips": "49",
+        "place_fips": "70660",
+        "county": "Utah County",
+        "latitude": 40.1149,
+        "longitude": -111.6549,
+        "fallback": {
+            "population": 47428,
+            "median_age": 28.5,
+            "median_household_income": 98497,
+            "median_home_value": 385000,
+            "growth_rate_pct": 2.2,
+            "ethnicity": {"White": 75.0, "Hispanic/Latino": 15.0, "Black": 5.0,
+                           "Asian": 3.0, "Other": 2.0},
+            "climate": {"avg_temp_f": 52.1, "annual_precipitation_in": 14.2,
+                         "heat_days_over_90": 55},
+            "zoning": {
+                "breakdown": {
+                    "Residential Single-Family": 45.2,
+                    "Residential Multi-Family": 12.8,
+                    "Commercial": 8.5,
+                    "Industrial": 6.2,
+                    "Open Space/Parks": 15.3,
+                    "Public/Institutional": 7.8,
+                    "Agricultural": 4.2,
+                },
+                "total_area_acres": 16500,
+                "source": "Spanish Fork Planning Estimates",
+            },
+        },
+    }
+
     dataset = {
+        "city": city,
         "meta": {
             "label": "GovSight demo dataset",
             "generated_for": "demonstration and testing - not real municipal data",

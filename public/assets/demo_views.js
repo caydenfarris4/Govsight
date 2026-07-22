@@ -132,19 +132,154 @@
   // ── views ──────────────────────────────────────────────────────────────
   const views = {};
 
+  function sourceBadge(live, label) {
+    return live
+      ? '<span style="background:#e2f2e8;color:#1e6b3c;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">LIVE - ' + label + '</span>'
+      : '<span style="background:#fdeeda;color:#8a5a12;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">ESTIMATED - ' + label + ' unavailable</span>';
+  }
+
+  function fetchWithTimeout(url, ms) {
+    const ctrl = new AbortController();
+    const t = setTimeout(function () { ctrl.abort(); }, ms || 7000);
+    return fetch(url, { signal: ctrl.signal }).then(function (r) {
+      clearTimeout(t);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  // Live demographics for the city of record from the US Census ACS 5-year
+  // API (keyless, CORS-enabled). Falls back to the configured estimates.
+  function fetchCensusDemographics(city) {
+    const vars = ['B01003_001E', 'B01002_001E', 'B19013_001E', 'B25077_001E',
+                  'B03002_001E', 'B03002_003E', 'B03002_004E', 'B03002_006E', 'B03002_012E'];
+    const url = 'https://api.census.gov/data/2023/acs/acs5?get=' + vars.join(',') +
+                '&for=place:' + city.place_fips + '&in=state:' + city.state_fips;
+    return fetchWithTimeout(url).then(function (data) {
+      const row = {};
+      data[0].forEach(function (h, i) { row[h] = parseFloat(data[1][i]); });
+      const total = row.B03002_001E || 1;
+      const white = row.B03002_003E / total * 100;
+      const black = row.B03002_004E / total * 100;
+      const asian = row.B03002_006E / total * 100;
+      const hispanic = row.B03002_012E / total * 100;
+      return {
+        live: true, vintage: '2023 ACS 5-year',
+        population: row.B01003_001E,
+        median_age: row.B01002_001E,
+        median_household_income: row.B19013_001E,
+        median_home_value: row.B25077_001E,
+        ethnicity: {
+          'White': Math.round(white * 10) / 10,
+          'Hispanic/Latino': Math.round(hispanic * 10) / 10,
+          'Black': Math.round(black * 10) / 10,
+          'Asian': Math.round(asian * 10) / 10,
+          'Other': Math.round(Math.max(0, 100 - white - hispanic - black - asian) * 10) / 10,
+        },
+      };
+    });
+  }
+
+  // Live short-term forecast from the National Weather Service (keyless, CORS)
+  function fetchWeather(city) {
+    return fetchWithTimeout('https://api.weather.gov/points/' + city.latitude + ',' + city.longitude)
+      .then(function (p) { return fetchWithTimeout(p.properties.forecast); })
+      .then(function (f) {
+        const now = f.properties.periods[0];
+        return { live: true, name: now.name, temp: now.temperature + '\u00b0' + now.temperatureUnit,
+                 detail: now.shortForecast };
+      });
+  }
+
   views.econ = function (el) {
+    const city = DATA.city || { name: 'your city', state: '', fallback: {} };
+    const fb = city.fallback || {};
     el.innerHTML = demoBanner() +
-      card('Inflation and Unemployment', canvasBox('ec1'), 'CPI year-over-year vs unemployment rate') +
-      card('Federal Funds Rate', canvasBox('ec2', 220), 'borrowing-cost environment') +
-      card('Local Building Permits', canvasBox('ec3', 220), 'leading indicator for impact fees and property tax base');
+      '<div style="background:#12263a;color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:14px;font-size:13px">' +
+      'Localized to <strong>' + esc(city.name) + ', ' + esc(city.state) + '</strong> (city of record - ' +
+      'Census place ' + esc(city.state_fips + city.place_fips || '') + '). Demographics pull live from the US Census; ' +
+      'estimates are labeled when a feed is unreachable.</div>' +
+      '<div id="demo-demographics">' + card('Demographics', '<div style="color:#5b6b7a;font-size:13px">Loading live Census data\u2026</div>') + '</div>' +
+      '<div id="demo-zoning"></div>' +
+      '<div id="demo-climate">' + card('Climate and Weather', '<div style="color:#5b6b7a;font-size:13px">Loading forecast\u2026</div>') + '</div>' +
+      card('Regional Economic Series', canvasBox('ec1'),
+           esc(city.name) + ' area - demo series until FRED/BEA keys are configured on the platform') +
+      card('Local Building Permits', canvasBox('ec3', 220),
+           'leading indicator for impact fees and the property tax base');
+
+    const renderDemographics = function (d) {
+      const eth = d.ethnicity || {};
+      document.getElementById('demo-demographics').innerHTML =
+        card('Demographics - ' + esc(city.name),
+          kpiRow([
+            kpi('Population', (d.population || 0).toLocaleString()),
+            kpi('Median age', (d.median_age || 0).toFixed(1)),
+            kpi('Median household income', fc(d.median_household_income || 0)),
+            kpi('Median home value', fc(d.median_home_value || 0))]) +
+          '<div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:center">' +
+          '<div style="height:220px"><canvas id="eth-chart"></canvas></div>' +
+          table(['Group', 'Share'], Object.entries(eth).map(function (e) {
+            return [esc(e[0]), e[1].toFixed(1) + '%'];
+          }), { rightAlign: [1] }) + '</div>',
+          sourceBadge(d.live, 'US Census ' + (d.vintage || '')));
+      makeChart('eth-chart', { type: 'doughnut', data: {
+        labels: Object.keys(eth),
+        datasets: [{ data: Object.values(eth),
+          backgroundColor: ['#2e6fa3', '#1c6e64', '#8a5a12', '#4169e1', '#5b6b7a'] }] },
+        options: { responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'right' } } } });
+    };
+
+    fetchCensusDemographics(city).then(renderDemographics).catch(function () {
+      renderDemographics({
+        live: false,
+        population: fb.population, median_age: fb.median_age,
+        median_household_income: fb.median_household_income,
+        median_home_value: fb.median_home_value, ethnicity: fb.ethnicity || {},
+      });
+    });
+
+    // Zoning (planning estimates; live GIS feed is city-configurable)
+    const zoning = (fb.zoning || {});
+    const zb = zoning.breakdown || {};
+    document.getElementById('demo-zoning').innerHTML =
+      card('Zoning Mix - ' + esc(city.name),
+        '<div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:center">' +
+        '<div style="height:220px"><canvas id="zone-chart"></canvas></div>' +
+        table(['Zone', 'Share of area'], Object.entries(zb).map(function (e) {
+          return [esc(e[0]), e[1].toFixed(1) + '%'];
+        }), { rightAlign: [1] }) + '</div>' +
+        '<div style="font-size:12px;color:#5b6b7a;margin-top:8px">Total area ~' +
+        (zoning.total_area_acres || 0).toLocaleString() + ' acres. Source: ' +
+        esc(zoning.source || 'planning estimates') + '. A live municipal GIS feed can be configured per city.</div>');
+    makeChart('zone-chart', { type: 'doughnut', data: {
+      labels: Object.keys(zb),
+      datasets: [{ data: Object.values(zb),
+        backgroundColor: ['#2e6fa3', '#4169e1', '#8a5a12', '#5b6b7a', '#1c6e64', '#12263a', '#a4271c'] }] },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'right' } } } });
+
+    // Climate and live weather
+    const renderClimate = function (weather) {
+      const cl = fb.climate || {};
+      document.getElementById('demo-climate').innerHTML =
+        card('Climate and Weather - ' + esc(city.name),
+          kpiRow([
+            weather ? kpi(weather.name || 'Now', weather.temp, esc(weather.detail || '')) :
+                      kpi('Current forecast', 'unavailable'),
+            kpi('Avg annual temp', (cl.avg_temp_f || 0) + '\u00b0F'),
+            kpi('Annual precipitation', (cl.annual_precipitation_in || 0) + ' in'),
+            kpi('Days over 90\u00b0F', cl.heat_days_over_90 || 0)]),
+          sourceBadge(!!weather, 'National Weather Service'));
+    };
+    fetchWeather(city).then(renderClimate).catch(function () { renderClimate(null); });
+
     const e = DATA.economic;
     makeChart('ec1', { type: 'line', data: { labels: e.months, datasets: [
       { label: 'CPI YoY %', data: e.cpi_yoy, borderColor: '#c62828', tension: 0.3 },
-      { label: 'Unemployment %', data: e.unemployment, borderColor: '#2e6fa3', tension: 0.3 }] },
-      options: { responsive: true, maintainAspectRatio: false } });
-    makeChart('ec2', { type: 'line', data: { labels: e.months, datasets: [
+      { label: 'Unemployment %', data: e.unemployment, borderColor: '#2e6fa3', tension: 0.3 },
       { label: 'Fed funds %', data: e.fed_funds, borderColor: '#12263a', tension: 0.3 }] },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+      options: { responsive: true, maintainAspectRatio: false } });
     makeChart('ec3', { type: 'bar', data: { labels: e.months, datasets: [
       { label: 'Permits', data: e.local_permits, backgroundColor: '#1c6e64' }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
