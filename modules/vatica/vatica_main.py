@@ -62,7 +62,14 @@ def render_vatica_module(org: str = "cityA", org_display_name: str = "City A"):
     """, unsafe_allow_html=True)
     
     # Create tabs for the main functions with BI Sandbox in tab 1
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["BI Sandbox", "Historical Analysis", "Department Insights", "Transaction Analyzer", "Balance Sheet", "Google Sheets Export"])
+    tab1, tab2, tab3, tab4, tab5, tab_close, tab6 = st.tabs(["BI Sandbox", "Historical Analysis", "Department Insights", "Transaction Analyzer", "Balance Sheet", "Monthly Close", "Google Sheets Export"])
+
+    with tab_close:
+        try:
+            from modules.vatica.monthly_close_assistant import render_monthly_close_tab
+            render_monthly_close_tab(org, org_display_name)
+        except Exception as close_exc:
+            st.error(f"Monthly Close Assistant unavailable: {close_exc}")
     
     with tab1:
         st.markdown("### Enhanced BI Sandbox")
