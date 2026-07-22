@@ -25,7 +25,7 @@ from modules.scenario_planner.scenario_planner_html_server import render_scenari
 # BI Sandbox moved to Vatica module
 from modules.utils.accessibility_helper import add_accessibility_features
 from .monte_carlo_simulator import render_monte_carlo_simulator
-from .pbb_spreadsheet import render_pbb_spreadsheet
+# Legacy PBB (pbb_spreadsheet) is dormant - enhanced multisheet only
 from .pbb_enhanced_multisheet import render_enhanced_pbb
 from .budget_playground_server import render_budget_playground_tab
 
@@ -142,18 +142,13 @@ def render_navi_module(org: str = "cityA", org_display_name: str = "City A"):
         st.markdown("### Position-Based Budgeting Workbook")
         st.markdown("Multi-sheet budgeting system with GL mapping, split allocations, and ERP export")
         
-        # Version selector
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.markdown("*Enterprise-grade PBB with multi-year planning and payroll integration*")
-        with col2:
-            use_enhanced = st.toggle("Enhanced Version", value=True, help="Use multi-sheet enhanced PBB")
-        
+        # The enhanced multi-sheet PBB is the supported implementation; the
+        # legacy spreadsheet (pbb_spreadsheet.py) is dormant and no longer
+        # reachable from the UI
+        st.markdown("*Enterprise-grade PBB with multi-year planning and payroll integration*")
+
         try:
-            if use_enhanced:
-                render_enhanced_pbb()
-            else:
-                render_pbb_spreadsheet()
+            render_enhanced_pbb()
         except Exception as e:
             st.error(f"Error loading Position-Based Budgeting: {str(e)}")
             st.info("Please ensure payroll database connection is configured in Admin Panel.")
