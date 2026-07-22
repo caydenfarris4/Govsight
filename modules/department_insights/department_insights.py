@@ -151,7 +151,11 @@ def compute_budget_pacing(df, threshold_pp: float = 8.0):
 
     rows = []
     for dept, cur in current.groupby("Department"):
-        annual_budget = cur["Budget"].sum()
+        # Annual budget from the average monthly budget x 12: in a partial
+        # year only elapsed months are loaded, and summing just those would
+        # understate the annual budget and overstate the pace
+        monthly_budget = cur.groupby("Month")["Budget"].sum()
+        annual_budget = float(monthly_budget.mean() * 12) if len(monthly_budget) else 0.0
         ytd_actual = cur[cur["Month"] <= current_month]["Actual"].sum()
         if annual_budget <= 0:
             continue
