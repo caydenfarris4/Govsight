@@ -1,0 +1,10 @@
+{
+  "_instructions": "The municipality's profile, used for grant matching and AI context. Update these to your city's real figures; they were previously hardcoded in source.",
+  "name": "Spanish Fork",
+  "state": "utah",
+  "type": "municipality",
+  "population": 47428,
+  "annual_budget": 100000000,
+  "departments": ["Police", "Fire", "Public Works", "Parks and Recreation", "Administration", "Finance", "Community Development", "Utilities", "Library", "Information Technology"],
+  "priorities": ["infrastructure", "public safety", "water"]
+}

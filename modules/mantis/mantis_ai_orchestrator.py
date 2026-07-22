@@ -1336,6 +1336,32 @@ BEHAVIOR GUIDELINES:
     
     # Tool Adapter Methods
     
+    def _get_municipal_profile(self) -> Dict[str, Any]:
+        """Municipal profile from config (configs/application/municipal_profile.json).
+
+        Previously hardcoded (population 50,000 / $100M budget); now the
+        city's real figures are maintained in config and shared by every
+        grant tool.
+        """
+        import json as _json
+        import os as _os
+        defaults = {
+            'type': 'municipality', 'name': 'your municipality',
+            'state': 'utah', 'population': 50000, 'budget': 100000000,
+            'departments': ['Police', 'Fire', 'Public Works', 'Parks'],
+            'priorities': [],
+        }
+        try:
+            path = _os.path.join('configs', 'application', 'municipal_profile.json')
+            with open(path, 'r') as fh:
+                data = _json.load(fh)
+            defaults.update({k: v for k, v in data.items() if not k.startswith('_')})
+            if 'annual_budget' in data:
+                defaults['budget'] = data['annual_budget']
+        except Exception:
+            pass
+        return defaults
+
     async def _search_grants_adapter(self, query: str, agency: str = "ALL", 
                                     min_amount: float = None, max_amount: float = None) -> MantisResult:
         """Adapter for grant search functionality"""
@@ -1348,52 +1374,68 @@ BEHAVIOR GUIDELINES:
             )
         
         try:
-            # Get municipal profile for matching
-            municipal_profile = {
-                'type': 'municipality',
-                'population': 50000,
-                'budget': 100000000,
-                'departments': ['Police', 'Fire', 'Public Works', 'Parks'],
-                'priorities': [query] if query else []
-            }
-            
-            # Search for grants using the correct method
-            # The method expects municipal_profile and priority_areas
-            priority_areas = []
-            if query:
-                priority_areas.append(query)
-            if agency and agency != "ALL":
-                priority_areas.append(agency)
-                
-            matching_grants = self.grant_intelligence.intelligent_grant_matching(
-                municipal_profile=municipal_profile,
-                priority_areas=priority_areas if priority_areas else None
+            profile = self._get_municipal_profile()
+
+            # Primary source: live grants.gov / USASpending search
+            live_grants = []
+            live_error = None
+            try:
+                from modules.external_data.grants_api import get_grants_api
+                live_grants = get_grants_api().search_all_grants(
+                    keywords=query or "", state=profile.get('state', 'utah'))
+                if min_amount:
+                    live_grants = [g for g in live_grants
+                                   if g.get('max_amount', 0) >= min_amount]
+                if max_amount:
+                    live_grants = [g for g in live_grants
+                                   if g.get('min_amount', 0) <= max_amount]
+                if agency and agency != "ALL":
+                    live_grants = [g for g in live_grants
+                                   if agency.lower() in str(g.get('agency', '')).lower()]
+            except Exception as api_exc:
+                live_error = str(api_exc)
+                logger.warning(f"Live grant search failed, using curated library: {api_exc}")
+
+            if live_grants:
+                df = pd.DataFrame([{
+                    'Title': g.get('title', ''),
+                    'Agency': g.get('agency', ''),
+                    'Amount': f"${g.get('min_amount', 0):,.0f} - ${g.get('max_amount', 0):,.0f}",
+                    'Deadline': str(g.get('deadline', ''))[:10],
+                    'Source': g.get('source', ''),
+                    'Link': g.get('url', ''),
+                } for g in live_grants[:10]])
+                return MantisResult(
+                    type="table",
+                    title=f"Grant Opportunities for '{query}' (live search)",
+                    message=(f"Found {len(live_grants)} grants from live federal sources. "
+                             f"Showing top {min(10, len(live_grants))}."),
+                    data=df,
+                    tool_used="search_grants",
+                    metadata={'total_grants': len(live_grants), 'data_source': 'live'}
+                )
+
+            # Fallback: curated grant library (clearly labeled)
+            priority_areas = [x for x in (query, None if agency == "ALL" else agency) if x]
+            grants = self.grant_intelligence.intelligent_grant_matching(
+                municipal_profile=profile,
+                priority_areas=priority_areas or None
             )
-            
-            # Filter by amounts if specified
-            if min_amount or max_amount:
-                filtered_grants = []
-                for grant in matching_grants:
-                    if min_amount and grant.min_amount < min_amount:
-                        continue
-                    if max_amount and grant.max_amount > max_amount:
-                        continue
-                    filtered_grants.append(grant)
-                matching_grants = filtered_grants
-            
-            matching_result = {'matching_grants': matching_grants}
-            
-            grants = matching_result.get('matching_grants', [])
-            
+            if min_amount:
+                grants = [g for g in grants if g.max_amount >= min_amount]
+            if max_amount:
+                grants = [g for g in grants if g.min_amount <= max_amount]
+
             if not grants:
                 return MantisResult(
                     type="text",
                     title="No Grants Found",
-                    message=f"No grants found matching '{query}'",
+                    message=(f"No grants found matching '{query}'. "
+                             + (f"Live search unavailable ({live_error}); only the curated "
+                                f"library was checked." if live_error else "")),
                     tool_used="search_grants"
                 )
-            
-            # Format results as DataFrame
+
             df = pd.DataFrame([{
                 'Title': g.title,
                 'Agency': g.agency,
@@ -1401,15 +1443,17 @@ BEHAVIOR GUIDELINES:
                 'Deadline': g.deadline.strftime('%Y-%m-%d'),
                 'Match Required': 'Yes' if g.match_required else 'No',
                 'Eligibility Score': f"{g.eligibility_score:.1%}"
-            } for g in grants[:10]])  # Limit to top 10
-            
+            } for g in grants[:10]])
+
             return MantisResult(
                 type="table",
-                title=f"Grant Opportunities for '{query}'",
-                message=f"Found {len(grants)} matching grants. Showing top {min(10, len(grants))}.",
+                title=f"Grant Opportunities for '{query}' (curated library)",
+                message=(f"Live grants.gov search was unavailable - showing "
+                         f"{min(10, len(grants))} matches from the curated grant library. "
+                         f"Verify current deadlines before applying."),
                 data=df,
                 tool_used="search_grants",
-                metadata={'total_grants': len(grants)}
+                metadata={'total_grants': len(grants), 'data_source': 'curated_library'}
             )
             
         except Exception as e:
@@ -2314,12 +2358,7 @@ BEHAVIOR GUIDELINES:
         try:
             # Get default org profile if not provided
             if not organization_profile:
-                organization_profile = {
-                    'type': 'municipality',
-                    'population': 50000,
-                    'budget': 100000000,
-                    'location': 'USA'
-                }
+                organization_profile = self._get_municipal_profile()
             
             # Since assess_grant_eligibility doesn't exist, use intelligent matching
             # to find and analyze the grant

@@ -1495,49 +1495,37 @@ async def analyze_whatif(query_obj: WhatIfQuery):
 
 @app.get("/api/grants/search")
 async def search_grants(q: str = Query(..., description="Search query for grants")):
-    """Search for available grants"""
+    """Search for available grants via live federal sources (grants.gov,
+    Simpler.Grants.gov, USASpending). Returns an honest empty result with
+    is_live=false when the live search is unavailable — no fabricated
+    sample grants."""
     try:
-        # Simulate grant search (in production, connect to grants.gov API)
-        sample_grants = [
-            {
-                "id": "GR001",
-                "name": "Infrastructure Improvement Grant",
-                "description": "Federal funding for local infrastructure projects",
-                "amount": 2500000,
-                "deadline": "2025-12-31",
-                "eligibility": "Municipalities with population > 10,000"
-            },
-            {
-                "id": "GR002", 
-                "name": "Public Safety Equipment Grant",
-                "description": "State grant for police and fire equipment",
-                "amount": 500000,
-                "deadline": "2025-06-30",
-                "eligibility": "All municipalities"
-            },
-            {
-                "id": "GR003",
-                "name": "Green Energy Initiative",
-                "description": "Federal grant for renewable energy projects",
-                "amount": 1000000,
-                "deadline": "2025-09-30",
-                "eligibility": "Cities with sustainability plans"
-            }
-        ]
-        
-        # Filter grants based on search query
-        filtered_grants = [
-            g for g in sample_grants 
-            if q.lower() in g["name"].lower() or q.lower() in g["description"].lower()
-        ]
-        
+        from modules.external_data.grants_api import get_grants_api
+        results = get_grants_api().search_all_grants(keywords=q)
+        grants = [{
+            "id": g.get("id") or g.get("url", ""),
+            "name": g.get("title", ""),
+            "agency": g.get("agency", ""),
+            "description": g.get("description", "")[:400],
+            "min_amount": g.get("min_amount", 0),
+            "max_amount": g.get("max_amount", 0),
+            "amount": g.get("max_amount", 0),
+            "deadline": str(g.get("deadline", ""))[:10],
+            "source": g.get("source", ""),
+            "url": g.get("url", ""),
+        } for g in results]
+
         return {
             "success": True,
             "query": q,
-            "grants": filtered_grants,
-            "count": len(filtered_grants)
+            "grants": grants,
+            "count": len(grants),
+            "is_live": bool(grants),
+            "message": None if grants else (
+                "Live grant search returned no results (the federal APIs may be "
+                "unreachable from this deployment). No sample grants are substituted.")
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")
 

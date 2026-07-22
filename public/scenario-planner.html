@@ -707,7 +707,9 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                 new Promise((_,rej) => setTimeout(()=>rej(new Error('timeout')),4000))
             ]);
             const apiGrants = (r.grants||r.results||[]).map(g => ({
-                ...g, name:g.name||g.title, _fromApi:true
+                ...g, name:g.name||g.title,
+                min: g.min ?? g.min_amount, max: g.max ?? g.max_amount,
+                _fromApi:true
             }));
             // Merge: add API results not already present in local results
             const localNames = new Set(localResults.map(g=>g.name.toLowerCase()));
@@ -763,7 +765,7 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                                     <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 12px',border:'1px solid #e3f2fd',borderRadius:6,marginBottom:7,background:'#fafeff'}}>
                                         <div style={{flex:1,minWidth:0}}>
                                             <div style={{fontWeight:600,fontSize:13}}>{r.name||r.title}</div>
-                                            <div style={{fontSize:11,color:'#777',marginTop:1}}>{r.agency||r.funder} {r.category&&<span className="badge badge-blue" style={{marginLeft:4}}>{r.category}</span>}</div>
+                                            <div style={{fontSize:11,color:'#777',marginTop:1}}>{r.agency||r.funder} {r.category&&<span className="badge badge-blue" style={{marginLeft:4}}>{r.category}</span>} {r._fromApi&&<span className="badge badge-green" style={{marginLeft:4}}>LIVE SEARCH</span>}</div>
                                             {amountDisplay&&<div style={{fontSize:11,color:'#2e7d32',marginTop:2}}>{amountDisplay}</div>}
                                             {(r.deadline||r.close_date)&&<div style={{fontSize:11,color:'#888'}}>Deadline: {r.deadline||r.close_date}</div>}
                                         </div>

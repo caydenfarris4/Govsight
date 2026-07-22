@@ -28,8 +28,9 @@ class GrantsAPIConnector:
             'User-Agent': 'GovSight Municipal Intelligence Platform'
         })
         
-        # OpenAI client for real grant research
-        self.openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        # OpenAI client for real grant research — created lazily so the
+        # connector works (live API search) without an OpenAI key configured
+        self._openai_client = None
         
         # Federal grant APIs - Multiple endpoints for redundancy
         self.simpler_grants_api = "https://api.simpler.grants.gov/v1/opportunities"  # Modern API (try first)
@@ -60,6 +61,14 @@ class GrantsAPIConnector:
             }
         }
     
+    @property
+    def openai_client(self):
+        if self._openai_client is None:
+            if not os.getenv('OPENAI_API_KEY'):
+                raise RuntimeError("OPENAI_API_KEY not configured")
+            self._openai_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        return self._openai_client
+
     def search_federal_grants(self, keywords: str = "", category: str = "All Categories", 
                              funding_min: int = 0, funding_max: int = 50000000) -> List[Dict[str, Any]]:
         """Search federal grants using priority system: Simpler.grants.gov → Grants.gov → FEMA → State → ChatGPT"""
