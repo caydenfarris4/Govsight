@@ -1,31 +1,36 @@
 # GovSight Financial Intelligence Platform - full stack container
-# Runs the Streamlit application (port 5000), the PBB FastAPI backend
-# (port 8000, internal), and the Budget Playground Node API (port 5002,
-# internal, reverse-proxied by the app at /bp-api).
+#
+# Stage 1 builds the React SPA; stage 2 is the Python runtime that
+# serves it. Two services run in the container:
+#   - Platform API + SPA (uvicorn, port 8000) - public entrypoint
+#   - Management console (Streamlit, port 5000) - admin surface
+FROM node:20-slim AS frontend
+WORKDIR /build
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# System dependencies: libpq for psycopg2, nodejs for the Budget Playground API
+# libpq for psycopg2 (optional Postgres connections)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
-    nodejs \
-    npm \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY budget_playground_api/package.json budget_playground_api/
-RUN cd budget_playground_api && npm install --omit=dev
-
 COPY . .
+COPY --from=frontend /build/dist frontend/dist
 
 # Databases live here; mount a volume to persist GL data, scenarios,
 # audit logs, and user databases across restarts.
 RUN mkdir -p databases/core
 
-EXPOSE 5000
+EXPOSE 8000 5000
 
 ENV PYTHONUNBUFFERED=1
 

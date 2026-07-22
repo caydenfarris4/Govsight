@@ -1,16 +1,19 @@
-# GovSight full-platform stack (Streamlit + PBB API + Budget Playground API
-# in one container, matching the single-host architecture the app expects).
+# GovSight full-platform stack in one container:
+#   - Platform (SPA + APIs) on 8000 - the public entrypoint users log into
+#   - Management console (Streamlit admin) on 5000
 services:
   govsight:
     build: .
     ports:
-      - "5000:5000"   # Streamlit application (public entrypoint)
-      - "8000:8000"   # PBB API (expose only if not fronted by a proxy)
+      - "8000:8000"   # Platform: React SPA + unified API (public entrypoint)
+      - "5000:5000"   # Management console (restrict to admins / VPN in prod)
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - SEED_SAMPLE_DATA=${SEED_SAMPLE_DATA:-1}
-      # Browser-facing URL of the PBB API; set to your public API hostname
+      # HMAC secret for platform session cookies - set a strong value in prod
+      - SESSION_SECRET=${SESSION_SECRET:-}
+      # Browser-facing URL of the platform API; set to your public hostname
       # when deploying behind Cloudflare or another proxy.
       - PBB_API_URL=${PBB_API_URL:-http://localhost:8000}
     volumes:
