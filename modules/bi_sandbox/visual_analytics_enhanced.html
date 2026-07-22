@@ -405,6 +405,19 @@
     </style>
 </head>
 <body>
+    <div id="data-source-banner" style="padding:8px 16px;font-size:13px;font-weight:600"></div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var el = document.getElementById('data-source-banner');
+        if (window.GOVSIGHT_DATA && window.GOVSIGHT_DATA.source === 'real') {
+            el.style.background = '#e2f2e8'; el.style.color = '#1e6b3c';
+            el.textContent = 'Charting the city\u2019s actual general-ledger data.';
+        } else {
+            el.style.background = '#fdecea'; el.style.color = '#a4271c';
+            el.textContent = 'SAMPLE DATA \u2014 no general-ledger connection detected. These charts do not reflect the city\u2019s actual figures.';
+        }
+    });
+    </script>
     <div class="container">
         <!-- Main Dashboard -->
         <div class="dashboard">
@@ -778,15 +791,36 @@
             window.addEventListener('resize', () => chartInstance.resize());
         }
         
+        // Real data injected server-side from the canonical GL store; the
+        // hardcoded arrays below are ONLY the fallback for detached previews
+        const LIVE = (typeof window !== 'undefined' && window.GOVSIGHT_DATA &&
+                      window.GOVSIGHT_DATA.source === 'real') ? window.GOVSIGHT_DATA : null;
+
+        function liveSeries(section, measureId) {
+            const s = LIVE && LIVE[section];
+            if (!s) return null;
+            let values;
+            if (measureId === 'actual') values = s.actual;
+            else if (measureId === 'variance') values = s.budget.map((b, i) => b - s.actual[i]);
+            else if (measureId === 'percentage') values = s.budget.map((b, i) => b > 0 ? Math.round(s.actual[i] / b * 100) : 0);
+            else values = s.budget;
+            return { categories: s.categories.slice(), values: values.slice() };
+        }
+
         // Generate chart data based on configuration
         function generateChartData(config) {
-            // This is sample data generation - in real application, this would fetch actual data
             let categories = [];
             let values = [];
-            
+            const measureId = (config.measures[0] || {}).id || 'budget';
+
             // Generate based on selected dimensions
             if (config.dimensions.length > 0) {
                 const dimension = config.dimensions[0];
+                const liveMap = { dept: 'byDept', account: 'byAccountType', category: 'byFund' };
+                const live = liveMap[dimension.id] ? liveSeries(liveMap[dimension.id], measureId) : null;
+                if (live) {
+                    return { categories: live.categories, values: live.values };
+                }
                 switch (dimension.id) {
                     case 'dept':
                         categories = ['Police', 'Fire', 'Public Works', 'Parks', 'Finance', 'Admin'];

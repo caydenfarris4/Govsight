@@ -75,7 +75,13 @@ def render_bi_sandbox_interface(org: str = "cityA", org_display_name: str = "Spa
         try:
             with open(html_path, 'r', encoding='utf-8') as f:
                 html_content = f.read()
-            
+
+            # Inject real GL aggregates so the default dashboard charts the
+            # city's actual numbers instead of its hardcoded sample arrays
+            injection = _build_dashboard_data_injection()
+            if injection:
+                html_content = html_content.replace("<script>", injection + "<script>", 1)
+
             # Render fullscreen dashboard
             components.html(html_content, height=1400, scrolling=True)
             
@@ -1364,3 +1370,55 @@ def render_performance_monitoring_tab(df: pd.DataFrame):
     ])
     
     st.dataframe(status_df, use_container_width=True, hide_index=True)
+
+def _build_dashboard_data_injection() -> str:
+    """Aggregate the canonical GL store into the payload the enhanced
+    dashboard charts from. Returns an empty string when no real data exists
+    (the page then labels itself as sample data)."""
+    import json
+    import os
+    import sqlite3
+    db_path = os.path.join("databases", "core", "govsight_all_in_one_data.db")
+    if not os.path.exists(db_path):
+        return ""
+    try:
+        conn = sqlite3.connect(db_path)
+        try:
+            dept = conn.execute(
+                """SELECT department, SUM(budget_amount), SUM(ytd_actual)
+                   FROM gl_accounts WHERE account_type='Expense'
+                   GROUP BY department ORDER BY SUM(budget_amount) DESC"""
+            ).fetchall()
+            atype = conn.execute(
+                """SELECT account_type, SUM(budget_amount), SUM(ytd_actual)
+                   FROM gl_accounts GROUP BY account_type"""
+            ).fetchall()
+            fund = conn.execute(
+                """SELECT fund, SUM(budget_amount), SUM(ytd_actual)
+                   FROM gl_accounts GROUP BY fund"""
+            ).fetchall()
+        finally:
+            conn.close()
+        if not dept:
+            return ""
+        payload = {
+            "source": "real",
+            "byDept": {
+                "categories": [d[0] for d in dept],
+                "budget": [round(d[1] or 0, 2) for d in dept],
+                "actual": [round(d[2] or 0, 2) for d in dept],
+            },
+            "byAccountType": {
+                "categories": [a[0] for a in atype],
+                "budget": [round(a[1] or 0, 2) for a in atype],
+                "actual": [round(a[2] or 0, 2) for a in atype],
+            },
+            "byFund": {
+                "categories": [f[0] for f in fund],
+                "budget": [round(f[1] or 0, 2) for f in fund],
+                "actual": [round(f[2] or 0, 2) for f in fund],
+            },
+        }
+        return "<script>window.GOVSIGHT_DATA = " + json.dumps(payload) + ";</script>\n"
+    except Exception:
+        return ""
