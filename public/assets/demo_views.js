@@ -132,6 +132,11 @@
   // ── views ──────────────────────────────────────────────────────────────
   const views = {};
 
+  function finePrint(text) {
+    return '<div style="margin-top:10px;padding-top:8px;border-top:1px solid #eef2f5;' +
+           'font-size:10.5px;color:#8a97a3;line-height:1.5">Source: ' + text + '</div>';
+  }
+
   function sourceBadge(live, label) {
     return live
       ? '<span style="background:#e2f2e8;color:#1e6b3c;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">LIVE - ' + label + '</span>'
@@ -202,9 +207,16 @@
       '<div id="demo-demographics">' + card('Demographics', '<div style="color:#5b6b7a;font-size:13px">Loading live Census data\u2026</div>') + '</div>' +
       '<div id="demo-zoning"></div>' +
       '<div id="demo-climate">' + card('Climate and Weather', '<div style="color:#5b6b7a;font-size:13px">Loading forecast\u2026</div>') + '</div>' +
-      card('Regional Economic Series', canvasBox('ec1'),
-           esc(city.name) + ' area - demo series until FRED/BEA keys are configured on the platform') +
-      card('Local Building Permits', canvasBox('ec3', 220),
+      card('Regional Economic Series',
+           canvasBox('ec1') +
+           finePrint('Demonstration series for the ' + esc(city.name) + ' area. In production these pull live from ' +
+             'Federal Reserve Economic Data (FRED, fred.stlouisfed.org) and the U.S. Bureau of Economic Analysis ' +
+             '(BEA, bea.gov) with free API keys configured on the platform backend.'),
+           esc(city.name) + ' area') +
+      card('Local Building Permits',
+           canvasBox('ec3', 220) +
+           finePrint('Demonstration series. In production, permit counts pull from the city\u2019s permitting ' +
+             'system through the data adapter, or from the U.S. Census Building Permits Survey for the region.'),
            'leading indicator for impact fees and the property tax base');
 
     const renderDemographics = function (d) {
@@ -220,7 +232,13 @@
           '<div style="height:220px"><canvas id="eth-chart"></canvas></div>' +
           table(['Group', 'Share'], Object.entries(eth).map(function (e) {
             return [esc(e[0]), e[1].toFixed(1) + '%'];
-          }), { rightAlign: [1] }) + '</div>',
+          }), { rightAlign: [1] }) + '</div>' +
+          finePrint(d.live
+            ? 'U.S. Census Bureau, American Community Survey 5-Year Estimates (' + (d.vintage || '2023 ACS') +
+              '), retrieved live from api.census.gov for Census place ' + esc(city.state_fips + '-' + city.place_fips) +
+              ' (' + esc(city.name) + ', ' + esc(city.state_abbr || city.state) + '). Ethnicity shares computed from table B03002.'
+            : 'Cached estimates derived from U.S. Census ACS (2023 vintage) for ' + esc(city.name) +
+              '; the live api.census.gov feed was unreachable at render time.'),
           sourceBadge(d.live, 'US Census ' + (d.vintage || '')));
       makeChart('eth-chart', { type: 'doughnut', data: {
         labels: Object.keys(eth),
@@ -250,8 +268,10 @@
           return [esc(e[0]), e[1].toFixed(1) + '%'];
         }), { rightAlign: [1] }) + '</div>' +
         '<div style="font-size:12px;color:#5b6b7a;margin-top:8px">Total area ~' +
-        (zoning.total_area_acres || 0).toLocaleString() + ' acres. Source: ' +
-        esc(zoning.source || 'planning estimates') + '. A live municipal GIS feed can be configured per city.</div>');
+        (zoning.total_area_acres || 0).toLocaleString() + ' acres.</div>' +
+        finePrint(esc(zoning.source || 'Municipal planning estimates') +
+          ' for ' + esc(city.name) + '. A live parcel-level feed from the city\u2019s GIS server ' +
+          '(ArcGIS REST) can be configured per municipality on the platform backend.'));
     makeChart('zone-chart', { type: 'doughnut', data: {
       labels: Object.keys(zb),
       datasets: [{ data: Object.values(zb),
@@ -269,7 +289,13 @@
                       kpi('Current forecast', 'unavailable'),
             kpi('Avg annual temp', (cl.avg_temp_f || 0) + '\u00b0F'),
             kpi('Annual precipitation', (cl.annual_precipitation_in || 0) + ' in'),
-            kpi('Days over 90\u00b0F', cl.heat_days_over_90 || 0)]),
+            kpi('Days over 90\u00b0F', cl.heat_days_over_90 || 0)]) +
+          finePrint((weather
+            ? 'Current forecast retrieved live from the National Weather Service (api.weather.gov) for ' +
+              city.latitude + ', ' + city.longitude + ' (' + esc(city.name) + '). '
+            : 'The live National Weather Service feed was unreachable at render time. ') +
+            'Climate normals (temperature, precipitation, heat days) are NOAA-derived local estimates for ' +
+            esc(city.name) + '.'),
           sourceBadge(!!weather, 'National Weather Service'));
     };
     fetchWeather(city).then(renderClimate).catch(function () { renderClimate(null); });
