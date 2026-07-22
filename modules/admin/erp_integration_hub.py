@@ -148,26 +148,34 @@ class ERPIntegrationHub:
             st.warning("Database drivers not fully available. Some ERP connections may be limited.")
         
         # Navigation tabs
-        tab1, tab2, tab3, tab4, tab5 = st.tabs([
-            "Connection Manager", 
+        tab1, tab_ai, tab2, tab3, tab4, tab5 = st.tabs([
+            "Connection Manager",
+            "AI Data Mapping",
             "Real-Time Monitoring",
             "Data Synchronization",
             "System Health",
             "Integration Settings"
         ])
-        
+
         with tab1:
             self.render_connection_manager()
-        
+
+        with tab_ai:
+            try:
+                from modules.admin.data_integration_panel import render_data_integration_panel
+                render_data_integration_panel()
+            except Exception as exc:
+                st.error(f"AI Data Mapping panel unavailable: {exc}")
+
         with tab2:
             self.render_realtime_monitoring()
-        
+
         with tab3:
             self.render_data_sync()
-        
+
         with tab4:
             self.render_system_health()
-        
+
         with tab5:
             self.render_integration_settings()
     
