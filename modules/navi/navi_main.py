@@ -56,16 +56,24 @@ def render_navi_module(org: str = "cityA", org_display_name: str = "City A"):
     """, unsafe_allow_html=True)
     
     # Create tabs for different functions within Navi module
-    tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+    tab1, tab2, tab3, tab_cash, tab4, tab5, tab6, tab7, tab8 = st.tabs([
         "Scenario Planner",
         "Economic Indicators",
         "Investment Optimizer",
+        "Cash Flow",
         "Report Comparison",
         "Risk Analysis",
         "Position-Based Budgeting",
         "Budget Playground",
         "Predictive Analytics"
     ])
+
+    with tab_cash:
+        try:
+            from modules.treasury.cash_flow_ui import render_cash_flow_forecast
+            render_cash_flow_forecast(org, org_display_name)
+        except Exception as cash_exc:
+            st.error(f"Cash Flow Forecast unavailable: {cash_exc}")
     
     with tab1:
         render_scenario_planner_html()

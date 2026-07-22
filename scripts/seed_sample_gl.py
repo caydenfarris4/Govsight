@@ -94,6 +94,19 @@ def main():
             rows.append((f"10-{dept_code}-{obj}", f"{dept_name} {obj_name}",
                          "Expense", dept_name, "10", budget, ytd))
 
+    # Balance the sample city: scale revenue budgets so total revenue runs a
+    # modest 2% surplus over expenses, as a real adopted budget would
+    total_expense = sum(r[5] for r in rows if r[2] == "Expense")
+    total_revenue = sum(r[5] for r in rows if r[2] == "Revenue")
+    if total_revenue > 0:
+        scale = (total_expense * 1.02) / total_revenue
+        rows = [
+            (a, n, t, d, f,
+             round(b * scale, 2) if t == "Revenue" else b,
+             round(y * scale, 2) if t == "Revenue" else y)
+            for (a, n, t, d, f, b, y) in rows
+        ]
+
     cur.executemany(
         "INSERT INTO gl_accounts VALUES (?, ?, ?, ?, ?, ?, ?)", rows)
 
