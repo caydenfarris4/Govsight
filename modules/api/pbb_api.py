@@ -91,7 +91,19 @@ except ImportError as e:
     print(f"Warning: Data Adapter API not available - {e}")
     DATA_ADAPTER_API_AVAILABLE = False
 
-app = FastAPI(title="GovSight PBB API", version="1.0.0")
+app = FastAPI(title="GovSight Platform API", version="2.0.0")
+
+# ── Unified platform routers ────────────────────────────────────────────────
+# Session auth, Budget Playground (Node parity, /api/bp), live data bundle,
+# and the Mantis chat bridge. Each is optional-imported so one missing
+# dependency cannot take the whole API down.
+for _router_module in ("auth", "budget_playground", "data", "mantis"):
+    try:
+        import importlib
+        _mod = importlib.import_module(f"modules.api.routers.{_router_module}")
+        app.include_router(_mod.router)
+    except Exception as _router_exc:
+        print(f"Router {_router_module} unavailable: {_router_exc}")
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to all responses"""
@@ -1985,6 +1997,31 @@ def portfolio_analytics(idle_cash: float = 0.0, benchmark_rate: Optional[float] 
     from modules.financial_data.portfolio_manager import get_portfolio_manager
     return get_portfolio_manager().analytics(idle_cash=idle_cash,
                                              benchmark_rate=benchmark_rate)
+
+
+
+# ── SPA serving ─────────────────────────────────────────────────────────────
+# Serves the built React frontend (frontend/dist) with an index.html
+# fallback for client-side routes. API routes above always win.
+from fastapi.responses import FileResponse
+from fastapi import Request as _Request
+
+_FRONTEND_DIST = os.path.join("frontend", "dist")
+
+
+@app.get("/{spa_path:path}", include_in_schema=False)
+def serve_spa(spa_path: str):
+    if spa_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="Not found")
+    candidate = os.path.normpath(os.path.join(_FRONTEND_DIST, spa_path))
+    if not candidate.startswith(os.path.normpath(_FRONTEND_DIST)):
+        raise HTTPException(status_code=404, detail="Not found")
+    if spa_path and os.path.isfile(candidate):
+        return FileResponse(candidate)
+    index = os.path.join(_FRONTEND_DIST, "index.html")
+    if os.path.isfile(index):
+        return FileResponse(index)
+    return {"detail": "Frontend not built. Run: cd frontend && npm run build"}
 
 
 if __name__ == "__main__":
