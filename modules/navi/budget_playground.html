@@ -745,6 +745,15 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
     const [applying,   setApplying]   = useState(false);
     const [msg,        setMsg]        = useState('');
     const [rfFocused,  setRfFocused]  = useState(null);
+    const [curves,     setCurves]     = useState(null);   // seasonality curves from history
+
+    useEffect(() => {
+        let cancelled = false;
+        req(BASE + '/seasonality?fyStart=' + fyStart)
+            .then(d => { if (!cancelled) setCurves(d); })
+            .catch(() => { if (!cancelled) setCurves({ available: false, byAccount: {}, byType: {} }); });
+        return () => { cancelled = true; };
+    }, [fyStart]);
 
     const numFmt = v => {
         if (v === '' || v === null || v === undefined) return '';
@@ -759,12 +768,25 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
             .map(l => {
                 const adopted    = l.budget_amount || 0;
                 const ytd        = l.ytd_actual    || 0;
-                const extrap     = months > 0 ? (ytd / months) * 12 : ytd;
+                // Seasonality-aware extrapolation: divide YTD by the share of
+                // the year this account has historically completed by month N
+                // (property tax is lumpy, sales tax lags — straight-line badly
+                // misstates both). Straight-line is the labeled fallback.
+                const curve = curves && (curves.byAccount?.[l.account_number] || curves.byType?.[l.account_type]);
+                const share = (curve && months >= 1) ? curve[months - 1] : null;
+                let extrap, method;
+                if (share && share > 0.03 && months < 12) {
+                    extrap = ytd / share;
+                    method = curves.byAccount?.[l.account_number] ? 'seasonal' : 'type-seasonal';
+                } else {
+                    extrap = months > 0 ? (ytd / months) * 12 : ytd;
+                    method = 'straight-line';
+                }
                 const variance   = extrap - adopted;
-                return { ...l, ytd, extrap, variance, adopted };
+                return { ...l, ytd, extrap, variance, adopted, method };
             })
             .sort((a,b) => Math.abs(b.variance) - Math.abs(a.variance));
-    }, [scenario, months]);
+    }, [scenario, months, curves]);
 
     const overBudget   = lines.filter(l=>l.variance>0 && l.account_type!=='Revenue').length;
     const underBudget  = lines.filter(l=>l.variance<0 && l.account_type!=='Revenue').length;
@@ -781,7 +803,7 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
                 revised_budget: parseFloat(overrides[l.account_number] ?? l.extrap.toFixed(0)),
                 forecast_yr2: l.forecast_yr2 ?? l.adopted,
                 forecast_yr3: l.forecast_yr3 ?? l.adopted,
-                note: 'Reforecast applied — extrapolated from ' + months + '-month YTD',
+                note: 'Reforecast applied — ' + (l.method === 'straight-line' ? 'straight-line' : 'seasonality-adjusted') + ' extrapolation from ' + months + '-month YTD',
             }));
         if (!toSave.length) { setMsg('No accounts selected.'); return; }
         setApplying(true);
@@ -810,7 +832,12 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
                         <label>Months elapsed: {months}</label>
                         <input type="range" min={1} max={12} value={months} onChange={e=>setMonths(parseInt(e.target.value))} style={{display:'block',width:200}} />
                     </div>
-                    <div style={{fontSize:12,color:'#888'}}>Extrapolating full-year from {months} month{months!==1?'s':''} of actual data.</div>
+                    <div style={{fontSize:12,color:'#888'}}>
+                        Extrapolating full-year from {months} month{months!==1?'s':''} of actual data.
+                        {curves?.available
+                            ? ' Using each account\u2019s historical monthly seasonality curve (badge per row); accounts without history use straight-line.'
+                            : ' No monthly history available \u2014 using straight-line extrapolation for all accounts.'}
+                    </div>
                 </div>
             </div>
             <div className="stat-grid" style={{gridTemplateColumns:'repeat(3,1fr)',maxWidth:480,marginBottom:12}}>
@@ -845,7 +872,13 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
                             <div className="right" style={{fontSize:12}}>{fc(l.ytd)}</div>
                             <div className="right">
                                 <div style={{fontWeight:700,color:isOver&&l.account_type!=='Revenue'?'#c62828':'#2e7d32',fontSize:12}}>{fc(l.extrap)}</div>
-                                <div style={{fontSize:10,color:'#888'}}>{fv(l.variance)}</div>
+                                <div style={{fontSize:10,color:'#888'}}>{fv(l.variance)}
+                                    {' '}<span style={{padding:'1px 5px',borderRadius:8,fontSize:9,fontWeight:700,
+                                        background:l.method==='straight-line'?'#f0f0f0':'#e3f0e6',
+                                        color:l.method==='straight-line'?'#777':'#1e6b3c'}}>
+                                        {l.method==='seasonal'?'SEASONAL':l.method==='type-seasonal'?'TYPE AVG':'STRAIGHT-LINE'}
+                                    </span>
+                                </div>
                             </div>
                             <div style={{textAlign:'center'}}>
                                 <input type="checkbox" checked={!!accepted[l.account_number]} onChange={()=>toggle(l.account_number)} style={{width:16,height:16,cursor:'pointer'}} />

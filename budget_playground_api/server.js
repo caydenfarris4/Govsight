@@ -1,6 +1,6 @@
 const express = require('express');
 const cors    = require('cors');
-const { initDatabases, getNonPayrollAccounts, getPlayDb, uuid } = require('./db');
+const { initDatabases, getNonPayrollAccounts, getGlDb, getPlayDb, uuid } = require('./db');
 
 const PORT = 5002;
 const app  = express();
@@ -181,6 +181,68 @@ app.put('/api/scenarios/:id/lines', (req, res) => {
 });
 
 // CSV export
+
+// Seasonality curves for reforecasting. Computes each account's historical
+// cumulative-share-of-year curve from monthly_actuals (when present), plus a
+// per-account-type average curve as fallback. Straight-line is the final
+// fallback and the response says which accounts have real curves.
+app.get('/api/seasonality', (req, res) => {
+    const fyStartMonth = (req.query.fyStart === 'January') ? 1 : 7; // calendar month of fiscal month 1
+    const glDb = getGlDb();
+    const hasTable = glDb.prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='monthly_actuals'").get();
+    if (!hasTable) {
+        return res.json({ available: false, byAccount: {}, byType: {}, reason: 'no monthly history' });
+    }
+    const rows = glDb.prepare(
+        'SELECT account_number, fiscal_year, month, actual FROM monthly_actuals').all();
+    if (!rows.length) {
+        return res.json({ available: false, byAccount: {}, byType: {}, reason: 'no monthly history' });
+    }
+
+    const toFiscalIdx = (calMonth) => ((calMonth - fyStartMonth + 12) % 12); // 0-based fiscal month
+    // account -> year -> [12 months of actuals in fiscal order]
+    const perAcctYear = {};
+    for (const r of rows) {
+        const key = r.account_number;
+        perAcctYear[key] = perAcctYear[key] || {};
+        const yr = perAcctYear[key][r.fiscal_year] = perAcctYear[key][r.fiscal_year] || new Array(12).fill(0);
+        yr[toFiscalIdx(r.month)] += r.actual;
+    }
+
+    const types = {};
+    for (const a of getNonPayrollAccounts()) types[a.account_number] = a.account_type;
+
+    const byAccount = {};
+    const typeAccum = {};
+    for (const [acct, years] of Object.entries(perAcctYear)) {
+        const shares = new Array(12).fill(0);
+        let usableYears = 0;
+        for (const months of Object.values(years)) {
+            const total = months.reduce((s, v) => s + Math.abs(v), 0);
+            if (total <= 0) continue;
+            usableYears++;
+            let cum = 0;
+            for (let i = 0; i < 12; i++) {
+                cum += Math.abs(months[i]);
+                shares[i] += cum / total;
+            }
+        }
+        if (!usableYears) continue;
+        const curve = shares.map(s => s / usableYears);
+        byAccount[acct] = curve;
+        const t = types[acct] || 'Expense';
+        typeAccum[t] = typeAccum[t] || { sum: new Array(12).fill(0), n: 0 };
+        for (let i = 0; i < 12; i++) typeAccum[t].sum[i] += curve[i];
+        typeAccum[t].n++;
+    }
+    const byType = {};
+    for (const [t, acc] of Object.entries(typeAccum)) {
+        byType[t] = acc.sum.map(v => v / acc.n);
+    }
+    res.json({ available: Object.keys(byAccount).length > 0, byAccount, byType });
+});
+
 app.get('/api/scenarios/:id/export.csv', (req, res) => {
     try {
         const db       = getPlayDb();

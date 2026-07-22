@@ -96,9 +96,57 @@ def main():
 
     cur.executemany(
         "INSERT INTO gl_accounts VALUES (?, ?, ?, ?, ?, ?, ?)", rows)
+
+    # Monthly actual history (two prior fiscal years) with realistic
+    # municipal seasonality so the reforecast engine has curves to learn:
+    # property tax arrives in Nov/Dec lumps, sales tax has a holiday bump,
+    # most expenses run level with a summer lift for field departments.
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS monthly_actuals (
+            account_number TEXT NOT NULL,
+            fiscal_year    INTEGER NOT NULL,
+            month          INTEGER NOT NULL,   -- calendar month 1-12
+            actual         REAL NOT NULL,
+            PRIMARY KEY (account_number, fiscal_year, month)
+        )
+    """)
+    cur.execute("DELETE FROM monthly_actuals")
+
+    def monthly_weights(account_number, account_name):
+        months = {m: 1.0 for m in range(1, 13)}
+        name = account_name.lower()
+        if "property tax" in name:
+            # Utah property tax due Nov 30: the year concentrates in Nov/Dec
+            months = {m: 0.25 for m in range(1, 13)}
+            months[11], months[12], months[1] = 6.0, 2.5, 0.8
+        elif "sales tax" in name:
+            months[12], months[1], months[6], months[7] = 1.5, 1.3, 1.15, 1.15
+        elif "investment earnings" in name:
+            pass  # level
+        elif any(dept in account_number for dept in ("-30-", "-35-")):
+            # Public Works / Parks: summer-heavy spending
+            for m in (5, 6, 7, 8, 9):
+                months[m] = 1.5
+        total = sum(months.values())
+        return {m: w / total for m, w in months.items()}
+
+    monthly_rows = []
+    for (acct, name, _atype, _dept, _fund, budget, _ytd) in rows:
+        weights = monthly_weights(acct, name)
+        for fy_offset, scale in ((2, 0.94), (1, 0.97)):  # two prior years
+            fiscal_year = 2025 - fy_offset
+            annual = budget * scale * random.uniform(0.96, 1.04)
+            for month, w in weights.items():
+                monthly_rows.append((
+                    acct, fiscal_year, month,
+                    round(annual * w * random.uniform(0.92, 1.08), 2)))
+    cur.executemany(
+        "INSERT INTO monthly_actuals VALUES (?, ?, ?, ?)", monthly_rows)
+
     conn.commit()
     conn.close()
-    print(f"Seeded {len(rows)} GL accounts into {os.path.normpath(DB_PATH)}")
+    print(f"Seeded {len(rows)} GL accounts and {len(monthly_rows)} monthly "
+          f"actuals into {os.path.normpath(DB_PATH)}")
 
 
 if __name__ == "__main__":
