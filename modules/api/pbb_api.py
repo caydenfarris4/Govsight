@@ -310,8 +310,13 @@ def calculate_wages_and_benefits(row_data: Dict[str, Any]) -> Dict[str, Any]:
         'EffectiveRate': round(effective_rate, 2)
     }
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 async def root():
+    # Serve the SPA at the root when it has been built; the API health
+    # message remains the fallback for API-only deployments.
+    index = os.path.join("frontend", "dist", "index.html")
+    if os.path.exists(index):
+        return FileResponse(index)
     return {"message": "GovSight PBB API is running"}
 
 @app.get("/health")

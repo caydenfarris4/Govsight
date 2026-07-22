@@ -1,3 +1,4 @@
+// GENERATED copy for the SPA bundle - source of truth is public/assets/.
 /*
  * GovSight demo data views.
  *
@@ -958,6 +959,7 @@
 
   window.DEMO_VIEWS = {
     load: loadData,
+    setData: function (d) { DATA = d; loadPromise = Promise.resolve(d); },
     render: function (name, container) {
       const fn = views[name];
       if (!fn) { container.innerHTML = '<div style="padding:30px;color:#5b6b7a">View not found: ' + esc(name) + '</div>'; return; }

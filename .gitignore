@@ -39,3 +39,6 @@ rag_indices/
 
 # Wrangler local dev state
 .wrangler/
+
+# Frontend build output
+frontend/dist/
