@@ -119,6 +119,116 @@ def generate_ai_commentary(df, prompt=None):
     # If AI Hub is not available, return fallback response
     return fallback_response
 
+
+def compute_budget_pacing(df, threshold_pp: float = 8.0):
+    """Budget pacing per department: percent of budget spent now vs the
+    share of the year this department has historically consumed by the
+    same month. Returns (DataFrame, latest_year, current_month) or
+    (None, None, None) when the data can't support the calculation.
+
+    The deviation is in percentage points; the projection divides YTD by
+    the historical share (the same seasonality idea the Budget Playground
+    reforecast uses), so a department at 68% spent that is normally at
+    54% by March is flagged long before year-end.
+    """
+    required = {"Department", "FiscalYear", "Budget", "Actual"}
+    if df is None or df.empty or not required.issubset(df.columns):
+        return None, None, None
+    if "Month" not in df.columns or df["Month"].isna().all():
+        return None, None, None
+
+    work = df.copy()
+    work["Month"] = pd.to_numeric(work["Month"], errors="coerce")
+    work = work.dropna(subset=["Month"])
+    if work.empty:
+        return None, None, None
+    latest_year = work["FiscalYear"].max()
+    prior = work[work["FiscalYear"] < latest_year]
+    current = work[work["FiscalYear"] == latest_year]
+    if current.empty or prior.empty:
+        return None, None, None
+    current_month = int(current["Month"].max())
+
+    rows = []
+    for dept, cur in current.groupby("Department"):
+        annual_budget = cur["Budget"].sum()
+        ytd_actual = cur[cur["Month"] <= current_month]["Actual"].sum()
+        if annual_budget <= 0:
+            continue
+        pace_pct = ytd_actual / annual_budget * 100.0
+
+        hist = prior[prior["Department"] == dept]
+        hist_share = None
+        if not hist.empty:
+            shares = []
+            for _, yr in hist.groupby("FiscalYear"):
+                total = yr["Actual"].sum()
+                if total > 0:
+                    shares.append(yr[yr["Month"] <= current_month]["Actual"].sum() / total)
+            if shares:
+                hist_share = sum(shares) / len(shares)
+        expected_pct = (hist_share * 100.0) if hist_share is not None \
+            else current_month / 12.0 * 100.0
+        deviation = pace_pct - expected_pct
+        projected = (ytd_actual / hist_share) if hist_share else \
+            (ytd_actual / current_month * 12.0 if current_month else ytd_actual)
+        rows.append({
+            "Department": dept,
+            "Annual Budget": annual_budget,
+            "YTD Actual": ytd_actual,
+            "% Spent": round(pace_pct, 1),
+            "Typical % by Now": round(expected_pct, 1),
+            "Deviation (pp)": round(deviation, 1),
+            "Projected Full Year": round(projected, 0),
+            "Projected vs Budget": round(projected - annual_budget, 0),
+            "Flag": "OVER PACE" if deviation > threshold_pp
+                    else "UNDER PACE" if deviation < -threshold_pp else "",
+        })
+    if not rows:
+        return None, None, None
+    out = pd.DataFrame(rows).sort_values(
+        "Deviation (pp)", key=lambda s: s.abs(), ascending=False)
+    return out, latest_year, current_month
+
+
+def render_budget_pacing(df):
+    """Render the pacing exception panel inside Department Insights."""
+    pacing_df, latest_year, current_month = compute_budget_pacing(df)
+    with st.expander("Budget Pacing Exceptions", expanded=pacing_df is not None
+                     and (pacing_df["Flag"] != "").any()):
+        if pacing_df is None:
+            st.info("Pacing needs monthly Budget/Actual history across at "
+                    "least two fiscal years (with a Month column).")
+            return
+        flagged = pacing_df[pacing_df["Flag"] != ""]
+        st.caption(
+            f"FY {latest_year}, through month {current_month}. Deviation "
+            f"compares percent of budget spent against each department's own "
+            f"historical spending pattern at this point in the year.")
+        if flagged.empty:
+            st.success("All departments are pacing within 8 percentage "
+                       "points of their historical pattern.")
+        else:
+            for _, r in flagged.iterrows():
+                msg = (f"{r['Department']}: {r['% Spent']:.1f}% spent vs a "
+                       f"typical {r['Typical % by Now']:.1f}% by now "
+                       f"({r['Deviation (pp)']:+.1f} pp). Projected full year "
+                       f"{format_currency(r['Projected Full Year'])} vs budget "
+                       f"{format_currency(r['Annual Budget'])}.")
+                if r["Flag"] == "OVER PACE":
+                    st.error(msg)
+                else:
+                    st.warning(msg)
+        st.dataframe(
+            pacing_df, use_container_width=True, hide_index=True,
+            column_config={
+                "Annual Budget": st.column_config.NumberColumn(format="$%.0f"),
+                "YTD Actual": st.column_config.NumberColumn(format="$%.0f"),
+                "Projected Full Year": st.column_config.NumberColumn(format="$%.0f"),
+                "Projected vs Budget": st.column_config.NumberColumn(format="$%.0f"),
+            })
+
+
 def render_department_insights(org: str = "cityA", org_display_name: str = "City A", restricted_departments: Optional[List[str]] = None, enable_debug: bool = False):
     """
     Render the Department Insights tab
@@ -174,6 +284,14 @@ def render_department_insights(org: str = "cityA", org_display_name: str = "City
         
         # Filter data based on selected years
         filtered_df = df[df["FiscalYear"].isin(selected_years)]
+
+        # Budget pacing exceptions (uses the full multi-year history so the
+        # historical pattern is not limited by the year filter)
+        try:
+            render_budget_pacing(df)
+        except Exception as pacing_exc:
+            if st.session_state.get("debug_mode", False):
+                st.warning(f"Pacing panel error: {pacing_exc}")
         
         # Department Filter - filtered by user role if applicable
         available_depts = sorted(filtered_df["Department"].unique())
