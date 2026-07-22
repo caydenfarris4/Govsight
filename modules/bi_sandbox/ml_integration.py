@@ -475,16 +475,31 @@ def render_economic_indicators_tab():
     """Render economic indicators from external data sources"""
     st.markdown("### Economic Indicators Dashboard")
     st.markdown("Real-time economic data for budget planning")
-    
+
     # Initialize connectors
     if 'cache_manager' not in st.session_state:
         st.session_state.cache_manager = CacheManager()
-    
+
     if 'fred_connector' not in st.session_state:
         st.session_state.fred_connector = FREDConnector(cache_manager=st.session_state.cache_manager)
-    
+
     if 'bea_connector' not in st.session_state:
         st.session_state.bea_connector = BEAConnector(cache_manager=st.session_state.cache_manager)
+
+    # Truth-in-data: without API keys these connectors generate RANDOM
+    # numbers. That must never look like real economic data.
+    missing_keys = []
+    if not getattr(st.session_state.fred_connector, 'api_key', None):
+        missing_keys.append("FRED_API_KEY (free at fred.stlouisfed.org/docs/api/api_key.html)")
+    if not getattr(st.session_state.bea_connector, 'api_key', None):
+        missing_keys.append("BEA_API_KEY (free at apps.bea.gov/api/signup)")
+    if missing_keys:
+        st.error(
+            "SIMULATED DATA - the charts below are randomly generated "
+            "placeholders, not real economic data. Do not use them for "
+            "budget decisions. To load real data, configure: "
+            + "; ".join(missing_keys)
+        )
     
     # Data source selector
     col1, col2, col3 = st.columns([1, 1, 1])

@@ -408,7 +408,7 @@ class EChartsDashboardAPI:
         np.random.seed(42)
         
         departments = ['Police', 'Fire', 'Public Works', 'Parks', 'Admin', 'IT', 'Finance', 'HR']
-        months = pd.date_range('2024-01', periods=12, freq='M')
+        months = pd.date_range('2024-01', periods=12, freq='ME')
         
         data = []
         for dept in departments:
@@ -423,8 +423,11 @@ class EChartsDashboardAPI:
                     'Variance': budget - actual,
                     'Percentage': (actual / budget) * 100
                 })
-        
-        return pd.DataFrame(data)
+
+        df = pd.DataFrame(data)
+        # Tagged so downstream chart payloads can label themselves as sample
+        df.attrs['is_sample'] = True
+        return df
     
     def _transform_bar_data(self, df: pd.DataFrame, config: Dict) -> Dict:
         """Transform data for bar chart"""

@@ -10,6 +10,7 @@ import numpy as np
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 import json
+import os
 
 # Import ML libraries
 try:
@@ -133,8 +134,15 @@ class PredictiveAnalyticsEngine:
         """Render the main forecasting interface"""
         
         # Generate sample data for demonstration
-        historical_data = self.generate_sample_data(category)
-        
+        historical_data, data_source = self.load_historical_data(category)
+        if data_source == 'real':
+            st.success("Training on the city's actual monthly general-ledger history.")
+        else:
+            st.error(
+                "SIMULATED TRAINING DATA - no monthly GL history is available, so "
+                "these forecasts are fit to generated placeholder data. Treat the "
+                "output as a demonstration only, never as a real forecast.")
+
         # Forecast parameters
         forecast_horizon = st.selectbox("Forecast Horizon", 
                                       options=[3, 6, 12, 24, 36],
@@ -147,7 +155,14 @@ class PredictiveAnalyticsEngine:
             with st.spinner("Running predictive models..."):
                 forecast_results = self.run_forecast(category, historical_data, forecast_horizon, confidence_level)
                 
-                if forecast_results:
+                if forecast_results and forecast_results.get('success'):
+                    st.session_state['pa_model_metrics'] = [
+                        {'Model': name.replace('_', ' ').title(),
+                         'R2 (holdout)': f"{m['r2']:.3f}",
+                         'MAE': f"${m['mae']:,.0f}",
+                         'RMSE': f"${m['rmse']:,.0f}",
+                         'Measured': datetime.now().strftime('%Y-%m-%d %H:%M')}
+                        for name, m in forecast_results.get('model_performance', {}).items()]
                     self.display_forecast_results(forecast_results, category)
     
     def render_forecast_settings(self, category: str):
@@ -188,39 +203,62 @@ class PredictiveAnalyticsEngine:
             st.info("No performance data available for this category yet.")
             return
         
-        # Generate mock performance data
-        performance_data = []
-        for model_name in available_models:
-            # Mock metrics - in production these would come from actual model evaluations
-            performance_data.append({
-                'Model': model_name.replace('_', ' ').title(),
-                'Accuracy (R²)': f"{np.random.uniform(0.75, 0.95):.3f}",
-                'MAE': f"${np.random.uniform(50000, 150000):,.0f}",
-                'RMSE': f"${np.random.uniform(75000, 200000):,.0f}",
-                'Last Updated': datetime.now().strftime('%Y-%m-%d')
-            })
-        
-        performance_df = pd.DataFrame(performance_data)
-        
-        # Display performance metrics
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            st.markdown("**Model Performance Comparison**")
-            st.dataframe(performance_df, use_container_width=True, hide_index=True)
-        
-        with col2:
-            st.markdown("**Best Performing Model**")
-            best_model = available_models[0].replace('_', ' ').title()
-            st.metric("Top Model", best_model)
-            st.metric("Avg Accuracy", "87.5%")
-            st.info("Models are evaluated on historical data and cross-validated for accuracy.")
+        # Only real, measured metrics are shown. Fabricated accuracy figures
+        # were displayed here previously; that is exactly the kind of number
+        # a finance director must never see unless it was actually computed.
+        measured = st.session_state.get('pa_model_metrics')
+        if measured:
+            st.markdown("**Model Performance (measured on the last forecast's holdout set)**")
+            st.dataframe(pd.DataFrame(measured), use_container_width=True, hide_index=True)
+        else:
+            st.info(
+                "No measured model performance yet. Run a forecast and the "
+                "holdout-set metrics (R-squared, MAE, RMSE) will appear here. "
+                "This panel never shows estimated or placeholder accuracy figures.")
     
+    def load_historical_data(self, category: str):
+        """Real monthly GL history when available; labeled synthetic otherwise.
+
+        Reads monthly_actuals from the canonical GL store (the table the
+        Budget Playground reforecast also uses). Revenue and budget series
+        aggregate the matching account types by month.
+        """
+        try:
+            import sqlite3
+            db_path = os.path.join('databases', 'core', 'govsight_all_in_one_data.db')
+            if os.path.exists(db_path):
+                conn = sqlite3.connect(db_path)
+                try:
+                    account_type = 'Revenue' if category == 'revenue_prediction' else 'Expense'
+                    df = pd.read_sql_query(
+                        """SELECT m.fiscal_year, m.month, SUM(m.actual) AS value
+                           FROM monthly_actuals m
+                           JOIN gl_accounts g ON g.account_number = m.account_number
+                           WHERE g.account_type = ?
+                           GROUP BY m.fiscal_year, m.month
+                           ORDER BY m.fiscal_year, m.month""",
+                        conn, params=(account_type,))
+                finally:
+                    conn.close()
+                if len(df) >= 24:  # need at least two years for lag features
+                    df['date'] = pd.to_datetime(
+                        df['fiscal_year'].astype(str) + '-' +
+                        df['month'].astype(str).str.zfill(2) + '-01')
+                    df = df.sort_values('date').reset_index(drop=True)
+                    col = {'budget_forecasting': 'actual_budget',
+                           'revenue_prediction': 'revenue',
+                           'demand_forecasting': 'service_requests'}.get(category, 'value')
+                    df[col] = df['value']
+                    return df[['date', col]], 'real'
+        except Exception:
+            pass
+        return self.generate_sample_data(category), 'synthetic'
+
     def generate_sample_data(self, category: str) -> pd.DataFrame:
         """Generate sample historical data for forecasting"""
         
         # Create date range for last 3 years
-        dates = pd.date_range(start='2021-01-01', end='2024-01-01', freq='M')
+        dates = pd.date_range(start='2021-01-01', end='2024-01-01', freq='ME')
         
         if category == 'budget_forecasting':
             # Generate budget data with trend and seasonality
@@ -323,7 +361,7 @@ class PredictiveAnalyticsEngine:
             
             # Create forecast dates
             last_date = historical_data['date'].max()
-            forecast_dates = pd.date_range(start=last_date + pd.DateOffset(months=1), periods=horizon, freq='M')
+            forecast_dates = pd.date_range(start=last_date + pd.DateOffset(months=1), periods=horizon, freq='ME')
             
             # Model evaluation on test set
             test_predictions = {}
@@ -376,7 +414,7 @@ class PredictiveAnalyticsEngine:
         
         if target_col in data.columns:
             for lag in [1, 3, 6, 12]:
-                lagged = data[target_col].shift(lag).fillna(method='bfill')
+                lagged = data[target_col].shift(lag).bfill()
                 features.append(lagged.values)
         
         # Trend feature
@@ -389,7 +427,7 @@ class PredictiveAnalyticsEngine:
         """Create feature matrix for future predictions"""
         
         last_date = historical_data['date'].max()
-        future_dates = pd.date_range(start=last_date + pd.DateOffset(months=1), periods=horizon, freq='M')
+        future_dates = pd.date_range(start=last_date + pd.DateOffset(months=1), periods=horizon, freq='ME')
         
         features = []
         
@@ -502,7 +540,7 @@ class PredictiveAnalyticsEngine:
         fig = go.Figure()
         
         # Historical data (mock for visualization)
-        historical_dates = pd.date_range(start='2021-01-01', end='2024-01-01', freq='M')
+        historical_dates = pd.date_range(start='2021-01-01', end='2024-01-01', freq='ME')
         historical_values = np.random.normal(1000000, 100000, len(historical_dates))
         
         # Historical line
@@ -560,6 +598,11 @@ class PredictiveAnalyticsEngine:
     
     def render_budget_optimization(self):
         """Render budget optimization interface"""
+        st.error(
+            "DEMONSTRATION MODULE - the figures below are generated for "
+            "illustration and are not computed from the city's data yet. "
+            "Do not use them for decisions.")
+
         
         st.subheader("AI-Powered Budget Optimization")
         
@@ -712,6 +755,11 @@ class PredictiveAnalyticsEngine:
     
     def render_risk_assessment(self):
         """Render financial risk assessment interface"""
+        st.error(
+            "DEMONSTRATION MODULE - the figures below are generated for "
+            "illustration and are not computed from the city's data yet. "
+            "Do not use them for decisions.")
+
         
         st.subheader("Financial Risk Assessment")
         
@@ -863,6 +911,11 @@ class PredictiveAnalyticsEngine:
     
     def render_scenario_analysis(self):
         """Render scenario analysis interface"""
+        st.error(
+            "DEMONSTRATION MODULE - the figures below are generated for "
+            "illustration and are not computed from the city's data yet. "
+            "Do not use them for decisions.")
+
         
         st.subheader("Advanced Scenario Analysis")
         
@@ -1004,6 +1057,11 @@ class PredictiveAnalyticsEngine:
     
     def render_model_management(self):
         """Render model management interface"""
+        st.error(
+            "DEMONSTRATION MODULE - the figures below are generated for "
+            "illustration and are not computed from the city's data yet. "
+            "Do not use them for decisions.")
+
         
         st.subheader("Predictive Model Management")
         
