@@ -189,6 +189,19 @@ export default {
       }
       return handleChat(request, env);
     }
+    // Diagnostic: confirms whether the AI secret is visible to this
+    // deployment (value never returned)
+    if (path === '/api/ai-status') {
+      if (!(await hasValidSession(request, config))) {
+        return Response.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
+      }
+      return Response.json({
+        ai_configured: Boolean(env.ANTHROPIC_API_KEY),
+        hint: env.ANTHROPIC_API_KEY ? 'AI chat is enabled.' :
+          'Add ANTHROPIC_API_KEY as a SECRET on this Worker (Settings > ' +
+          'Variables and Secrets > Add > Type: Secret), then click Deploy.',
+      });
+    }
 
     const isPublic = PUBLIC_PATHS.has(path) || PUBLIC_PREFIXES.some(p => path.startsWith(p));
     if (!isPublic && !(await hasValidSession(request, config))) {

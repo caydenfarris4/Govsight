@@ -2,6 +2,11 @@ name = "govsight"
 main = "worker/index.js"
 compatibility_date = "2026-07-01"
 
+# Dashboard-set variables survive git-push deploys. Without this, each
+# "wrangler deploy" from Workers Builds wipes plaintext variables added
+# in the dashboard (encrypted secrets are always preserved).
+keep_vars = true
+
 # The worker gates every request behind login before serving the static
 # application in public/. The full Streamlit platform is containerized
 # separately (see Dockerfile and documentation/DEPLOYMENT.md).
