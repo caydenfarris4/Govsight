@@ -642,6 +642,7 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
     const [searchResults, setSearchResults] = useState([]);
     const [searching, setSearching] = useState(false);
     const [searchError, setSearchError] = useState('');
+    const [searchStatus, setSearchStatus] = useState(null);
     const [portalFilter, setPortalFilter] = useState('All Agencies');
     const [selectedState, setSelectedState] = useState('');
     const [showPortals, setShowPortals] = useState(false);
@@ -694,31 +695,39 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
 
     const runSearch = async () => {
         if (!searchQuery.trim()) return;
-        setSearching(true); setSearchError(''); setSearchResults([]);
+        setSearching(true); setSearchError(''); setSearchResults([]); setSearchStatus(null);
 
-        // Step 1: immediate client-side search against built-in library (always works)
-        const localResults = searchGrantLibrary(searchQuery);
-        setSearchResults(localResults);
-
-        // Step 2: try API in background, merge any additional results
+        // Live federal opportunity search is the primary source: the platform
+        // queries grants.gov, simpler.grants.gov, and USASpending and never
+        // fabricates results. Federal endpoints can be slow, so wait for them.
+        let live = [];
+        let liveOk = false, liveMsg = '';
         try {
             const r = await Promise.race([
                 api.searchGrants(searchQuery),
-                new Promise((_,rej) => setTimeout(()=>rej(new Error('timeout')),4000))
+                new Promise((_,rej) => setTimeout(()=>rej(new Error('timeout')),15000))
             ]);
-            const apiGrants = (r.grants||r.results||[]).map(g => ({
+            live = (r.grants||r.results||[]).map(g => ({
                 ...g, name:g.name||g.title,
                 min: g.min ?? g.min_amount, max: g.max ?? g.max_amount,
-                _fromApi:true
+                _live:true
             }));
-            // Merge: add API results not already present in local results
-            const localNames = new Set(localResults.map(g=>g.name.toLowerCase()));
-            const newFromApi = apiGrants.filter(g => !localNames.has((g.name||'').toLowerCase()));
-            if (newFromApi.length) setSearchResults(prev => [...prev, ...newFromApi]);
-        } catch {
-            // API unavailable — local results already shown, no error needed
+            liveOk = !!(r.is_live && live.length);
+            if (!liveOk) liveMsg = r.message || 'Live grant search returned no matches for this query.';
+        } catch (e) {
+            liveMsg = 'Live grant search unreachable' + (e && e.message === 'timeout' ? ' (timed out)' : '') + '.';
         }
 
+        // Built-in reference library supplements the live results. These are
+        // recurring federal programs, not open notices - deadlines shown are
+        // typical annual cycles and must be verified with the agency.
+        const liveNames = new Set(live.map(g=>(g.name||'').toLowerCase()));
+        const library = searchGrantLibrary(searchQuery)
+            .filter(g => !liveNames.has(g.name.toLowerCase()))
+            .map(g => ({...g, _library:true}));
+
+        setSearchResults([...live, ...library]);
+        setSearchStatus({ liveOk, liveCount: live.length, libraryCount: library.length, message: liveMsg });
         setSearching(false);
     };
 
@@ -752,12 +761,21 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                         {searchQuery.trim()&&<a href={`https://www.grants.gov/search-grants?keywords=${encodeURIComponent(searchQuery)}`} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" title="Search this query directly on Grants.gov">Search Grants.gov</a>}
                     </div>
 
+                    {searchStatus && !searching && (
+                        searchStatus.liveOk ? (
+                            <div className="alert alert-success" style={{marginBottom:10}}>
+                                <strong>{searchStatus.liveCount} live federal opportunit{searchStatus.liveCount!==1?'ies':'y'}</strong> from Grants.gov / USASpending
+                                {searchStatus.libraryCount>0 && <span> — plus {searchStatus.libraryCount} recurring program{searchStatus.libraryCount!==1?'s':''} from the reference library</span>}
+                            </div>
+                        ) : (
+                            <div className="alert alert-warning" style={{marginBottom:10}}>
+                                {searchStatus.message}{' '}
+                                {searchStatus.libraryCount>0 && <span>Showing {searchStatus.libraryCount} recurring federal program{searchStatus.libraryCount!==1?'s':''} from the built-in reference library — verify current cycles with the agency.</span>}
+                            </div>
+                        )
+                    )}
                     {searchResults.length > 0 && (
                         <div style={{marginBottom:14}}>
-                            <div style={{fontSize:13,fontWeight:600,color:'#555',marginBottom:8}}>
-                                {searchResults.length} result{searchResults.length!==1?'s':''} found
-                                {searching&&<span style={{fontWeight:400,color:'#888',marginLeft:8}}>— checking API for more...</span>}
-                            </div>
                             {searchResults.map((r,i) => {
                                 const already = pipeline.some(p=>p.name===r.name);
                                 const amountDisplay = r.max ? `${fc(r.min||0)} – ${fc(r.max)}` : r.amount ? `Up to ${fc(r.amount)}` : null;
@@ -765,9 +783,9 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                                     <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 12px',border:'1px solid #e3f2fd',borderRadius:6,marginBottom:7,background:'#fafeff'}}>
                                         <div style={{flex:1,minWidth:0}}>
                                             <div style={{fontWeight:600,fontSize:13}}>{r.name||r.title}</div>
-                                            <div style={{fontSize:11,color:'#777',marginTop:1}}>{r.agency||r.funder} {r.category&&<span className="badge badge-blue" style={{marginLeft:4}}>{r.category}</span>} {r._fromApi&&<span className="badge badge-green" style={{marginLeft:4}}>LIVE SEARCH</span>}</div>
+                                            <div style={{fontSize:11,color:'#777',marginTop:1}}>{r.agency||r.funder} {r.category&&<span className="badge badge-blue" style={{marginLeft:4}}>{r.category}</span>} {r._live&&<span className="badge badge-green" style={{marginLeft:4}}>LIVE{r.source?` — ${r.source}`:''}</span>} {r._library&&<span className="badge badge-gray" style={{marginLeft:4}} title="Recurring federal program from the built-in reference library — verify the current cycle with the agency">REFERENCE</span>}</div>
                                             {amountDisplay&&<div style={{fontSize:11,color:'#2e7d32',marginTop:2}}>{amountDisplay}</div>}
-                                            {(r.deadline||r.close_date)&&<div style={{fontSize:11,color:'#888'}}>Deadline: {r.deadline||r.close_date}</div>}
+                                            {(r.deadline||r.close_date)&&<div style={{fontSize:11,color:'#888'}}>{r._library?'Typical deadline':'Deadline'}: {r.deadline||r.close_date}</div>}
                                         </div>
                                         <div style={{display:'flex',gap:6,flexShrink:0}}>
                                             {(r.url||r.link)&&<a href={r.url||r.link} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">View</a>}
@@ -783,8 +801,8 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                             })}
                         </div>
                     )}
-                    {!searching && searchQuery.trim() && searchResults.length===0 && (
-                        <div className="alert alert-info">No matches found in the built-in library for "{searchQuery}". Try broader terms, or use the <a href={`https://www.grants.gov/search-grants?keywords=${encodeURIComponent(searchQuery)}`} target="_blank" rel="noopener noreferrer">Grants.gov search</a> to find additional programs.
+                    {!searching && searchStatus && searchResults.length===0 && (
+                        <div className="alert alert-info">No live opportunities or reference programs matched "{searchQuery}". Try broader terms, or use the <a href={`https://www.grants.gov/search-grants?keywords=${encodeURIComponent(searchQuery)}`} target="_blank" rel="noopener noreferrer">Grants.gov search</a> directly.
                         </div>
                     )}
 
@@ -837,7 +855,7 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                         <span style={{fontSize:12,fontWeight:400,color:'#777'}}>Shortfall: {gapDetails.map(d=>`Yr ${d.year}: ${fc(d.shortfall)}`).join(', ')}</span>
                     </div>
                     <div className="card-body">
-                        <p style={{fontSize:13,color:'#777',marginBottom:12}}>These grants were matched to your project's categories and funding gap. Click "Track Grant" to add any to your pipeline.</p>
+                        <p style={{fontSize:13,color:'#777',marginBottom:12}}>Recurring federal programs matched to your project's categories and funding gap — verify the current cycle with the agency, and use Grant Search above for live open notices. Click "Track Grant" to add any to your pipeline.</p>
                         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:12}}>
                             {GRANT_TEMPLATES.map((g,i) => {
                                 const tracked = pipeline.some(p=>p.name===g.name);

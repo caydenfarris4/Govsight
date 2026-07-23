@@ -97,6 +97,57 @@ class TestNavi:
         assert wait_text(page, "Investment")
 
 
+class TestGrantFinder:
+    """The Scenario Planner's grant search: live federal results are the
+    primary source; the built-in library is a labeled reference fallback."""
+
+    LIVE_PAYLOAD = {
+        "success": True, "query": "water", "count": 1, "is_live": True,
+        "message": None,
+        "grants": [{
+            "id": "EPA-2026-004", "name": "Clean Water Infrastructure Notice FY26",
+            "agency": "EPA", "description": "", "min_amount": 500000,
+            "max_amount": 8000000, "amount": 8000000, "deadline": "2026-10-15",
+            "source": "grants.gov",
+            "url": "https://www.grants.gov/search-results-detail/999001"}],
+    }
+
+    def _open_search(self, page):
+        goto(page, "/navi/0")
+        assert wait_text(page, "Scenario")
+        page.click("button:has-text('Revenue')")
+        assert wait_text(page, "Grant Pipeline")
+        page.fill("input[placeholder*='Search by keyword']", "water")
+        page.click("button:has-text('Search'):not(:has-text('Grants.gov'))")
+
+    def test_live_results_first_with_source_badges(self, page):
+        import json
+        page.route("**/api/grants/search*", lambda route: route.fulfill(
+            status=200, content_type="application/json",
+            body=json.dumps(self.LIVE_PAYLOAD)))
+        try:
+            self._open_search(page)
+            assert wait_text(page, "1 live federal opportunity")
+            assert wait_text(page, "LIVE — grants.gov")
+            assert wait_text(page, "Clean Water Infrastructure Notice FY26")
+        finally:
+            page.unroute("**/api/grants/search*")
+
+    def test_degraded_search_is_labeled_reference(self, page):
+        import json
+        empty = {"success": True, "query": "water", "grants": [], "count": 0,
+                 "is_live": False, "message": "Live grant search returned no results."}
+        page.route("**/api/grants/search*", lambda route: route.fulfill(
+            status=200, content_type="application/json", body=json.dumps(empty)))
+        try:
+            self._open_search(page)
+            assert wait_text(page, "reference library")
+            assert wait_text(page, "REFERENCE")
+            assert wait_text(page, "Typical deadline")
+        finally:
+            page.unroute("**/api/grants/search*")
+
+
 class TestMantis:
     def test_chat_page_and_status(self, page):
         goto(page, "/mantis/0")
