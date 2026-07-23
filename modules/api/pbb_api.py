@@ -102,6 +102,73 @@ try:
 except Exception as _akm_err:
     print(f"API key hydration skipped: {_akm_err}")
 
+# ── API security middleware: authentication + rate limiting ─────────────────
+# Every API endpoint requires a signed session; AI and credential
+# endpoints carry per-caller budgets so an unattended deployment cannot
+# be used to run up provider bills or brute-force logins.
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
+from modules.security.rate_limiter import rate_limiter
+
+# Reachable without a session (login itself, liveness, and the SPA shell)
+_AUTH_EXEMPT = {"/api/auth/login", "/api/auth/logout", "/health", "/health/databases"}
+# Legacy PBB paths that predate the /api prefix but serve data
+_PROTECTED_LEGACY = ("/employees", "/employee/", "/calculate", "/positions")
+
+# (path prefix, per-caller limit, window seconds). Login rules key on the
+# client IP (pre-auth); everything else keys on the authenticated user.
+_RATE_RULES = [
+    ("/api/auth/login", 10, 60), ("/api/auth/login", 60, 3600),
+    ("/api/mantis/chat", 10, 60), ("/api/mantis/chat", 150, 86400),
+    ("/api/mantis/insights", 4, 60), ("/api/mantis/insights", 60, 86400),
+    ("/api/ai/", 10, 60), ("/api/ai/", 150, 86400),
+    ("/api/grants/search", 8, 60), ("/api/grants/search", 200, 86400),
+    ("/api/monte-carlo/run", 6, 60),
+]
+_GLOBAL_RULE = (240, 60)  # catch-all ceiling per caller across /api/*
+
+
+class APISecurityMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        path = request.url.path
+        is_api = path.startswith("/api/") or \
+            any(path == p or path.startswith(p) for p in _PROTECTED_LEGACY)
+        if not is_api:
+            return await call_next(request)
+
+        client_ip = request.client.host if request.client else "unknown"
+        username = None
+        try:
+            from modules.api.routers.auth import read_session, COOKIE_NAME
+            username = read_session(request.cookies.get(COOKIE_NAME))
+        except Exception:
+            pass
+        principal = username or f"ip:{client_ip}"
+
+        for prefix, limit, window in _RATE_RULES:
+            if path.startswith(prefix):
+                key_id = f"ip:{client_ip}" if prefix == "/api/auth/login" else principal
+                ok, retry = rate_limiter.allow(
+                    f"{prefix}|{window}|{key_id}", limit, window)
+                if not ok:
+                    return JSONResponse(
+                        {"detail": "Rate limit exceeded for this endpoint. "
+                                   f"Try again in {retry} seconds."},
+                        status_code=429, headers={"Retry-After": str(retry)})
+        ok, retry = rate_limiter.allow(f"api-global|{principal}", *_GLOBAL_RULE)
+        if not ok:
+            return JSONResponse(
+                {"detail": f"Rate limit exceeded. Try again in {retry} seconds."},
+                status_code=429, headers={"Retry-After": str(retry)})
+
+        if path not in _AUTH_EXEMPT and not username:
+            return JSONResponse({"detail": "Not authenticated"}, status_code=401)
+
+        return await call_next(request)
+
+
+app.add_middleware(APISecurityMiddleware)
+
 # ── Unified platform routers ────────────────────────────────────────────────
 # Session auth, Budget Playground (Node parity, /api/bp), live data bundle,
 # and the Mantis chat bridge. Each is optional-imported so one missing

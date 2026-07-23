@@ -21,6 +21,30 @@ const PUBLIC_PREFIXES = ['/assets/'];
 
 const encoder = new TextEncoder();
 
+// Sliding-window rate limiting, per worker isolate. Cloudflare may run
+// several isolates so the effective global limit is a small multiple of
+// these numbers - still a hard ceiling on brute force and AI spend.
+const RATE_BUCKETS = new Map();
+function rateAllow(key, limit, windowMs) {
+  const now = Date.now();
+  if (RATE_BUCKETS.size > 10000) RATE_BUCKETS.clear(); // memory bound
+  let hits = RATE_BUCKETS.get(key);
+  if (!hits) { hits = []; RATE_BUCKETS.set(key, hits); }
+  while (hits.length && hits[0] <= now - windowMs) hits.shift();
+  if (hits.length >= limit) return false;
+  hits.push(now);
+  return true;
+}
+function clientIp(request) {
+  return request.headers.get('CF-Connecting-IP') ||
+         request.headers.get('X-Forwarded-For') || 'unknown';
+}
+function rateLimited(message, retryS) {
+  return Response.json(
+    { ok: false, error: 'rate_limited', message },
+    { status: 429, headers: { 'Retry-After': String(retryS) } });
+}
+
 async function sign(secret, data) {
   const key = await crypto.subtle.importKey(
     'raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -221,6 +245,10 @@ export default {
     const config = getConfig(env);
 
     if (path === '/api/login' && request.method === 'POST') {
+      // Brute-force ceiling per source IP
+      if (!rateAllow(`login:${clientIp(request)}`, 10, 60_000)) {
+        return rateLimited('Too many sign-in attempts. Wait a minute and try again.', 60);
+      }
       return handleLogin(request, config);
     }
     if (path === '/api/logout') {
@@ -229,6 +257,14 @@ export default {
     if (path === '/api/chat' && request.method === 'POST') {
       if (!(await hasValidSession(request, config))) {
         return Response.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
+      }
+      // AI spend ceiling per session (and per IP as a backstop)
+      const session = parseCookies(request)[COOKIE_NAME] || clientIp(request);
+      if (!rateAllow(`chat-m:${session}`, 8, 60_000)) {
+        return rateLimited('Chat rate limit reached (8 per minute). Give it a moment.', 60);
+      }
+      if (!rateAllow(`chat-h:${session}`, 60, 3_600_000)) {
+        return rateLimited('Hourly chat limit reached (60 per hour). Try again later.', 900);
       }
       return handleChat(request, env);
     }
