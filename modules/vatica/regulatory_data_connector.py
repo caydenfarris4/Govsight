@@ -20,7 +20,10 @@ from datetime import datetime
 import streamlit as st
 import requests
 from urllib.parse import quote
-import trafilatura
+try:
+    import trafilatura
+except ImportError:  # optional scraping dependency; degrade gracefully
+    trafilatura = None
 
 # Cache for regulatory data to avoid repeated API calls
 if 'regulatory_cache' not in st.session_state:
@@ -80,11 +83,13 @@ def get_website_text_content(url: str) -> str:
     Returns:
         str: Extracted text content
     """
+    if trafilatura is None:
+        return "Web scraping not available (trafilatura package not installed)"
     try:
         # Check cache first
         if url in st.session_state.regulatory_cache:
             return st.session_state.regulatory_cache[url]
-        
+
         # Download and extract content
         downloaded = trafilatura.fetch_url(url)
         if downloaded:

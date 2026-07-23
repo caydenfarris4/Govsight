@@ -154,8 +154,11 @@ class TestMantis:
         assert wait_text(page, "Mantis AI Assistant", 15000)
 
     def test_chat_degrades_without_ai_key(self, page):
-        if os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY"):
-            pytest.skip("AI key configured; degraded path not applicable")
+        status = page.evaluate(
+            "() => fetch('/api/mantis/status', {credentials: 'same-origin'})"
+            ".then(r => r.json())")
+        if status.get("ai_available"):
+            pytest.skip("platform has an AI key configured; degraded path not applicable")
         goto(page, "/mantis/0")
         wait_text(page, "Mantis AI Assistant", 15000)
         page.fill("input[placeholder*='Ask a question']", "How are revenues?")

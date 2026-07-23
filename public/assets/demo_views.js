@@ -1082,11 +1082,36 @@
       if (dev < -8) insights.push([e[0] + ' is underspending', e[0] + ' is ' + Math.abs(dev).toFixed(1) + ' points behind its usual pace - potential reallocation capacity if it holds.']);
     });
     insights.push(['November cash lump ahead', 'Property tax collections concentrate in November (about ' + (seasonalShares('Revenue')[10] * 100).toFixed(0) + '% of annual revenue). Plan liquidity through the October trough before locking cash into term investments.']);
-    el.innerHTML = demoBanner() +
-      '<div style="background:#fdeeda;color:#8a5a12;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px">The conversational AI assistant requires the platform backend with an AI key. Below are analytical insights computed directly from the demo ledger.</div>' +
-      insights.map(function (i) {
-        return card(i[0], '<div style="font-size:13.5px;color:#22303c;line-height:1.6">' + i[1] + '</div>');
-      }).join('');
+
+    const renderComputed = function (note) {
+      el.innerHTML = demoBanner() +
+        '<div style="background:#fdeeda;color:#8a5a12;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px">' +
+        esc(note || 'AI insight generation is unavailable. Below are analytical insights computed directly from the ledger.') + '</div>' +
+        insights.map(function (i) {
+          return card(i[0], '<div style="font-size:13.5px;color:#22303c;line-height:1.6">' + i[1] + '</div>');
+        }).join('');
+    };
+
+    // AI-written insights when the platform has an Anthropic key; the
+    // engine-computed insights remain the fallback everywhere else.
+    if (onPlatform()) {
+      el.innerHTML = demoBanner() +
+        '<div style="padding:20px;color:#5b6b7a;font-size:13px">Generating AI insights from the ledger…</div>';
+      platformGet('/api/mantis/insights').then(function (resp) {
+        if (!resp.ai) { renderComputed(resp.reason); return; }
+        el.innerHTML = demoBanner() +
+          '<div style="margin-bottom:12px"><span style="background:#e8eef7;color:#24508f;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">AI GENERATED - ' + esc(resp.model || 'Claude') + '</span>' +
+          ' <span style="font-size:11.5px;color:#8a97a3">narrative written by AI from platform engine metrics - verify before acting</span></div>' +
+          resp.insights.map(function (i) {
+            return card(i.title, '<div style="font-size:13.5px;color:#22303c;line-height:1.6">' + esc(i.body) + '</div>');
+          }).join('') +
+          '<div style="margin-top:4px">' + insights.map(function (i) {
+            return card(i[0], '<div style="font-size:13.5px;color:#22303c;line-height:1.6">' + i[1] + '</div>');
+          }).join('') + '</div>';
+      }).catch(function () { renderComputed(); });
+    } else {
+      renderComputed('The conversational AI assistant requires the platform backend with an AI key. Below are analytical insights computed directly from the demo ledger.');
+    }
   };
 
   // Composite hub: sub-view toggle rendering existing views or iframes.

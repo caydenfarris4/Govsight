@@ -750,85 +750,90 @@ def render_admin_panel():
         st.markdown("### System Settings")
         settings["DefaultPassword"] = st.text_input("Default Password for New Users", value=settings.get("DefaultPassword", ""), type="password")
         
-        # OpenAI API Key Configuration with secure handling
-        st.markdown("#### 🤖 OpenAI API Configuration")
-        
-        # Get current API key status
-        api_status = api_key_manager.get_status("openai")
-        
-        # Display status with appropriate icons
-        if api_status["configured"]:
-            st.success(f"✓ OpenAI API Key Configured (Source: {api_status['source']})")
-            if api_status.get("partial_hash"):
-                st.info(f"Key preview: {api_status['partial_hash']}")
-        else:
-            st.warning("✗ OpenAI API Key Not Configured - AI features will be disabled")
-        
-        # Secure API key input with expandable section
-        with st.expander("Configure OpenAI API Key", expanded=not api_status["configured"]):
-            st.markdown("""
-            **To enable AI features:**
-            1. Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
-            2. Enter the key below (starts with 'sk-')
-            3. Click 'Test Key' to validate
-            """)
-            
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                new_api_key = st.text_input(
-                    "Enter OpenAI API Key",
-                    type="password",
-                    placeholder="sk-...",
-                    help="Your OpenAI API key will be securely encrypted and stored",
-                    key="openai_api_key_input"
-                )
-            
-            with col2:
-                st.write("")  # Spacer
-                st.write("")  # Align button with input
-                if st.button("🔑 Save Key", disabled=not new_api_key):
-                    result = api_key_manager.set_api_key(new_api_key, "openai")
-                    if result["success"]:
-                        st.success(result["message"])
-                        st.rerun()
-                    else:
-                        st.error(result["message"])
-            
-            # Test API key button
-            if api_status["configured"] or new_api_key:
-                col1, col2, col3 = st.columns([1, 1, 1])
-                
+        # AI provider key configuration with secure handling. Both keys feed
+        # the whole platform: Mantis chat and insights, dual-AI routing,
+        # grant intelligence, and the AI data mapper.
+        st.markdown("#### AI Configuration")
+
+        _AI_PROVIDERS = [
+            ("openai", "OpenAI", "sk-...",
+             "Powers financial analysis, data queries, and grant research (GPT models). "
+             "Get a key at platform.openai.com/api-keys."),
+            ("anthropic", "Anthropic", "sk-ant-...",
+             "Powers technical routing, cross-check review, AI insights, and data "
+             "mapping (Claude models). Get a key at console.anthropic.com."),
+        ]
+
+        for _ptype, _pname, _placeholder, _phelp in _AI_PROVIDERS:
+            api_status = api_key_manager.get_status(_ptype)
+
+            if api_status["configured"]:
+                st.success(f"{_pname} API Key Configured (Source: {api_status['source']})")
+                if api_status.get("partial_hash"):
+                    st.caption(f"Key preview: {api_status['partial_hash']}")
+            else:
+                st.warning(f"{_pname} API Key Not Configured - {_pname}-powered features are disabled")
+
+            with st.expander(f"Configure {_pname} API Key", expanded=not api_status["configured"]):
+                st.caption(_phelp)
+
+                col1, col2 = st.columns([3, 1])
                 with col1:
-                    if st.button("🧪 Test Current Key", disabled=not api_status["configured"]):
-                        with st.spinner("Testing API key..."):
-                            validation = api_key_manager.validate_api_key()
-                            if validation["valid"]:
-                                st.success("✓ " + validation["message"])
-                            else:
-                                st.error("✗ " + validation["message"])
-                
+                    new_api_key = st.text_input(
+                        f"Enter {_pname} API Key",
+                        type="password",
+                        placeholder=_placeholder,
+                        help=f"Your {_pname} API key will be securely encrypted and stored",
+                        key=f"{_ptype}_api_key_input"
+                    )
+
                 with col2:
-                    if new_api_key and st.button("🧪 Test New Key"):
-                        with st.spinner("Testing new API key..."):
-                            validation = api_key_manager.validate_api_key(new_api_key)
-                            if validation["valid"]:
-                                st.success("✓ " + validation["message"])
-                                st.info("Click 'Save Key' to apply this key")
-                            else:
-                                st.error("✗ " + validation["message"])
-                
-                with col3:
-                    if api_status["configured"] and st.button("🗑️ Remove Key", type="secondary"):
-                        result = api_key_manager.remove_api_key("openai")
+                    st.write("")  # Spacer
+                    st.write("")  # Align button with input
+                    if st.button("Save Key", disabled=not new_api_key, key=f"{_ptype}_save"):
+                        result = api_key_manager.set_api_key(new_api_key, _ptype)
                         if result["success"]:
                             st.success(result["message"])
                             st.rerun()
                         else:
                             st.error(result["message"])
-        
+
+                if api_status["configured"] or new_api_key:
+                    col1, col2, col3 = st.columns([1, 1, 1])
+
+                    with col1:
+                        if st.button("Test Current Key", disabled=not api_status["configured"],
+                                     key=f"{_ptype}_test_current"):
+                            with st.spinner("Testing API key..."):
+                                validation = api_key_manager.validate_api_key(key_type=_ptype)
+                                if validation["valid"]:
+                                    st.success(validation["message"])
+                                else:
+                                    st.error(validation["message"])
+
+                    with col2:
+                        if new_api_key and st.button("Test New Key", key=f"{_ptype}_test_new"):
+                            with st.spinner("Testing new API key..."):
+                                validation = api_key_manager.validate_api_key(new_api_key, _ptype)
+                                if validation["valid"]:
+                                    st.success(validation["message"])
+                                    st.info("Click 'Save Key' to apply this key")
+                                else:
+                                    st.error(validation["message"])
+
+                    with col3:
+                        if api_status["configured"] and st.button("Remove Key", type="secondary",
+                                                                  key=f"{_ptype}_remove"):
+                            result = api_key_manager.remove_api_key(_ptype)
+                            if result["success"]:
+                                st.success(result["message"])
+                                st.rerun()
+                            else:
+                                st.error(result["message"])
+
         # Keep backward compatibility with settings
         # Don't store the actual key in settings anymore
-        settings["OpenAI_Key"] = "***CONFIGURED***" if api_status["configured"] else ""
+        settings["OpenAI_Key"] = "***CONFIGURED***" if api_key_manager.is_configured("openai") else ""
         
         # Google Sheets Integration
         st.markdown("#### Google Sheets Integration")

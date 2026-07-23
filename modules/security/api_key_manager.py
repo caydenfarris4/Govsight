@@ -24,11 +24,24 @@ class APIKeyManager:
     - Graceful degradation when keys are missing
     """
     
+    # Supported providers: environment variable + expected key prefix
+    ENV_KEYS = {
+        "openai": "OPENAI_API_KEY",
+        "anthropic": "ANTHROPIC_API_KEY",
+    }
+    KEY_PREFIXES = {
+        "openai": "sk-",
+        "anthropic": "sk-ant-",
+    }
+
     def __init__(self):
-        self.env_key = "OPENAI_API_KEY"
+        self.env_key = "OPENAI_API_KEY"  # legacy alias, kept for callers
         self.config_file = Path("configs/security/api_keys.json")
         self.encryption_key_file = Path("configs/security/.encryption_key")
         self.cipher_suite = self._get_cipher_suite()
+
+    def _env_var(self, key_type: str) -> Optional[str]:
+        return self.ENV_KEYS.get(key_type)
         
     def _get_cipher_suite(self) -> Optional[Fernet]:
         """Get or create encryption cipher for secure storage"""
@@ -71,13 +84,16 @@ class APIKeyManager:
             return {"success": False, "message": "API key cannot be empty"}
         
         # Validate key format (basic check)
-        if key_type == "openai" and not api_key.startswith("sk-"):
-            return {"success": False, "message": "Invalid OpenAI API key format (should start with 'sk-')"}
-        
+        prefix = self.KEY_PREFIXES.get(key_type)
+        if prefix and not api_key.startswith(prefix):
+            return {"success": False,
+                    "message": f"Invalid {key_type} API key format (should start with '{prefix}')"}
+
         try:
             # Set in environment variable for immediate use
-            if key_type == "openai":
-                os.environ[self.env_key] = api_key
+            env_var = self._env_var(key_type)
+            if env_var:
+                os.environ[env_var] = api_key
             
             # Store encrypted version for persistence
             if self.cipher_suite:
@@ -133,8 +149,9 @@ class APIKeyManager:
             API key if available, None otherwise
         """
         # Check environment variable first (runtime storage)
-        if key_type == "openai":
-            key = os.environ.get(self.env_key)
+        env_var = self._env_var(key_type)
+        if env_var:
+            key = os.environ.get(env_var)
             if key and key != "sk-xxx":  # Ignore placeholder
                 return key
         
@@ -158,11 +175,11 @@ class APIKeyManager:
                 if key_type in config and "encrypted" in config[key_type]:
                     encrypted_key = base64.b64decode(config[key_type]["encrypted"])
                     api_key = self.cipher_suite.decrypt(encrypted_key).decode()
-                    
+
                     # Set in environment for immediate use
-                    if key_type == "openai":
-                        os.environ[self.env_key] = api_key
-                    
+                    if env_var:
+                        os.environ[env_var] = api_key
+
                     return api_key
             except Exception:
                 pass
@@ -191,11 +208,12 @@ class APIKeyManager:
         key = self.get_api_key(key_type)
         if key:
             status["configured"] = True
-            
+
             # Determine source
-            if os.environ.get(self.env_key):
+            env_var = self._env_var(key_type)
+            if env_var and os.environ.get(env_var):
                 status["source"] = "environment"
-            elif hasattr(st, 'secrets') and self.env_key in st.secrets:
+            elif hasattr(st, 'secrets') and env_var and env_var in st.secrets:
                 status["source"] = "secrets"
             elif self.config_file.exists():
                 status["source"] = "encrypted_storage"
@@ -239,7 +257,21 @@ class APIKeyManager:
                 return {"valid": False, "message": "Connection error - check network"}
             except Exception as e:
                 return {"valid": False, "message": f"Validation error: {str(e)}"}
-        
+
+        if key_type == "anthropic":
+            try:
+                import anthropic
+                client = anthropic.Anthropic(api_key=api_key)
+                # Minimal request to confirm the key authenticates
+                client.models.list(limit=1)
+                return {"valid": True, "message": "API key is valid"}
+            except anthropic.AuthenticationError:
+                return {"valid": False, "message": "Invalid API key"}
+            except anthropic.APIConnectionError:
+                return {"valid": False, "message": "Connection error - check network"}
+            except Exception as e:
+                return {"valid": False, "message": f"Validation error: {str(e)}"}
+
         return {"valid": False, "message": f"Unknown key type: {key_type}"}
     
     def remove_api_key(self, key_type: str = "openai") -> Dict[str, Any]:
@@ -254,8 +286,9 @@ class APIKeyManager:
         """
         try:
             # Remove from environment
-            if key_type == "openai" and self.env_key in os.environ:
-                del os.environ[self.env_key]
+            env_var = self._env_var(key_type)
+            if env_var and env_var in os.environ:
+                del os.environ[env_var]
             
             # Remove from encrypted storage
             if self.config_file.exists():
@@ -272,6 +305,19 @@ class APIKeyManager:
             
         except Exception as e:
             return {"success": False, "message": f"Failed to remove key: {str(e)}"}
+
+    def hydrate_environment(self) -> Dict[str, bool]:
+        """Load every stored key into its environment variable.
+
+        Call at process startup (and cheaply before AI feature checks) so
+        keys configured through the admin console reach services that read
+        os.environ - the FastAPI platform, the Mantis orchestrator, and
+        the AI data mapper all become live without a restart.
+        """
+        loaded = {}
+        for key_type in self.ENV_KEYS:
+            loaded[key_type] = self.get_api_key(key_type) is not None
+        return loaded
 
 # Global instance for easy access
 api_key_manager = APIKeyManager()

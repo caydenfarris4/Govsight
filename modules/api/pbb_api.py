@@ -93,6 +93,15 @@ except ImportError as e:
 
 app = FastAPI(title="GovSight Platform API", version="2.0.0")
 
+# Load admin-configured AI keys (encrypted store) into the environment so
+# every service that reads os.environ - Mantis, grants AI, data mapper -
+# is live without requiring deployment env vars.
+try:
+    from modules.security.api_key_manager import api_key_manager as _akm
+    _akm.hydrate_environment()
+except Exception as _akm_err:
+    print(f"API key hydration skipped: {_akm_err}")
+
 # ── Unified platform routers ────────────────────────────────────────────────
 # Session auth, Budget Playground (Node parity, /api/bp), live data bundle,
 # and the Mantis chat bridge. Each is optional-imported so one missing

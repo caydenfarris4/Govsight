@@ -227,10 +227,10 @@ class AnthropicProcessor(BaseAPIProcessor):
             
             start_time = time.time()
             
-            # The newest Anthropic model is "claude-sonnet-4-20250514"
+            # Current Anthropic model
             # do not change this unless explicitly requested by the user
             response = client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model="claude-sonnet-5",
                 max_tokens=1500,
                 temperature=0.3,
                 messages=[{
@@ -245,8 +245,8 @@ class AnthropicProcessor(BaseAPIProcessor):
             
             return {
                 'success': True,
-                'result': response.content[0].text,
-                'model_used': "claude-sonnet-4-20250514",
+                'result': ''.join(b.text for b in response.content if getattr(b, 'type', '') == 'text'),
+                'model_used': "claude-sonnet-5",
                 'processing_time': processing_time,
                 'provider': 'anthropic'
             }

@@ -6,7 +6,7 @@ the nature of the question, and enables a cross-check mode where both models
 review each other's answers before a final response is returned.
 
 ROUTING PHILOSOPHY:
-- Claude (claude-3-5-sonnet): Excels at code, debugging, technical explanations,
+- Claude (claude-sonnet-5): Excels at code, debugging, technical explanations,
   SQL generation, step-by-step problem solving, and platform configuration help.
 - GPT-4o: Excels at financial reasoning, grants knowledge, structured tool use
   (the existing function-calling tools stay on GPT), GASB compliance, and
@@ -30,6 +30,12 @@ import logging
 from typing import Tuple, Optional
 
 logger = logging.getLogger(__name__)
+
+def _text_blocks(response) -> str:
+    """Join the text blocks of an Anthropic response (skips thinking blocks)."""
+    return "".join(b.text for b in response.content
+                   if getattr(b, "type", "") == "text")
+
 
 # ---------------------------------------------------------------------------
 # Routing categories
@@ -200,7 +206,7 @@ class ClaudeAdvisor:
 
     def __init__(self):
         self.client = None
-        self.model = "claude-3-5-sonnet-20241022"
+        self.model = "claude-sonnet-5"
         self._init_client()
 
     def _init_client(self):
@@ -212,7 +218,7 @@ class ClaudeAdvisor:
         try:
             import anthropic
             self.client = anthropic.Anthropic(api_key=api_key)
-            logger.info("Anthropic client initialised (claude-3-5-sonnet-20241022)")
+            logger.info(f"Anthropic client initialised ({self.model})")
         except ImportError:
             logger.error("anthropic package not installed")
         except Exception as e:
@@ -242,7 +248,7 @@ class ClaudeAdvisor:
             system=system,
             messages=[{"role": "user", "content": user_message}],
         )
-        return response.content[0].text
+        return _text_blocks(response)
 
     def review(self, original_question: str, primary_model: str,
                primary_answer: str, max_tokens: int = 1000) -> str:
@@ -259,7 +265,7 @@ class ClaudeAdvisor:
             system="You are a precise, critical reviewer. Be direct and honest.",
             messages=[{"role": "user", "content": prompt}],
         )
-        return response.content[0].text
+        return _text_blocks(response)
 
 
 # ---------------------------------------------------------------------------

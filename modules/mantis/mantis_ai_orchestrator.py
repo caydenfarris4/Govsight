@@ -967,8 +967,8 @@ class MantisAIOrchestrator:
                 type="text",
                 title="MantisAI — Technical Advisor",
                 message=response_text,
-                tool_used="claude-3-5-sonnet",
-                metadata={"model": "claude-3-5-sonnet-20241022", "routing_reason": reason},
+                tool_used=self.claude_advisor.model,
+                metadata={"model": self.claude_advisor.model, "routing_reason": reason},
             )
         except Exception as e:
             logger.error(f"Claude route failed: {e}")

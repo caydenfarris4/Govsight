@@ -229,11 +229,11 @@ Rules:
             import anthropic
             client = anthropic.Anthropic()
             resp = client.messages.create(
-                model=os.getenv("GOVSIGHT_MAPPING_MODEL_ANTHROPIC", "claude-sonnet-4-5"),
+                model=os.getenv("GOVSIGHT_MAPPING_MODEL_ANTHROPIC", "claude-sonnet-5"),
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],
             )
-            return resp.content[0].text
+            return ''.join(b.text for b in resp.content if getattr(b, 'type', '') == 'text')
         except Exception as exc:
             logger.warning("Anthropic mapping call failed: %s", exc)
             return None

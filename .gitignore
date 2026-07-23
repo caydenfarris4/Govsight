@@ -32,6 +32,7 @@ logs/
 
 # Per-deployment encryption key (auto-generated at runtime)
 configs/security/.encryption_key
+configs/security/api_keys.json
 
 # Runtime-generated state
 config/
@@ -42,3 +43,4 @@ rag_indices/
 
 # Frontend build output
 frontend/dist/
+ai_encryption.key
