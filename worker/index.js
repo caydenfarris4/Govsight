@@ -57,6 +57,90 @@ async function hasValidSession(request, config) {
   return (await sign(config.secret, exp)) === sig;
 }
 
+/**
+ * AI chat proxy. The static app cannot hold an API key (anything shipped
+ * to the browser is public), so the worker calls Anthropic server-side
+ * with a key stored as a Cloudflare secret:
+ *   npx wrangler secret put ANTHROPIC_API_KEY
+ * The client sends a compact digest of the demo financials as context;
+ * the model is instructed to answer only from that data.
+ */
+const CHAT_MODEL = 'claude-sonnet-5';
+const MAX_MESSAGE_CHARS = 4000;
+const MAX_CONTEXT_CHARS = 12000;
+const MAX_HISTORY_TURNS = 10;
+
+async function handleChat(request, env) {
+  if (!env.ANTHROPIC_API_KEY) {
+    return Response.json({
+      ok: false, error: 'not_configured',
+      message: 'AI chat is not configured for this deployment. An administrator ' +
+               'can enable it by adding the ANTHROPIC_API_KEY secret to the ' +
+               'Cloudflare Worker (Settings > Variables, or ' +
+               '"npx wrangler secret put ANTHROPIC_API_KEY").',
+    }, { status: 503 });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ ok: false, error: 'bad_request' }, { status: 400 });
+  }
+  const message = String(body.message || '').slice(0, MAX_MESSAGE_CHARS).trim();
+  if (!message) {
+    return Response.json({ ok: false, error: 'empty_message' }, { status: 400 });
+  }
+
+  const context = JSON.stringify(body.context || {}).slice(0, MAX_CONTEXT_CHARS);
+  const history = Array.isArray(body.history)
+    ? body.history.slice(-MAX_HISTORY_TURNS)
+        .filter(t => (t.role === 'user' || t.role === 'assistant') && typeof t.text === 'string')
+        .map(t => ({ role: t.role, content: t.text.slice(0, MAX_MESSAGE_CHARS) }))
+    : [];
+
+  const system =
+    'You are Mantis, the AI financial analyst inside GovSight, a municipal ' +
+    'finance platform. You are answering for the demo city whose financial ' +
+    'digest is provided below as JSON (budgets, actuals by department, top ' +
+    'vendors, fund balances). Answer as a concise municipal finance analyst: ' +
+    'cite the actual numbers from the digest, name departments and vendors, ' +
+    'and suggest concrete next steps a finance director could take. If a ' +
+    'question needs data that is not in the digest, say what is missing ' +
+    'instead of guessing. Keep answers under 250 words. Plain text only, no ' +
+    'markdown headers.\n\nFINANCIAL DIGEST:\n' + context;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: CHAT_MODEL,
+      max_tokens: 1000,
+      system,
+      messages: [...history, { role: 'user', content: message }],
+    }),
+  });
+
+  if (!resp.ok) {
+    const detail = await resp.text();
+    return Response.json({
+      ok: false, error: 'upstream',
+      message: `AI request failed (${resp.status}). ${detail.slice(0, 200)}`,
+    }, { status: 502 });
+  }
+
+  const data = await resp.json();
+  const reply = (data.content || [])
+    .filter(b => b.type === 'text')
+    .map(b => b.text)
+    .join('');
+  return Response.json({ ok: true, reply, model: data.model || CHAT_MODEL });
+}
+
 async function handleLogin(request, config) {
   let body;
   try {
@@ -98,6 +182,12 @@ export default {
     }
     if (path === '/api/logout') {
       return handleLogout();
+    }
+    if (path === '/api/chat' && request.method === 'POST') {
+      if (!(await hasValidSession(request, config))) {
+        return Response.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
+      }
+      return handleChat(request, env);
     }
 
     const isPublic = PUBLIC_PATHS.has(path) || PUBLIC_PREFIXES.some(p => path.startsWith(p));

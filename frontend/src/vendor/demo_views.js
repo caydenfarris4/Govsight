@@ -1115,6 +1115,129 @@
     }
   };
 
+  // ── AI chat over the demo ledger ───────────────────────────────────────
+  // The edge worker proxies to Claude server-side (/api/chat) so no API
+  // key ever reaches the browser. The digest below is the model's only
+  // data source, so answers stay grounded in the ledger on screen.
+  function buildFinancialDigest() {
+    const fy = DATA.meta.current_fiscal_year;
+    const byDept = {};
+    DATA.accounts.forEach(function (a) {
+      if (a.account_type !== 'Expense') return;
+      const d = byDept[a.department] = byDept[a.department] || { budget: 0, ytd_actual: 0 };
+      d.budget += a.budget_amount; d.ytd_actual += a.ytd_actual;
+    });
+    const totals = { revenue_budget: 0, revenue_ytd: 0, expense_budget: 0, expense_ytd: 0 };
+    DATA.accounts.forEach(function (a) {
+      if (a.account_type === 'Revenue') { totals.revenue_budget += a.budget_amount; totals.revenue_ytd += a.ytd_actual; }
+      if (a.account_type === 'Expense') { totals.expense_budget += a.budget_amount; totals.expense_ytd += a.ytd_actual; }
+    });
+    const vendorTotals = {};
+    DATA.transactions.forEach(function (t) {
+      if (!t.vendor) return;
+      vendorTotals[t.vendor] = (vendorTotals[t.vendor] || 0) + t.amount;
+    });
+    const topVendors = Object.entries(vendorTotals)
+      .sort(function (a, b) { return b[1] - a[1]; }).slice(0, 10)
+      .map(function (e) { return { vendor: e[0], total_spend: Math.round(e[1]) }; });
+    return {
+      city: DATA.city || {},
+      fiscal_year: fy,
+      months_elapsed: DATA.meta.months_elapsed,
+      totals: totals,
+      departments: Object.entries(byDept).map(function (e) {
+        return { department: e[0], annual_budget: Math.round(e[1].budget),
+                 ytd_actual: Math.round(e[1].ytd_actual) };
+      }),
+      top_vendors: topVendors,
+      balance_sheet: (DATA.balance_sheet || []).slice(0, 15),
+      reserve_policy_months: DATA.reserve_policy_months,
+      transaction_count: DATA.transactions.length,
+    };
+  }
+
+  views.aiChat = function (el) {
+    const history = [];
+    el.innerHTML = demoBanner() +
+      '<div style="max-width:880px;margin:0 auto">' +
+      '<div id="chat-log"></div>' +
+      '<div id="chat-empty" style="text-align:center;padding:26px 0">' +
+        '<div style="font-size:17px;font-weight:600;color:#12263a">Mantis AI Assistant</div>' +
+        '<div style="font-size:13.5px;color:#5b6b7a;margin:6px 0 18px">Ask about budgets, spending patterns, departments, or vendors in the demo ledger.</div>' +
+        '<div id="chat-suggest" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>' +
+      '</div>' +
+      '<form id="chat-form" style="display:flex;gap:10px;margin-top:18px">' +
+        '<input id="chat-input" type="text" placeholder="Ask a question about the demo financial data…" ' +
+          'style="flex:1;padding:11px 16px;border-radius:10px;border:1px solid #cfd8e0;font-size:14px;background:#fff">' +
+        '<button id="chat-send" type="submit" style="background:#12263a;color:#fff;border:none;border-radius:10px;' +
+          'padding:11px 22px;font-size:14px;font-weight:600;cursor:pointer">Send</button>' +
+      '</form></div>';
+
+    const SUGGESTIONS = [
+      'Which departments are over budget pace this year?',
+      'Who are our largest vendors and what do we pay them?',
+      'How healthy are our fund reserves?',
+      'Summarize revenue vs spending so far this fiscal year',
+    ];
+    const suggestHost = byId('chat-suggest');
+    SUGGESTIONS.forEach(function (s) {
+      const b = document.createElement('button');
+      b.textContent = s;
+      b.setAttribute('style', 'border:1px solid #cfd8e0;background:#fff;color:#3c4a58;border-radius:99px;padding:8px 14px;font-size:12.5px;cursor:pointer');
+      b.addEventListener('click', function () { send(s); });
+      suggestHost.appendChild(b);
+    });
+
+    const bubble = function (role, html) {
+      const wrap = document.createElement('div');
+      wrap.setAttribute('style', 'display:flex;margin:10px 0;justify-content:' +
+        (role === 'user' ? 'flex-end' : 'flex-start'));
+      const inner = document.createElement('div');
+      inner.setAttribute('style', role === 'user'
+        ? 'background:#2450b8;color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:13.5px;max-width:78%'
+        : 'background:#fff;border:1px solid #e3e9ee;border-radius:14px 14px 14px 4px;padding:12px 16px;font-size:13.5px;max-width:85%;color:#22303c;white-space:pre-wrap;line-height:1.55');
+      inner.innerHTML = html;
+      wrap.appendChild(inner);
+      byId('chat-log').appendChild(wrap);
+      wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      return inner;
+    };
+
+    let busy = false;
+    const send = function (text) {
+      const message = (text || byId('chat-input').value || '').trim();
+      if (!message || busy) return;
+      busy = true;
+      byId('chat-input').value = '';
+      const empty = byId('chat-empty');
+      if (empty && empty.parentElement) empty.remove();
+      bubble('user', esc(message));
+      const pending = bubble('assistant', '<span style="color:#8fa1b0">Analyzing…</span>');
+      fetch('/api/chat', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message, history: history.slice(-10),
+                               context: buildFinancialDigest() }),
+      }).then(function (r) { return r.json().then(function (d) { return { status: r.status, d: d }; }); })
+        .then(function (res) {
+          if (!res.d.ok) {
+            pending.innerHTML = '<span style="color:#8a5a12">' +
+              esc(res.d.message || res.d.error || ('Request failed (' + res.status + ')')) + '</span>';
+          } else {
+            pending.textContent = res.d.reply;
+            history.push({ role: 'user', text: message });
+            history.push({ role: 'assistant', text: res.d.reply });
+          }
+        })
+        .catch(function (err) {
+          pending.innerHTML = '<span style="color:#a4271c">Could not reach the AI service: ' +
+            esc(err.message) + '</span>';
+        })
+        .then(function () { busy = false; });
+    };
+    byId('chat-form').addEventListener('submit', function (e) { e.preventDefault(); send(); });
+  };
+
   // Composite hub: sub-view toggle rendering existing views or iframes.
   function renderHub(el, subs, storageKey) {
     let active = null;
