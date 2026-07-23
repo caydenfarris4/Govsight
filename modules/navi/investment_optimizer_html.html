@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     
     <style>
+        /* GovSight platform theme - navy palette, white cards, compact type */
         * {
             margin: 0;
             padding: 0;
@@ -17,78 +18,70 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f9fafb;
+            background: #f4f6f8;
+            color: #22303c;
             min-height: 100vh;
             padding: 0;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1240px;
             margin: 0 auto;
-            background: white;
-            min-height: 100vh;
         }
 
         .header {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
+            background: linear-gradient(135deg, #12263a 0%, #1d3a56 100%);
+            color: #fff;
+            padding: 18px 22px;
+            border-radius: 10px;
+            margin: 16px 0 0;
         }
 
         .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 600;
+            font-size: 19px;
+            margin-bottom: 3px;
+            font-weight: 700;
         }
 
         .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
+            font-size: 13px;
+            color: #b7c6d5;
         }
 
         .tabs {
             display: flex;
-            background: #f3f4f6;
-            border-bottom: 2px solid #e5e7eb;
+            gap: 4px;
+            background: transparent;
+            border-bottom: 1px solid #e3e9ee;
+            margin-top: 14px;
         }
 
         .tab {
-            flex: 1;
-            padding: 18px 20px;
+            padding: 9px 16px;
             background: transparent;
             border: none;
+            border-bottom: 3px solid transparent;
             cursor: pointer;
-            font-size: 16px;
-            font-weight: 500;
-            color: #6b7280;
-            transition: all 0.3s;
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #5b6b7a;
+            white-space: nowrap;
+            transition: color 0.15s, border-color 0.15s;
             position: relative;
         }
 
         .tab:hover {
-            background: #e5e7eb;
-            color: #1f2937;
+            color: #12263a;
         }
 
         .tab.active {
-            background: white;
-            color: #2563eb;
-            font-weight: 600;
-        }
-
-        .tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: #2563eb;
+            color: #12263a;
+            font-weight: 700;
+            border-bottom-color: #2450b8;
         }
 
         .content {
-            padding: 30px;
+            padding: 20px 0 30px;
         }
 
         .tab-content {
@@ -97,105 +90,107 @@
 
         .tab-content.active {
             display: block;
-            animation: fadeIn 0.3s;
+            animation: fadeIn 0.2s;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .alert {
-            padding: 16px 20px;
+            padding: 10px 14px;
             border-radius: 8px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 14px;
+            gap: 10px;
+            font-size: 13px;
             line-height: 1.5;
         }
 
         .alert-warning {
-            background: #fef3c7;
-            border: 1px solid #fde68a;
-            color: #92400e;
+            background: #fdeeda;
+            border: 1px solid #ecd9a8;
+            color: #8a5a12;
         }
 
         .metrics {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .metric-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 25px;
-            border-radius: 12px;
-            color: white;
+            background: #fff;
+            border: 1px solid #dde4ea;
+            padding: 14px 16px;
+            border-radius: 10px;
+            color: #12263a;
         }
 
         .metric-label {
-            font-size: 14px;
-            opacity: 0.9;
-            margin-bottom: 8px;
-        }
-
-        .metric-value {
-            font-size: 32px;
-            font-weight: 700;
+            font-size: 11px;
+            color: #5b6b7a;
+            text-transform: uppercase;
+            letter-spacing: .05em;
             margin-bottom: 4px;
         }
 
+        .metric-value {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
         .metric-delta {
-            font-size: 13px;
-            opacity: 0.85;
+            font-size: 11px;
+            color: #5b6b7a;
         }
 
         .opportunity-card {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
-            transition: all 0.3s;
+            background: #fff;
+            border: 1px solid #dde4ea;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: border-color 0.15s;
         }
 
         .opportunity-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
+            border-color: #9db4c8;
         }
 
         .opportunity-card.estimated {
-            border: 2px solid #f59e0b;
-            background: #fffbeb;
+            border: 1px solid #ecd9a8;
+            background: #fffdf7;
         }
 
         .opportunity-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .opportunity-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1f2937;
+            font-size: 14.5px;
+            font-weight: 700;
+            color: #12263a;
         }
 
         .opportunity-rate {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            color: #2563eb;
+            color: #2450b8;
         }
 
         .opportunity-details {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            margin-top: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-top: 12px;
         }
 
         .detail-item {
@@ -204,168 +199,178 @@
         }
 
         .detail-label {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 4px;
+            font-size: 11px;
+            color: #5b6b7a;
+            margin-bottom: 2px;
         }
 
         .detail-value {
-            font-size: 14px;
-            font-weight: 500;
-            color: #1f2937;
+            font-size: 13px;
+            font-weight: 600;
+            color: #22303c;
         }
 
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .input-label {
             display: block;
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #5b6b7a;
+            margin-bottom: 5px;
         }
 
         .input-field {
             width: 100%;
-            padding: 12px 16px;
-            border: 1px solid #d1d5db;
+            padding: 9px 12px;
+            border: 1px solid #cfd8e0;
             border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.3s;
+            font-size: 14px;
+            background: #fff;
+            color: #22303c;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
 
         .input-field:focus {
             outline: none;
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            border-color: #2450b8;
+            box-shadow: 0 0 0 3px rgba(36, 80, 184, 0.12);
         }
 
         .btn {
-            padding: 12px 24px;
+            padding: 9px 20px;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: background 0.15s;
             display: inline-flex;
             align-items: center;
             gap: 8px;
         }
 
         .btn-primary {
-            background: #2563eb;
-            color: white;
+            background: #1d3a56;
+            color: #fff;
         }
 
         .btn-primary:hover {
-            background: #1d4ed8;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+            background: #12263a;
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: #12263a;
+            border: 1px solid #cfd8e0;
+        }
+
+        .btn-secondary:hover {
+            background: #eef2f6;
         }
 
         .chart-container {
             position: relative;
-            height: 400px;
-            margin: 30px 0;
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            height: 380px;
+            margin: 20px 0;
+            background: #fff;
+            border: 1px solid #dde4ea;
+            border-radius: 10px;
+            padding: 16px;
         }
 
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 16px;
         }
 
         .badge {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
+            padding: 2px 10px;
+            border-radius: 99px;
+            font-size: 11px;
+            font-weight: 700;
         }
 
         .badge-live {
-            background: #d1fae5;
-            color: #065f46;
+            background: #e2f2e8;
+            color: #1e6b3c;
         }
 
         .badge-stale { background: #fdeeda; color: #8a5a12; }
         .badge-manual { background: #e8eef7; color: #24508f; }
         .badge-static { background: #fdecea; color: #a4271c; }
         .badge-estimated {
-            background: #fef3c7;
-            color: #92400e;
+            background: #fdeeda;
+            color: #8a5a12;
         }
 
         .badge-fdic {
-            background: #dbeafe;
-            color: #1e40af;
+            background: #e8eef7;
+            color: #24508f;
         }
 
         .badge-govt {
-            background: #e0e7ff;
-            color: #3730a3;
+            background: #e8eef7;
+            color: #24508f;
         }
 
         .recommendation-box {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 12px;
-            margin: 20px 0;
+            background: linear-gradient(135deg, #12263a 0%, #1d3a56 100%);
+            color: #fff;
+            padding: 20px 22px;
+            border-radius: 10px;
+            margin: 16px 0;
         }
 
         .recommendation-box h3 {
-            font-size: 20px;
-            margin-bottom: 12px;
+            font-size: 16px;
+            margin-bottom: 10px;
         }
 
         .recommendation-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
-            margin-top: 16px;
+            gap: 14px;
+            margin-top: 12px;
         }
 
         @media (max-width: 768px) {
             .grid-2 {
                 grid-template-columns: 1fr;
             }
-            
+
             .tabs {
-                flex-direction: column;
-            }
-            
-            .header h1 {
-                font-size: 1.8em;
+                flex-wrap: wrap;
             }
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 16px;
+            background: #fff;
+            font-size: 13px;
         }
 
         th {
-            background: #f3f4f6;
-            padding: 12px;
+            background: #fff;
+            padding: 8px 10px;
             text-align: left;
             font-weight: 600;
-            border-bottom: 2px solid #e5e7eb;
+            font-size: 12px;
+            color: #5b6b7a;
+            border-bottom: 2px solid #dde4ea;
         }
 
         td {
-            padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 8px 10px;
+            border-bottom: 1px solid #eef2f5;
         }
 
         .hidden {
@@ -396,7 +401,7 @@
 
             <div id="calculator" class="tab-content">
                 <h2 style="margin-bottom: 20px">Cash Optimization Calculator</h2>
-                <p style="color: #6b7280; margin-bottom: 30px">
+                <p style="color: #5b6b7a; margin-bottom: 30px">
                     Enter your available cash and investment criteria to get personalized recommendations.
                 </p>
 
@@ -438,15 +443,15 @@
 
             <div id="portfolio" class="tab-content">
                 <h2 style="margin-bottom: 6px">Investment Portfolio</h2>
-                <p style="color:#666; margin-bottom: 16px">Track actual holdings: maturity ladder, weighted yield, reinvestment alerts, and the cost of idle cash.</p>
+                <p style="color:#5b6b7a; margin-bottom: 16px">Track actual holdings: maturity ladder, weighted yield, reinvestment alerts, and the cost of idle cash.</p>
                 <div id="portfolio-status"></div>
                 <div class="metrics" id="portfolio-metrics"></div>
                 <div class="grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px">
-                    <div class="card" style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:16px">
+                    <div class="card" style="background:#fff; border:1px solid #dde4ea; border-radius:10px; padding:16px">
                         <h3 style="margin-bottom:10px">Maturity Ladder</h3>
                         <div style="height:260px"><canvas id="ladder-chart"></canvas></div>
                     </div>
-                    <div class="card" style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:16px">
+                    <div class="card" style="background:#fff; border:1px solid #dde4ea; border-radius:10px; padding:16px">
                         <h3 style="margin-bottom:10px">Idle Cash Opportunity Cost</h3>
                         <div class="input-group"><label>Idle cash in checking (earning ~0%)</label>
                             <input type="number" id="idle-cash" value="0" step="100000"></div>
@@ -474,7 +479,7 @@
 
             <div id="grants" class="tab-content">
                 <h2 style="margin-bottom: 20px">Grant + Investment Integration</h2>
-                <p style="color: #6b7280; margin-bottom: 30px">
+                <p style="color: #5b6b7a; margin-bottom: 30px">
                     Maximize returns on grant funds between receipt and expenditure dates.
                 </p>
 
@@ -499,110 +504,110 @@
                 <h2 style="margin-bottom: 20px">Municipal Investment Education</h2>
 
                 <div style="margin-bottom: 30px">
-                    <h3 style="color: #2563eb; margin-bottom: 16px">Understanding Safe Investment Options</h3>
-                    <p style="color: #6b7280; line-height: 1.6">
+                    <h3 style="color: #12263a; margin-bottom: 16px">Understanding Safe Investment Options</h3>
+                    <p style="color: #5b6b7a; line-height: 1.6">
                         Cities and municipalities have several accredited and regulated investment options for managing cash reserves.
                     </p>
                 </div>
 
                 <div class="opportunity-card">
-                    <h4 style="color: #1f2937; margin-bottom: 12px">US Treasury Securities</h4>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <h4 style="color: #12263a; margin-bottom: 12px">US Treasury Securities</h4>
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>What:</strong> Direct obligations of the US Government
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>Types:</strong> Treasury Bills (4 weeks to 1 year), Treasury Notes (2 to 10 years), Treasury Bonds (20 to 30 years)
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>Safety:</strong> Backed by full faith and credit of US Government (AAA rated)
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 16px">
+                    <p style="color: #5b6b7a; margin-bottom: 16px">
                         <strong>Best for:</strong> Risk-free investment, benchmark for other rates
                     </p>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap">
                         <a href="https://www.treasurydirect.gov/" target="_blank" class="btn btn-primary" style="text-decoration: none">
                             Treasury Direct →
                         </a>
-                        <a href="https://www.treasurydirect.gov/auctions/upcoming/" target="_blank" class="btn btn-secondary" style="text-decoration: none; background: #6b7280; color: white">
+                        <a href="https://www.treasurydirect.gov/auctions/upcoming/" target="_blank" class="btn btn-secondary" style="text-decoration: none">
                             View Auctions →
                         </a>
                     </div>
                 </div>
 
                 <div class="opportunity-card">
-                    <h4 style="color: #1f2937; margin-bottom: 12px">CDARS / ICS (IntraFi Network)</h4>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <h4 style="color: #12263a; margin-bottom: 12px">CDARS / ICS (IntraFi Network)</h4>
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>What:</strong> Certificate of Deposit Account Registry Service / IntraFi Cash Service
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>How it works:</strong> Your deposit is split into increments under $250,000 and placed at different FDIC-insured banks
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>Network:</strong> 3,000+ participating banks nationwide
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 16px">
+                    <p style="color: #5b6b7a; margin-bottom: 16px">
                         <strong>Best for:</strong> Large cash balances requiring FDIC insurance
                     </p>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap">
                         <a href="https://www.intrafi.com/" target="_blank" class="btn btn-primary" style="text-decoration: none">
                             IntraFi Network →
                         </a>
-                        <a href="https://www.intrafi.com/find-a-network-bank" target="_blank" class="btn btn-secondary" style="text-decoration: none; background: #6b7280; color: white">
+                        <a href="https://www.intrafi.com/find-a-network-bank" target="_blank" class="btn btn-secondary" style="text-decoration: none">
                             Find Your Bank →
                         </a>
                     </div>
                 </div>
 
                 <div class="opportunity-card">
-                    <h4 style="color: #1f2937; margin-bottom: 12px">Government Money Market Funds</h4>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <h4 style="color: #12263a; margin-bottom: 12px">Government Money Market Funds</h4>
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>What:</strong> Mutual funds investing in government securities
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>Types:</strong> Treasury MMF (99.5%+ in Treasury securities), Government MMF (99.5%+ in government securities)
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>Safety:</strong> AAA rated, highly stable $1.00 NAV
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 16px">
+                    <p style="color: #5b6b7a; margin-bottom: 16px">
                         <strong>Best for:</strong> Operating cash needing daily liquidity
                     </p>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap">
                         <a href="https://investor.vanguard.com/investment-products/mutual-funds/profile/vusxx" target="_blank" class="btn btn-primary" style="text-decoration: none">
                             Vanguard VUSXX →
                         </a>
-                        <a href="https://www.schwab.com/public/schwab/investing/accounts_products/investment/money_markets_funds" target="_blank" class="btn btn-secondary" style="text-decoration: none; background: #6b7280; color: white">
+                        <a href="https://www.schwab.com/public/schwab/investing/accounts_products/investment/money_markets_funds" target="_blank" class="btn btn-secondary" style="text-decoration: none">
                             Schwab MMFs →
                         </a>
                     </div>
                 </div>
 
                 <div class="opportunity-card">
-                    <h4 style="color: #1f2937; margin-bottom: 12px">Local Government Investment Pools (LGIPs)</h4>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <h4 style="color: #12263a; margin-bottom: 12px">Local Government Investment Pools (LGIPs)</h4>
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>What:</strong> State-sponsored investment pools for local governments
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>Structure:</strong> Managed by state treasury, invests in high-quality short-term securities
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 12px">
+                    <p style="color: #5b6b7a; margin-bottom: 12px">
                         <strong>Safety:</strong> State-regulated, typically AAA/AAAm rated
                     </p>
-                    <p style="color: #6b7280; margin-bottom: 16px">
+                    <p style="color: #5b6b7a; margin-bottom: 16px">
                         <strong>Best for:</strong> Local government entities, competitive rates with safety
                     </p>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap">
                         <a href="https://www.gfoa.org/materials/local-government-investment-pools" target="_blank" class="btn btn-primary" style="text-decoration: none">
                             GFOA Resources →
                         </a>
-                        <a href="https://www.msrb.org/LGIP-Investment-Pool-Structure" target="_blank" class="btn btn-secondary" style="text-decoration: none; background: #6b7280; color: white">
+                        <a href="https://www.msrb.org/LGIP-Investment-Pool-Structure" target="_blank" class="btn btn-secondary" style="text-decoration: none">
                             MSRB Guide →
                         </a>
                     </div>
                 </div>
 
                 <div class="alert alert-info" style="margin-top: 30px; background: #dbeafe; border: 1px solid #bfdbfe; color: #1e40af">
-                    <span>ℹ️</span>
+                    
                     <div>
                         <strong>Additional Resources:</strong>
                         <ul style="margin-top: 8px; margin-left: 20px">
@@ -670,7 +675,7 @@
                 fdic: false,
                 govt: true,
                 liquidity: 'Daily',
-                source: '⚠️ ESTIMATED RATE (Oct 2025: 4.13-4.34%) - Verify at investor.vanguard.com/vusxx',
+                source: 'ESTIMATED RATE (Oct 2025: 4.13-4.34%) - Verify at investor.vanguard.com/vusxx',
                 isLive: false,
                 notes: 'State tax exempt - distributions exempt from state and local income tax',
                 link: 'https://investor.vanguard.com/investment-products/mutual-funds/profile/vusxx',
@@ -689,7 +694,7 @@
                 fdic: true,
                 govt: false,
                 liquidity: 'Low (penalty for early withdrawal)',
-                source: '⚠️ ESTIMATED (Oct 2025 market: 3.95-4.50%) - Contact your IntraFi network bank',
+                source: 'ESTIMATED (Oct 2025 market: 3.95-4.50%) - Contact your IntraFi network bank',
                 isLive: false,
                 notes: 'Multi-million FDIC insurance through network of 3,000+ banks. Rates typically 0.25-0.50% below standard CDs',
                 link: 'https://www.intrafi.com/find-a-network-bank',
@@ -708,7 +713,7 @@
                 fdic: true,
                 govt: false,
                 liquidity: 'Low (penalty for early withdrawal)',
-                source: '⚠️ ESTIMATED (Oct 2025 market: 3.95-4.42%) - Contact your IntraFi network bank',
+                source: 'ESTIMATED (Oct 2025 market: 3.95-4.42%) - Contact your IntraFi network bank',
                 isLive: false,
                 notes: 'Multi-million FDIC insurance through network of 3,000+ banks. Rates typically 0.25-0.50% below standard CDs',
                 link: 'https://www.intrafi.com/find-a-network-bank',
@@ -727,7 +732,7 @@
                 fdic: true,
                 govt: false,
                 liquidity: 'High (daily access)',
-                source: '⚠️ ESTIMATED (Oct 2025 range: 2.85-4.05%) - Contact your IntraFi network bank',
+                source: 'ESTIMATED (Oct 2025 range: 2.85-4.05%) - Contact your IntraFi network bank',
                 isLive: false,
                 notes: 'Multi-million FDIC insurance with daily liquidity. Rates vary significantly by bank and balance tier',
                 link: 'https://www.intrafi.com/find-a-network-bank',
@@ -746,7 +751,7 @@
                 fdic: false,
                 govt: false,
                 liquidity: 'Daily',
-                source: '⚠️ ESTIMATED (Oct 2025 national avg: 4.99-5.08%) - Contact your state treasury',
+                source: 'ESTIMATED (Oct 2025 national avg: 4.99-5.08%) - Contact your state treasury',
                 isLive: false,
                 notes: 'State-regulated investment pool for local governments. Rates vary by state - check with your state treasurer',
                 link: 'https://www.gfoa.org/materials/local-government-investment-pools',
@@ -894,12 +899,12 @@
                     <div class="metric-card">
                         <div class="metric-label">Live Data Sources</div>
                         <div class="metric-value">${liveCount}</div>
-                        <div class="metric-delta">${liveCount > 0 ? '✓ Current' : 'No live data'}</div>
+                        <div class="metric-delta">${liveCount > 0 ? 'Current' : 'No live data'}</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-label">Estimated Data</div>
                         <div class="metric-value">${estimatedCount}</div>
-                        <div class="metric-delta">${estimatedCount > 0 ? '⚠️ Verify' : 'All live'}</div>
+                        <div class="metric-delta">${estimatedCount > 0 ? 'Verify' : 'All live'}</div>
                     </div>
                 </div>
             `;
@@ -909,7 +914,7 @@
                     <div class="opportunity-card ${!opp.isLive ? 'estimated' : ''}">
                         ${!opp.isLive ? `
                             <div class="alert alert-warning" style="margin-bottom: 16px">
-                                <span>⚠️</span>
+                                
                                 <div><strong>ESTIMATED RATE</strong> - This rate is not from live API data. Contact provider to verify current rates before investing.</div>
                             </div>
                         ` : ''}
@@ -917,7 +922,7 @@
                         <div class="opportunity-header">
                             <div>
                                 <div class="opportunity-title">
-                                    ${!opp.isLive ? '⚠️ ESTIMATED: ' : ''}${opp.name}
+                                    ${!opp.isLive ? 'ESTIMATED: ' : ''}${opp.name}
                                 </div>
                                 <div style="margin-top: 8px; display: flex; gap: 8px">
                                     ${freshnessBadge(opp)}
@@ -956,8 +961,8 @@
                         </div>
 
                         ${opp.notes ? `
-                            <div style="margin-top: 16px; font-size: 13px; color: #6b7280">
-                                ℹ️ ${opp.notes}
+                            <div style="margin-top: 16px; font-size: 13px; color: #5b6b7a">
+                                ${opp.notes}
                             </div>
                         ` : ''}
 
@@ -997,7 +1002,7 @@
             if (filtered.length === 0) {
                 document.getElementById('calc-result').innerHTML = `
                     <div class="alert alert-warning" style="margin-top: 20px">
-                        <span>⚠️</span>
+                        
                         <div>No suitable investments found for your criteria. Try adjusting the liquidity requirement or amount.</div>
                     </div>
                 `;
@@ -1011,7 +1016,7 @@
                 <div class="recommendation-box" style="margin-top: 30px">
                     ${!best.isLive ? `
                         <div class="alert alert-warning" style="margin-bottom: 16px">
-                            <span>⚠️</span>
+                            
                             <div><strong>ESTIMATED RATE WARNING:</strong> The recommended investment uses an estimated rate. Verify current rates with the provider before proceeding.</div>
                         </div>
                     ` : ''}
@@ -1136,8 +1141,8 @@
                         <td style="text-align: right; font-weight: 600">$${calc.totalReturn.toLocaleString()}</td>
                         <td style="text-align: center">
                             ${opp.isLive ? 
-                                '<span class="badge badge-live">✓ Live</span>' : 
-                                '<span class="badge badge-estimated">⚠️ Estimated</span>'
+                                '<span class="badge badge-live">LIVE</span>' : 
+                                '<span class="badge badge-estimated">ESTIMATED</span>'
                             }
                         </td>
                     </tr>
@@ -1165,7 +1170,7 @@
             if (suitable.length === 0) {
                 document.getElementById('grant-result').innerHTML = `
                     <div class="alert alert-warning" style="margin-top: 20px">
-                        <span>⚠️</span>
+                        
                         <div>No suitable investments found for your criteria. Try adjusting the days available or grant amount.</div>
                     </div>
                 `;
@@ -1195,7 +1200,7 @@
                         </div>
                         <div>
                             <div style="font-size: 14px; opacity: 0.9">Interest Earned</div>
-                            <div style="font-size: 20px; font-weight: 600; color: #10b981">
+                            <div style="font-size: 20px; font-weight: 600; color: #8fd6ac">
                                 +$${calc.interestEarned.toLocaleString()}
                             </div>
                         </div>

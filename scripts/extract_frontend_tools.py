@@ -125,10 +125,24 @@ def investment_optimizer():
     idx = script.rstrip().rfind("});")
     script = script.rstrip()[:idx] + "}\n"
 
+    # Inline onclick="fn(...)" handlers resolve at global scope; the
+    # bundle's module scope hides these functions, so re-export every
+    # handler that is actually defined in the script onto window.
+    handler_names = sorted(set(re.findall(r'onclick="(\w+)\(', body)
+                               + re.findall(r'onclick="(\w+)\(', script)))
+    defined = [n for n in handler_names
+               if re.search(r"\bfunction\s+" + n + r"\b", script)]
+    missing = set(handler_names) - set(defined)
+    if missing:
+        raise SystemExit(f"optimizer onclick handlers not defined: {missing}")
+    globals_line = ("Object.assign(window, { " + ", ".join(defined) + " });\n"
+                    if defined else "")
+
     module = HEADER + (
         "import './investmentOptimizer.css';\n\n"
         "const BODY_HTML = " + repr(body) + ";\n\n"
-        + script +
+        + script + "\n"
+        + globals_line +
         "\nexport function mountInvestmentOptimizer(el) {\n"
         "  el.innerHTML = BODY_HTML;\n"
         "  __optimizerInit();\n"
