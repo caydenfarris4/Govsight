@@ -66,12 +66,64 @@ async function hasValidSession(request, config) {
  * the model is instructed to answer only from that data.
  */
 const CHAT_MODEL = 'claude-sonnet-5';
+const OPENAI_CHAT_MODEL = 'gpt-4o';
 const MAX_MESSAGE_CHARS = 4000;
 const MAX_CONTEXT_CHARS = 12000;
 const MAX_HISTORY_TURNS = 10;
 
+// Accept common alternate spellings admins use in the dashboard
+function anthropicKey(env) {
+  return env.ANTHROPIC_API_KEY || env.ANTHROPIC_KEY || env.Anthropic_API_Key || null;
+}
+function openaiKey(env) {
+  return env.OPENAI_API_KEY || env.OPEN_AI_KEY || env.OPEN_AI_Key || env.OpenAI_Key || null;
+}
+
+async function callAnthropic(key, system, history, message) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: CHAT_MODEL,
+      max_tokens: 1000,
+      system,
+      messages: [...history, { role: 'user', content: message }],
+    }),
+  });
+  if (!resp.ok) throw new Error(`Anthropic ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
+  const data = await resp.json();
+  const reply = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+  return { reply, model: data.model || CHAT_MODEL };
+}
+
+async function callOpenAI(key, system, history, message) {
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`,
+    },
+    body: JSON.stringify({
+      model: OPENAI_CHAT_MODEL,
+      max_tokens: 1000,
+      messages: [{ role: 'system', content: system }, ...history,
+                 { role: 'user', content: message }],
+    }),
+  });
+  if (!resp.ok) throw new Error(`OpenAI ${resp.status}: ${(await resp.text()).slice(0, 200)}`);
+  const data = await resp.json();
+  return { reply: data.choices?.[0]?.message?.content || '',
+           model: data.model || OPENAI_CHAT_MODEL };
+}
+
 async function handleChat(request, env) {
-  if (!env.ANTHROPIC_API_KEY) {
+  const aKey = anthropicKey(env);
+  const oKey = openaiKey(env);
+  if (!aKey && !oKey) {
     return Response.json({
       ok: false, error: 'not_configured',
       message: 'AI chat is not configured for this deployment. An administrator ' +
@@ -110,35 +162,26 @@ async function handleChat(request, env) {
     'instead of guessing. Keep answers under 250 words. Plain text only, no ' +
     'markdown headers.\n\nFINANCIAL DIGEST:\n' + context;
 
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': env.ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: CHAT_MODEL,
-      max_tokens: 1000,
-      system,
-      messages: [...history, { role: 'user', content: message }],
-    }),
-  });
+  // Claude is primary; OpenAI is the fallback provider (or primary when
+  // it is the only key configured)
+  const attempts = [];
+  if (aKey) attempts.push(() => callAnthropic(aKey, system, history, message));
+  if (oKey) attempts.push(() => callOpenAI(oKey, system, history, message));
 
-  if (!resp.ok) {
-    const detail = await resp.text();
-    return Response.json({
-      ok: false, error: 'upstream',
-      message: `AI request failed (${resp.status}). ${detail.slice(0, 200)}`,
-    }, { status: 502 });
+  const failures = [];
+  for (const attempt of attempts) {
+    try {
+      const { reply, model } = await attempt();
+      if (reply) return Response.json({ ok: true, reply, model });
+      failures.push(`${attempts.length > 1 ? 'provider' : 'model'} returned empty reply`);
+    } catch (err) {
+      failures.push(String(err && err.message || err).slice(0, 200));
+    }
   }
-
-  const data = await resp.json();
-  const reply = (data.content || [])
-    .filter(b => b.type === 'text')
-    .map(b => b.text)
-    .join('');
-  return Response.json({ ok: true, reply, model: data.model || CHAT_MODEL });
+  return Response.json({
+    ok: false, error: 'upstream',
+    message: `AI request failed. ${failures.join(' | ')}`,
+  }, { status: 502 });
 }
 
 async function handleLogin(request, config) {
@@ -195,11 +238,20 @@ export default {
       if (!(await hasValidSession(request, config))) {
         return Response.json({ ok: false, error: 'Not authenticated' }, { status: 401 });
       }
+      const providers = {
+        anthropic: Boolean(anthropicKey(env)),
+        openai: Boolean(openaiKey(env)),
+      };
+      const configured = providers.anthropic || providers.openai;
       return Response.json({
-        ai_configured: Boolean(env.ANTHROPIC_API_KEY),
-        hint: env.ANTHROPIC_API_KEY ? 'AI chat is enabled.' :
-          'Add ANTHROPIC_API_KEY as a SECRET on this Worker (Settings > ' +
-          'Variables and Secrets > Add > Type: Secret), then click Deploy.',
+        ai_configured: configured,
+        providers,
+        hint: configured
+          ? 'AI chat is enabled' +
+            (providers.anthropic && providers.openai ? ' (Claude primary, OpenAI fallback).'
+              : providers.anthropic ? ' (Claude).' : ' (OpenAI).')
+          : 'Add ANTHROPIC_API_KEY as a SECRET on this Worker (Settings > ' +
+            'Variables and Secrets > Add > Type: Secret), then click Deploy.',
       });
     }
 
