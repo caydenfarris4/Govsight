@@ -23,8 +23,13 @@ from modules.api.routers.auth import require_user
 router = APIRouter(prefix="/api/bp", tags=["budget-playground"],
                    dependencies=[Depends(require_user)])
 
-GL_DB_PATH = os.path.join("databases", "core", "govsight_all_in_one_data.db")
-PLAY_DB_PATH = os.path.join("databases", "budget_playground.db")
+from modules.tenancy.context import tenant_db_path
+
+def GL_DB_PATH() -> str:
+    return tenant_db_path(os.path.join("core", "govsight_all_in_one_data.db"))
+
+def PLAY_DB_PATH() -> str:
+    return tenant_db_path("budget_playground.db")
 
 _PAYROLL_RE = re.compile(r"-(5100|5200)$")
 
@@ -38,17 +43,18 @@ def _uuid() -> str:
 
 
 def _gl() -> sqlite3.Connection:
-    if not os.path.exists(GL_DB_PATH):
+    if not os.path.exists(GL_DB_PATH()):
         raise HTTPException(status_code=503,
                             detail="GL database not found - seed or sync data first")
-    conn = sqlite3.connect(GL_DB_PATH)
+    conn = sqlite3.connect(GL_DB_PATH())
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def _play() -> sqlite3.Connection:
-    os.makedirs(os.path.dirname(PLAY_DB_PATH) or ".", exist_ok=True)
-    conn = sqlite3.connect(PLAY_DB_PATH)
+    path = PLAY_DB_PATH()
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS scenarios (

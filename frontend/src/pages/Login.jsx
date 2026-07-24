@@ -12,7 +12,7 @@ export default function Login({ onLogin }) {
     setBusy(true); setError('');
     try {
       const result = await login(username.trim(), password);
-      onLogin({ username: result.username, role: result.role });
+      onLogin(result);
     } catch (err) {
       setError(err.message || 'Sign in failed');
     } finally {

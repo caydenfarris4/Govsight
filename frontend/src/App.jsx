@@ -18,7 +18,8 @@ export default function App() {
     if (!user) return;
     // Environment the embedded tools expect (formerly server-injected)
     window.GOVSIGHT_API_URL = window.location.origin;
-    window.GOVSIGHT_USER = { username: user.username, role: user.role };
+    window.GOVSIGHT_USER = { username: user.username, role: user.role,
+                             tenant: user.tenant_id, tenant_name: user.tenant_name };
     getBundle().then((bundle) => {
       const accounts = bundle.accounts || [];
       const shape = (type) => accounts
@@ -46,7 +47,7 @@ export default function App() {
     <Layout user={user} onLogout={() => setUser(null)}>
       <Routes>
         <Route path="/" element={<Dashboard user={user} />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin" element={<Admin user={user} />} />
         <Route path="/:moduleId/:tabIndex?" element={<ModulePage user={user} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -24,15 +24,20 @@ from modules.api.routers.auth import require_user
 router = APIRouter(prefix="/api/data", tags=["data"],
                    dependencies=[Depends(require_user)])
 
-CANONICAL_DB = os.path.join("databases", "core", "govsight_all_in_one_data.db")
-PAYROLL_DB = os.path.join("databases", "payroll_city_payroll_demo (1).db")
+from modules.tenancy.context import tenant_db_path
+
+def CANONICAL_DB() -> str:
+    return tenant_db_path(os.path.join("core", "govsight_all_in_one_data.db"))
+
+def PAYROLL_DB() -> str:
+    return tenant_db_path("payroll_city_payroll_demo (1).db")
 DEMO_JSON = os.path.join("public", "demo", "demo_data.json")
 
 
 def _conn() -> Optional[sqlite3.Connection]:
-    if not os.path.exists(CANONICAL_DB):
+    if not os.path.exists(CANONICAL_DB()):
         return None
-    conn = sqlite3.connect(CANONICAL_DB)
+    conn = sqlite3.connect(CANONICAL_DB())
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -49,7 +54,7 @@ def _live_positions() -> Optional[List[Dict[str, Any]]]:
     """Positions from the connected payroll system, in the bundle's shape.
     The loaded-benefits rate comes from the canonical payroll rates so the
     Personnel workbook matches the PBB calculation engine."""
-    if not os.path.exists(PAYROLL_DB):
+    if not os.path.exists(PAYROLL_DB()):
         return None
     try:
         from modules.navi.payroll_rates import DEFAULT_PAYROLL_RATES as rates
@@ -57,7 +62,7 @@ def _live_positions() -> Optional[List[Dict[str, Any]]]:
             rates["std_benefits_pct"] + rates["retirement_pct"]
             + rates["fica_pct"] + rates["medicare_pct"]
             + rates["unemployment_pct"] + rates["workers_comp_pct"], 4)
-        conn = sqlite3.connect(PAYROLL_DB)
+        conn = sqlite3.connect(PAYROLL_DB())
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
             """SELECT e.EmployeeID AS id, e.Position AS title,
@@ -82,8 +87,17 @@ def _live_positions() -> Optional[List[Dict[str, Any]]]:
 
 
 @router.get("/bundle")
-def data_bundle():
-    demo = _demo_defaults()
+def data_bundle(user: dict = Depends(require_user)):
+    from modules.tenancy.acl import allowed_departments, filter_bundle
+    from modules.tenancy.context import DEFAULT_TENANT, current_tenant
+
+    # Sample-data fallbacks belong to the founding demo city only; a new
+    # city starts empty until its ERP data is ingested.
+    if current_tenant() == DEFAULT_TENANT:
+        demo = _demo_defaults()
+    else:
+        demo = {"city": {"name": user.get("tenant_name", "")},
+                "departments": []}
     sources: Dict[str, str] = {}
     bundle: Dict[str, Any] = {}
 
@@ -152,7 +166,9 @@ def data_bundle():
     bundle["reserve_policy_months"] = demo.get("reserve_policy_months", 2.0)
     bundle["meta"] = {
         "label": "GovSight data bundle",
-        "organization": (demo.get("city") or {}).get("name", ""),
+        "organization": (demo.get("city") or {}).get("name", "")
+                        or user.get("tenant_name", ""),
+        "tenant": current_tenant(),
         "current_fiscal_year": max(
             [m["fiscal_year"] for m in bundle["monthly_actuals"]] or [today.year]),
         "months_elapsed": max(
@@ -163,13 +179,22 @@ def data_bundle():
         "sources": sources,
         "live_sections": sorted(k for k, v in sources.items() if v == "live"),
     }
-    return bundle
+    return filter_bundle(bundle, allowed_departments(user))
 
 
 @router.get("/close-review")
-def close_review(year: int, month: int):
+def close_review(year: int, month: int, user: dict = Depends(require_user)):
+    from fastapi import HTTPException
+    from modules.tenancy.acl import allowed_departments
+    # The close review reads the entire ledger (all departments' vendors
+    # and amounts); it is a citywide-visibility function.
+    if allowed_departments(user) is not None:
+        raise HTTPException(
+            status_code=403,
+            detail="Monthly close review requires citywide department access. "
+                   "Ask your city administrator to grant all-departments visibility.")
     from modules.vatica.monthly_close_assistant import MonthlyCloseAssistant
-    report = MonthlyCloseAssistant().run(year, month)
+    report = MonthlyCloseAssistant(db_path=CANONICAL_DB()).run(year, month)
     return {
         "year": report.year, "month": report.month,
         "generated_at": report.generated_at,
@@ -186,7 +211,7 @@ def close_review(year: int, month: int):
 def cash_flow(starting_balance: float, policy_floor: float = 0.0,
               revenue_scale: float = 1.0, expense_scale: float = 1.0):
     from modules.treasury.cash_flow_engine import CashFlowEngine
-    proj = CashFlowEngine().project(
+    proj = CashFlowEngine(db_path=CANONICAL_DB()).project(
         starting_balance=starting_balance, policy_floor=policy_floor,
         revenue_scale=revenue_scale, expense_scale=expense_scale)
     return {
@@ -205,9 +230,9 @@ class _PacingUnavailable(Exception):
     pass
 
 
-@router.get("/pacing")
-def pacing():
-    """Department pacing from the canonical monthly history."""
+def compute_pacing() -> Dict[str, Any]:
+    """Department pacing from the current tenant's monthly history.
+    Internal (unfiltered); the HTTP endpoint applies the caller's ACL."""
     import pandas as pd
     conn = _conn()
     if not conn:
@@ -228,3 +253,12 @@ def pacing():
         return {"available": False, "reason": "insufficient monthly history"}
     return {"available": True, "fiscal_year": int(year), "through_month": int(month),
             "rows": out.to_dict(orient="records")}
+
+
+@router.get("/pacing")
+def pacing(user: dict = Depends(require_user)):
+    from modules.tenancy.acl import allowed_departments, filter_pacing_rows
+    result = compute_pacing()
+    if result.get("available"):
+        result["rows"] = filter_pacing_rows(result["rows"], allowed_departments(user))
+    return result

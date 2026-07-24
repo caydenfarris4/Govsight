@@ -1,22 +1,25 @@
 """
-Session authentication for the unified API.
+Tenant-aware session authentication for the unified API.
 
-HMAC-signed session cookies (same scheme as the edge worker) over the
-existing user database with hashed passwords. The SPA calls
-/api/auth/login, /api/auth/me, and /api/auth/logout; every other
-router depends on `require_user`.
+Sessions are HMAC-signed cookies carrying `username|tenant|expiry`.
+Credentials live in the central tenant directory (salted PBKDF2);
+accounts from the legacy single-tenant user database migrate
+automatically on their first successful login. Every request is bound
+to the session's city - a user cannot reach another tenant's data
+because the tenant in their signed cookie decides which database files
+open (see modules/tenancy/context.py).
 """
 
 import hashlib
 import hmac
 import os
 import time
-from typing import Optional
+from typing import Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 
-from modules.admin.user_database import authenticate_user, get_user_info
+from modules.tenancy.directory import directory
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -32,12 +35,13 @@ def _sign(payload: str) -> str:
     return hmac.new(_secret(), payload.encode(), hashlib.sha256).hexdigest()
 
 
-def make_session(username: str) -> str:
-    payload = f"{username}|{int(time.time()) + SESSION_SECONDS}"
+def make_session(username: str, tenant_id: str) -> str:
+    payload = f"{username}|{tenant_id}|{int(time.time()) + SESSION_SECONDS}"
     return payload + "|" + _sign(payload)
 
 
-def read_session(token: Optional[str]) -> Optional[str]:
+def read_session(token: Optional[str]) -> Optional[Tuple[str, str]]:
+    """Validate a session cookie; returns (username, tenant_id) or None."""
     if not token:
         return None
     parts = token.rsplit("|", 1)
@@ -46,22 +50,37 @@ def read_session(token: Optional[str]) -> Optional[str]:
     payload, sig = parts
     if not hmac.compare_digest(_sign(payload), sig):
         return None
+    fields = payload.split("|")
+    if len(fields) != 3:
+        return None
+    username, tenant_id, expires = fields
     try:
-        username, expires = payload.rsplit("|", 1)
         if int(expires) < time.time():
             return None
     except ValueError:
         return None
-    return username
+    return username, tenant_id
 
 
 def require_user(request: Request) -> dict:
-    username = read_session(request.cookies.get(COOKIE_NAME))
-    if not username:
+    session = read_session(request.cookies.get(COOKIE_NAME))
+    if not session:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    info = get_user_info(username) or {"username": username, "role": "viewer"}
-    info["username"] = username
-    return info
+    username, tenant_id = session
+    user = directory.get_user(username)
+    if not user or not user["active"] or user["tenant_id"] != tenant_id:
+        raise HTTPException(status_code=401, detail="Session no longer valid")
+    tenant = directory.get_tenant(tenant_id) or {}
+    if not tenant.get("active", 1):
+        raise HTTPException(status_code=403, detail="This city's account is suspended")
+    user["tenant_name"] = tenant.get("name", tenant_id)
+    return user
+
+
+def require_admin(user: dict = Depends(require_user)) -> dict:
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Administrator access required")
+    return user
 
 
 class LoginRequest(BaseModel):
@@ -71,16 +90,22 @@ class LoginRequest(BaseModel):
 
 @router.post("/login")
 def login(body: LoginRequest, response: Response):
-    if not authenticate_user(body.username, body.password):
+    user = directory.authenticate(body.username, body.password)
+    if not user:
         raise HTTPException(status_code=401, detail="Invalid username or password")
-    info = get_user_info(body.username) or {}
+    tenant = directory.get_tenant(user["tenant_id"]) or {}
+    if not tenant.get("active", 1):
+        raise HTTPException(status_code=403, detail="This city's account is suspended")
     response.set_cookie(
-        COOKIE_NAME, make_session(body.username),
+        COOKIE_NAME, make_session(user["username"], user["tenant_id"]),
         max_age=SESSION_SECONDS, httponly=True, samesite="lax",
         secure=os.getenv("GOVSIGHT_INSECURE_COOKIES") != "1",
     )
-    return {"ok": True, "username": body.username,
-            "role": info.get("role", "viewer")}
+    return {"ok": True, "username": user["username"], "role": user["role"],
+            "tenant_id": user["tenant_id"],
+            "tenant_name": tenant.get("name", user["tenant_id"]),
+            "departments": user["departments"],
+            "is_platform_admin": user["is_platform_admin"]}
 
 
 @router.post("/logout")
@@ -91,5 +116,7 @@ def logout(response: Response):
 
 @router.get("/me")
 def me(user: dict = Depends(require_user)):
-    return {"username": user["username"], "role": user.get("role", "viewer"),
-            "departments": user.get("departments", "all")}
+    return {"username": user["username"], "role": user["role"],
+            "tenant_id": user["tenant_id"], "tenant_name": user["tenant_name"],
+            "departments": user["departments"],
+            "is_platform_admin": user["is_platform_admin"]}

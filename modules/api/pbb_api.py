@@ -137,10 +137,12 @@ class APISecurityMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"
-        username = None
+        username = tenant_id = None
         try:
             from modules.api.routers.auth import read_session, COOKIE_NAME
-            username = read_session(request.cookies.get(COOKIE_NAME))
+            session = read_session(request.cookies.get(COOKIE_NAME))
+            if session:
+                username, tenant_id = session
         except Exception:
             pass
         principal = username or f"ip:{client_ip}"
@@ -164,7 +166,20 @@ class APISecurityMiddleware(BaseHTTPMiddleware):
         if path not in _AUTH_EXEMPT and not username:
             return JSONResponse({"detail": "Not authenticated"}, status_code=401)
 
-        return await call_next(request)
+        # Bind the session's city for the whole request: every database
+        # opened through tenant_db_path() resolves inside this tenant.
+        from modules.tenancy.context import set_current_tenant, reset_current_tenant
+        token = None
+        if tenant_id:
+            try:
+                token = set_current_tenant(tenant_id)
+            except ValueError:
+                return JSONResponse({"detail": "Invalid session"}, status_code=401)
+        try:
+            return await call_next(request)
+        finally:
+            if token is not None:
+                reset_current_tenant(token)
 
 
 app.add_middleware(APISecurityMiddleware)
@@ -173,7 +188,7 @@ app.add_middleware(APISecurityMiddleware)
 # Session auth, Budget Playground (Node parity, /api/bp), live data bundle,
 # and the Mantis chat bridge. Each is optional-imported so one missing
 # dependency cannot take the whole API down.
-for _router_module in ("auth", "budget_playground", "data", "mantis"):
+for _router_module in ("auth", "budget_playground", "data", "mantis", "tenant_admin"):
     try:
         import importlib
         _mod = importlib.import_module(f"modules.api.routers.{_router_module}")
@@ -295,7 +310,8 @@ GLOBAL_SETTINGS = dict(DEFAULT_PAYROLL_RATES)
 
 def get_db_connection():
     """Get database connection"""
-    payroll_db_path = "databases/payroll_city_payroll_demo (1).db"
+    from modules.tenancy.context import tenant_db_path
+    payroll_db_path = tenant_db_path("payroll_city_payroll_demo (1).db")
     if not os.path.exists(payroll_db_path):
         raise HTTPException(status_code=404, detail="Payroll database not found")
     return sqlite3.connect(payroll_db_path)
@@ -1082,7 +1098,8 @@ async def get_departments():
     """Get list of departments with budget data"""
     try:
         # Try to get from the main database
-        db_path = "databases/core/govsight_all_in_one_data.db"
+        from modules.tenancy.context import tenant_db_path
+        db_path = tenant_db_path("core/govsight_all_in_one_data.db")
         if not os.path.exists(db_path):
             # Fallback to sample data
             return {
@@ -1350,8 +1367,9 @@ async def analyze_whatif(query_obj: WhatIfQuery):
 
     # ── 1. Load GL accounts for context ───────────────────────────────────────
     gl_revenue, gl_expense = [], []
+    from modules.tenancy.context import tenant_db_path as _tdp
     db_candidates = [
-        _os.path.join(_os.path.dirname(__file__), '..', '..', 'databases', 'core', 'govsight_all_in_one_data.db'),
+        _tdp(_os.path.join('core', 'govsight_all_in_one_data.db')),
     ]
     for db_path in db_candidates:
         if not _os.path.exists(db_path):
@@ -1634,11 +1652,16 @@ async def search_grants(q: str = Query(..., description="Search query for grants
 
 import uuid as _uuid_module
 
-BP_DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'databases', 'budget_playground.db')
-GL_DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'databases', 'core', 'govsight_all_in_one_data.db')
+from modules.tenancy.context import tenant_db_path as _tenant_db_path
+
+def BP_DB_PATH() -> str:
+    return _tenant_db_path('budget_playground.db')
+
+def GL_DB_PATH() -> str:
+    return _tenant_db_path(os.path.join('core', 'govsight_all_in_one_data.db'))
 
 def _bp_connect():
-    conn = sqlite3.connect(BP_DB_PATH)
+    conn = sqlite3.connect(BP_DB_PATH())
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -1693,7 +1716,7 @@ def _is_payroll_account(acct_number: str) -> bool:
 def _get_nonpayroll_accounts():
     rows = []
     try:
-        conn = sqlite3.connect(GL_DB_PATH)
+        conn = sqlite3.connect(GL_DB_PATH())
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute("""

@@ -39,6 +39,12 @@ export default function Layout({ user, onLogout, children }) {
           {user.role === 'admin' && navLink('/admin', 'Admin')}
         </nav>
         <span style={{ flex: 1 }} />
+        {user.tenant_name && (
+          <span style={{
+            fontSize: 12, color: '#dbe9f5', background: 'rgba(255,255,255,.12)',
+            borderRadius: 99, padding: '3px 12px', fontWeight: 600,
+          }}>{user.tenant_name}</span>
+        )}
         <span style={{ fontSize: 12.5, color: '#b7c6d5' }}>
           {user.username} ({user.role})
         </span>

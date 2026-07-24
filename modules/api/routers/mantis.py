@@ -108,26 +108,37 @@ def status():
     }
 
 
-def _insight_metrics() -> Dict[str, Any]:
+def _insight_metrics(user: Dict[str, Any]) -> Dict[str, Any]:
     """Deterministic metrics for the insight narrative: department pacing
-    from the pacing engine plus the latest close review summary. The AI
-    writes about these numbers; it does not invent any."""
+    from the pacing engine plus the latest close review summary, scoped
+    to the departments the caller may see. The AI writes about these
+    numbers; it does not invent any."""
+    from modules.tenancy.acl import allowed_departments, filter_pacing_rows
+    allowed = allowed_departments(user)
     metrics: Dict[str, Any] = {}
     try:
-        from modules.api.routers.data import pacing
-        metrics["pacing"] = pacing()
+        from modules.api.routers.data import compute_pacing
+        pacing = compute_pacing()
+        if pacing.get("available"):
+            pacing["rows"] = filter_pacing_rows(pacing["rows"], allowed)
+        metrics["pacing"] = pacing
     except Exception as exc:
         metrics["pacing"] = {"available": False, "reason": str(exc)}
+    if allowed is not None:
+        # Close review reads the whole ledger; only citywide users get it
+        return metrics
     try:
         import sqlite3
-        conn = sqlite3.connect("databases/core/govsight_all_in_one_data.db")
+        from modules.tenancy.context import tenant_db_path
+        conn = sqlite3.connect(tenant_db_path("core/govsight_all_in_one_data.db"))
         latest = conn.execute(
             "SELECT MAX(transaction_date) FROM canonical_transactions").fetchone()[0]
         conn.close()
         if latest:
             from modules.vatica.monthly_close_assistant import MonthlyCloseAssistant
             year, month = int(latest[:4]), int(latest[5:7])
-            report = MonthlyCloseAssistant().run(year, month)
+            report = MonthlyCloseAssistant(
+                db_path=tenant_db_path("core/govsight_all_in_one_data.db")).run(year, month)
             metrics["close_review"] = {
                 "period": f"{year}-{month:02d}",
                 "transaction_count": report.transaction_count,
@@ -140,7 +151,7 @@ def _insight_metrics() -> Dict[str, Any]:
 
 
 @router.get("/insights")
-def insights():
+def insights(user: dict = Depends(require_user)):
     """AI-written insight cards for the Ledger Insights tab. Metrics come
     from the platform engines; Claude turns them into finance-director
     narrative. Honest degraded response without an Anthropic key."""
@@ -149,7 +160,7 @@ def insights():
         return {"ai": False,
                 "reason": "ANTHROPIC_API_KEY not configured - the tab shows "
                           "engine-computed insights instead."}
-    metrics = _insight_metrics()
+    metrics = _insight_metrics(user)
     try:
         import anthropic
         import json as _json
