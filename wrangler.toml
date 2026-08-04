@@ -21,6 +21,12 @@ run_worker_first = true
 # Requires the Workers paid plan (Containers). If a build fails with a
 # plan/containers error, the previous deployment stays live - revert
 # this block to unblock builds.
+#
+# Note: concurrent builds (e.g. two branches pushed together) can race
+# on container-application creation with
+# DURABLE_OBJECT_ALREADY_HAS_APPLICATION; a retried or subsequent build
+# resolves it by modifying the now-existing application. Consider
+# disabling non-production branch builds in Workers Builds settings.
 [[containers]]
 class_name = "GovsightPlatform"
 image = "./Dockerfile"
