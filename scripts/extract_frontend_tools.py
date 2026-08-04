@@ -161,7 +161,8 @@ def vendor_views():
             src = src.replace(
                 "  window.DEMO_VIEWS = {\n    load: loadData,",
                 "  window.DEMO_VIEWS = {\n    load: loadData,\n"
-                "    setData: function (d) { DATA = d; loadPromise = Promise.resolve(d); },")
+                "    setData: function (d) { MASTER = d; DATA = personaView(d); "
+                "loadPromise = Promise.resolve(DATA); },")
             assert "setData" in src
         write(f"frontend/src/vendor/{name}",
               "// GENERATED copy for the SPA bundle - source of truth is public/assets/.\n" + src)

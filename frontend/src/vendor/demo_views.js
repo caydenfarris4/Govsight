@@ -13,15 +13,74 @@
 (function () {
   'use strict';
 
-  let DATA = null;
+  let DATA = null;     // what views render (persona-filtered)
+  let MASTER = null;   // unfiltered dataset (admin scope)
   let loadPromise = null;
   const charts = {};
+
+  // ── demo personas ──────────────────────────────────────────────────────
+  // The static demo can switch between two identities so one person can
+  // demo both sides of the permission model: the city administrator
+  // (citywide, manages access) and a department-restricted employee.
+  // The admin screen's checkbox edits are stored in this browser and
+  // directly control what the employee persona sees - mirroring the
+  // platform's server-enforced department ACLs.
+  const PERSONA_KEY = 'gs_demo_persona';
+  const EMP_DEPTS_KEY = 'gs_demo_emp_departments';
+  const DEFAULT_EMP_DEPTS = ['Parks and Recreation', 'Library'];
+  const PERSONAS = {
+    admin: { username: 'admin_user', title: 'City Administrator' },
+    employee: { username: 'j.rivera', title: 'Budget Analyst' },
+  };
+
+  function getPersona() {
+    try { return localStorage.getItem(PERSONA_KEY) === 'employee' ? 'employee' : 'admin'; }
+    catch (e) { return 'admin'; }
+  }
+  function setPersona(p) {
+    try { localStorage.setItem(PERSONA_KEY, p === 'employee' ? 'employee' : 'admin'); }
+    catch (e) { /* ignore */ }
+    applyPersona();
+  }
+  function getEmployeeDepartments() {
+    try {
+      const v = JSON.parse(localStorage.getItem(EMP_DEPTS_KEY));
+      if (Array.isArray(v)) return v;
+    } catch (e) { /* fall through */ }
+    return DEFAULT_EMP_DEPTS.slice();
+  }
+  function setEmployeeDepartments(deps) {
+    try { localStorage.setItem(EMP_DEPTS_KEY, JSON.stringify(deps)); }
+    catch (e) { /* ignore */ }
+    applyPersona();
+  }
+
+  function personaView(d) {
+    if (!d || getPersona() !== 'employee') return d;
+    const allowed = {};
+    getEmployeeDepartments().forEach(function (x) { allowed[x] = true; });
+    const out = Object.assign({}, d);
+    out.accounts = (d.accounts || []).filter(function (a) { return allowed[a.department]; });
+    const visible = {};
+    out.accounts.forEach(function (a) { visible[a.account_number] = true; });
+    out.monthly_actuals = (d.monthly_actuals || []).filter(function (m) { return visible[m.account_number]; });
+    out.transactions = (d.transactions || []).filter(function (t) { return allowed[t.department]; });
+    out.positions = (d.positions || []).filter(function (p) { return allowed[p.department]; });
+    out.departments = (d.departments || []).filter(function (x) { return allowed[x]; });
+    out.meta = Object.assign({}, d.meta, {
+      department_scope: getEmployeeDepartments().slice().sort() });
+    return out;
+  }
+
+  function applyPersona() {
+    if (MASTER) DATA = personaView(MASTER);
+  }
 
   function loadData() {
     if (!loadPromise) {
       loadPromise = fetch('demo/demo_data.json')
         .then(function (r) { if (!r.ok) throw new Error('demo data ' + r.status); return r.json(); })
-        .then(function (d) { DATA = d; return d; });
+        .then(function (d) { MASTER = d; DATA = personaView(d); return DATA; });
     }
     return loadPromise;
   }
@@ -970,6 +1029,16 @@
   };
 
   views.close = function (el) {
+    // Whole-ledger function: mirrors the platform's citywide-visibility
+    // requirement for department-restricted users
+    if (getPersona() === 'employee') {
+      el.innerHTML = demoBanner() +
+        '<div style="background:#fdeeda;color:#8a5a12;padding:12px 16px;border-radius:8px;font-size:13px">' +
+        'Monthly close review requires citywide department access - it reads every ' +
+        'department\'s vendors and amounts. Ask your city administrator to grant ' +
+        'all-departments visibility.</div>';
+      return;
+    }
     // Latest month with activity is the close period
     const latestDate = DATA.transactions.reduce(function (m, t) {
       return t.date > m ? t.date : m;
@@ -1238,6 +1307,79 @@
     byId('chat-form').addEventListener('submit', function (e) { e.preventDefault(); send(); });
   };
 
+  // ── demo administration: users, roles, department access ──────────────
+  // Mirrors the platform's city-admin screen. The employee account's
+  // department checkboxes are live: they control what the Employee
+  // persona sees across every module (stored in this browser).
+  views.adminDemo = function (el) {
+    const emp = PERSONAS.employee;
+    const allDepts = (MASTER && MASTER.departments) || [];
+
+    const draw = function () {
+      const current = {};
+      getEmployeeDepartments().forEach(function (d) { current[d] = true; });
+      const count = getEmployeeDepartments().filter(function (d) {
+        return allDepts.indexOf(d) >= 0; }).length;
+
+      el.innerHTML =
+        '<div style="background:#e8eef7;color:#24508f;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:14px">' +
+        'DEMO ADMINISTRATION - permission changes are saved in this browser and immediately shape the Employee view. ' +
+        'On the full platform this screen manages real per-city accounts with server-enforced access.</div>' +
+
+        card('City',
+          '<div style="font-size:13.5px;color:#22303c;line-height:1.7">' +
+          '<strong>Spanish Fork, UT</strong> - this city\'s data is fully siloed: its own databases, ' +
+          'users, and permissions. Other cities on GovSight cannot see any of it.</div>') +
+
+        card('Users',
+          // admin (self)
+          '<div style="border-bottom:1px solid #eef2f5;padding:10px 0;display:flex;align-items:center;gap:12px">' +
+            '<div style="flex:1"><span style="font-weight:700;font-size:14px">' + esc(PERSONAS.admin.username) + '</span>' +
+            ' <span style="font-size:11.5px;color:#8fa1b0">(you)</span>' +
+            '<div style="font-size:12px;color:#5b6b7a;margin-top:2px">' + esc(PERSONAS.admin.title) + ' - All departments (citywide)</div></div>' +
+            '<span style="background:#e2f2e8;color:#1e6b3c;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">ADMIN</span>' +
+          '</div>' +
+          // employee (editable)
+          '<div style="padding:10px 0">' +
+            '<div style="display:flex;align-items:center;gap:12px">' +
+              '<div style="flex:1"><span style="font-weight:700;font-size:14px">' + esc(emp.username) + '</span>' +
+              '<div style="font-size:12px;color:#5b6b7a;margin-top:2px">' + esc(emp.title) +
+              ' - <span id="adm-count">' + count + '</span> of ' + allDepts.length + ' departments</div></div>' +
+              '<span style="background:#e8eef7;color:#24508f;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">VIEWER</span>' +
+              '<button id="adm-view-as" style="background:#12263a;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">View as ' + esc(emp.username) + '</button>' +
+            '</div>' +
+            '<div style="margin-top:10px;padding:12px;background:#f4f6f8;border-radius:8px">' +
+              '<div style="font-size:12px;font-weight:600;color:#5b6b7a;margin-bottom:8px">Department access - what ' + esc(emp.username) + ' can see</div>' +
+              '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">' +
+              allDepts.map(function (d) {
+                return '<label style="font-size:12.5px;display:flex;gap:6px;align-items:center;cursor:pointer">' +
+                  '<input type="checkbox" data-dept="' + esc(d) + '"' + (current[d] ? ' checked' : '') + '> ' + esc(d) + '</label>';
+              }).join('') + '</div>' +
+              '<div style="font-size:11.5px;color:#8a97a3;margin-top:8px">Changes apply instantly. ' +
+              'Budgets, transactions, insights, personnel, and AI analysis all filter to these departments for this user; ' +
+              'the monthly close review requires citywide access.</div>' +
+            '</div>' +
+          '</div>',
+          'accounts belong to this city only');
+
+      el.querySelectorAll('input[data-dept]').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+          const deps = Array.prototype.slice.call(el.querySelectorAll('input[data-dept]'))
+            .filter(function (c) { return c.checked; })
+            .map(function (c) { return c.getAttribute('data-dept'); });
+          setEmployeeDepartments(deps);
+          const n = byId('adm-count'); if (n) n.textContent = deps.length;
+        });
+      });
+      const viewAs = byId('adm-view-as');
+      if (viewAs) viewAs.addEventListener('click', function () {
+        setPersona('employee');
+        if (typeof window.GS_PERSONA_CHANGED === 'function') window.GS_PERSONA_CHANGED();
+      });
+    };
+    draw();
+  };
+
   // Composite hub: sub-view toggle rendering existing views or iframes.
   function renderHub(el, subs, storageKey) {
     let active = null;
@@ -1290,12 +1432,17 @@
 
   window.DEMO_VIEWS = {
     load: loadData,
-    setData: function (d) { DATA = d; loadPromise = Promise.resolve(d); },
+    setData: function (d) { MASTER = d; DATA = personaView(d); loadPromise = Promise.resolve(DATA); },
+    getPersona: getPersona,
+    setPersona: setPersona,
+    personas: PERSONAS,
+    getEmployeeDepartments: getEmployeeDepartments,
+    setEmployeeDepartments: setEmployeeDepartments,
     render: function (name, container) {
       const fn = views[name];
       if (!fn) { container.innerHTML = '<div style="padding:30px;color:#5b6b7a">View not found: ' + esc(name) + '</div>'; return; }
       container.innerHTML = '<div style="padding:30px;color:#5b6b7a">Loading demo data…</div>';
-      loadData().then(function () { fn(container); })
+      loadData().then(function () { applyPersona(); fn(container); })
         .catch(function (err) {
           container.innerHTML = '<div style="padding:30px;color:#a4271c">Could not load demo data: ' + esc(err.message) + '</div>';
         });

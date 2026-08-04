@@ -47,6 +47,25 @@
     border-radius: 6px;
   }
   .topbar a.logout:hover { background: rgba(255, 255, 255, 0.1); }
+  .topbar .who {
+    font-size: 0.8rem;
+    color: #dbe9f5;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    padding: 0.25rem 0.8rem;
+    font-weight: 600;
+  }
+  .topbar .who.employee { background: #fdeeda; color: #8a5a12; }
+  .topbar button.persona {
+    color: #dbe9f5;
+    background: none;
+    font-size: 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    padding: 0.35rem 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .topbar button.persona:hover { background: rgba(255, 255, 255, 0.1); }
   main { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; }
 
   /* Home */
@@ -142,6 +161,8 @@
     <div class="org">Organization: Spanish Fork</div>
   </div>
   <div class="spacer"></div>
+  <span class="who" id="who-badge"></span>
+  <button class="persona" id="persona-toggle" title="Demo: switch between the city administrator and a department-restricted employee"></button>
   <a class="logout" href="/api/logout">Logout</a>
 </header>
 <main id="app"></main>
@@ -208,6 +229,31 @@ function esc(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// ── demo personas: city administrator vs department-restricted employee ──
+function persona() {
+  return window.DEMO_VIEWS ? DEMO_VIEWS.getPersona() : 'admin';
+}
+function updateTopbar() {
+  const p = persona();
+  const who = DEMO_VIEWS.personas[p];
+  const badge = document.getElementById('who-badge');
+  badge.textContent = `${who.username} (${who.title})`;
+  badge.className = 'who' + (p === 'employee' ? ' employee' : '');
+  document.getElementById('persona-toggle').textContent =
+    p === 'admin' ? 'View as employee' : 'Back to admin';
+}
+window.GS_PERSONA_CHANGED = function () {
+  updateTopbar();
+  if (persona() === 'employee' && location.hash.indexOf('#/admin') === 0) {
+    location.hash = '#/';
+  }
+  route();
+};
+document.getElementById('persona-toggle').addEventListener('click', function () {
+  DEMO_VIEWS.setPersona(persona() === 'admin' ? 'employee' : 'admin');
+  window.GS_PERSONA_CHANGED();
+});
+
 function renderHome() {
   let cards = '';
   for (const key of Object.keys(MODULES)) {
@@ -220,12 +266,44 @@ function renderHome() {
         <span class="enter">Enter ${esc(m.name)}</span>
       </div>`;
   }
+  if (persona() === 'admin') {
+    cards += `
+      <div class="mcard" style="background:#1d3a56" onclick="location.hash='#/admin'">
+        <div class="kicker">GOVSIGHT ADMIN</div>
+        <h2>Administration</h2>
+        <div class="sub">Users, roles &amp; department access</div>
+        <span class="enter">Open Admin Settings</span>
+      </div>`;
+  }
+  const note = persona() === 'employee'
+    ? `<p style="background:#fdeeda;color:#8a5a12;border-radius:8px;padding:0.6rem 1rem;font-size:0.85rem;margin-bottom:1.5rem">
+         You are viewing GovSight as a department-restricted employee - budgets, transactions, and insights
+         are limited to the departments your administrator granted.</p>` : '';
   app.innerHTML = `
     <div class="home">
       <h1>Welcome to GovSight Financial Analyzer</h1>
       <p>Select a module below to access different analytical tools.</p>
+      ${note}
       <div class="cards">${cards}</div>
     </div>`;
+}
+
+function renderAdmin() {
+  if (persona() !== 'admin') { location.hash = '#/'; return; }
+  app.innerHTML = `
+    <div class="module-view">
+      <div class="module-head" style="background:#1d3a56">
+        <div class="row">
+          <a class="back" href="#/">&#8592; Dashboard</a>
+          <h1>Administration</h1>
+          <span class="tag">Users, roles &amp; department access</span>
+        </div>
+      </div>
+      <div class="panel" style="overflow-y:auto;background:#f5f7fa">
+        <div id="view-host" style="padding:20px;max-width:1240px;margin:0 auto;width:100%"></div>
+      </div>
+    </div>`;
+  window.DEMO_VIEWS.render('adminDemo', document.getElementById('view-host'));
 }
 
 function renderModule(key, tabIndex) {
@@ -276,7 +354,9 @@ function renderModule(key, tabIndex) {
 
 function route() {
   const parts = location.hash.replace(/^#\/?/, '').split('/');
-  if (parts[0] && MODULES[parts[0]]) {
+  if (parts[0] === 'admin') {
+    renderAdmin();
+  } else if (parts[0] && MODULES[parts[0]]) {
     renderModule(parts[0], parseInt(parts[1] || '0', 10) || 0);
   } else {
     renderHome();
@@ -284,6 +364,7 @@ function route() {
 }
 
 window.addEventListener('hashchange', route);
+updateTopbar();
 route();
 </script>
 </body>
