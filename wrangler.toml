@@ -41,8 +41,14 @@ class_name = "GovsightPlatform"
 tag = "v1"
 new_sqlite_classes = ["GovsightPlatform"]
 
-# The platform's public hostname (DNS record is created automatically
-# because the zone is on this Cloudflare account)
+# Custom domains: wrangler treats this list as the COMPLETE set of the
+# worker's domains on every deploy - a hostname omitted here gets
+# detached (which deactivates its DNS record). Both public hostnames
+# must therefore live in this config, not the dashboard.
+[[routes]]
+pattern = "demo.thegovsight.com"
+custom_domain = true
+
 [[routes]]
 pattern = "app.thegovsight.com"
 custom_domain = true
