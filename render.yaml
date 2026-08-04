@@ -1,0 +1,26 @@
+# Render.com blueprint: deploys the full GovSight platform (React SPA +
+# FastAPI backend) straight from this repository.
+#
+# To deploy: dashboard.render.com > New > Blueprint > select this repo.
+# Render builds the Dockerfile and serves the platform on HTTPS with the
+# demo city seeded. Note: instance disks are ephemeral - admin changes
+# and synced data reset on redeploys, which is fine for a demo. Use at
+# least 1 GB RAM (the "starter" 512 MB instance may run out under the
+# analytics engines).
+services:
+  - type: web
+    name: govsight-platform
+    runtime: docker
+    plan: standard
+    healthCheckPath: /health
+    envVars:
+      - key: GOVSIGHT_MODE
+        value: platform
+      - key: SEED_SAMPLE_DATA
+        value: "1"
+      - key: SESSION_SECRET
+        generateValue: true
+      # AI features: add ANTHROPIC_API_KEY and OPENAI_API_KEY as secrets
+      # in the Render dashboard (Environment > Add Secret), or set them
+      # from the platform's Admin > Platform > AI Provider Keys screen
+      # after the first boot.

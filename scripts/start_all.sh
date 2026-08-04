@@ -33,6 +33,19 @@ if [ "${SEED_SAMPLE_DATA:-0}" = "1" ] && [ ! -f databases/core/govsight_all_in_o
     python3 scripts/seed_sample_gl.py
 fi
 
+# Single-port platform mode for PaaS hosts (Railway, Render, Cloud Run):
+# they inject one $PORT and route all traffic to it. Serve the platform
+# (SPA + APIs) on that port and skip the Streamlit console and legacy
+# Node API to fit small instances. Enable with GOVSIGHT_MODE=platform.
+if [ "${GOVSIGHT_MODE:-}" = "platform" ]; then
+    if [ ! -f frontend/dist/index.html ] && command -v npm >/dev/null 2>&1; then
+        echo "Building frontend bundle..."
+        (cd frontend && npm ci && npm run build)
+    fi
+    echo "Starting GovSight platform (single-port mode) on port ${PORT:-8000}..."
+    exec python3 -m uvicorn modules.api.pbb_api:app --host 0.0.0.0 --port "${PORT:-8000}"
+fi
+
 # Build the SPA if it isn't built yet and a toolchain is available
 # (the Docker image ships it prebuilt from the frontend build stage)
 if [ ! -f frontend/dist/index.html ] && command -v npm >/dev/null 2>&1; then

@@ -11,6 +11,36 @@ Cloudflare's static hosting cannot run long-lived Python servers, so the full
 platform must be hosted on a server or container platform. Cloudflare can sit
 in front of it as DNS/proxy, and the static demo deploys to Workers directly.
 
+## 0. Fastest path: git-connected container host (demo deployment)
+
+The repo is deploy-ready for any host that builds a Dockerfile from
+GitHub and routes one HTTPS port to it. `GOVSIGHT_MODE=platform` makes
+the container serve the platform (SPA + all APIs) on the injected
+`$PORT`, skipping the Streamlit console and legacy Node API to fit
+small instances.
+
+**Render** (about two clicks): dashboard.render.com > New > Blueprint >
+pick this repo. `render.yaml` configures everything - Docker build,
+`/health` checks, demo data seeding, a generated `SESSION_SECRET`. Use
+an instance with at least 1 GB RAM.
+
+**Railway**: railway.app > New Project > Deploy from GitHub repo. It
+auto-detects the Dockerfile; set environment variables
+`GOVSIGHT_MODE=platform` and `SEED_SAMPLE_DATA=1`, plus a strong
+`SESSION_SECRET`, then Generate Domain.
+
+**Google Cloud Run**: `gcloud run deploy govsight --source . --memory 2Gi
+--set-env-vars GOVSIGHT_MODE=platform,SEED_SAMPLE_DATA=1,SESSION_SECRET=...`
+(see scripts/deploy.sh for the scripted version).
+
+After first boot, sign in with the default admin credentials, then use
+Admin > Platform > AI Provider Keys to enable Mantis chat and insights.
+
+Demo-deployment caveat: these hosts give containers ephemeral disks, so
+admin changes and synced data reset on each redeploy (the demo city
+reseeds automatically). For a production city, attach a persistent
+volume or move the data layer to a managed database first.
+
 ## 1. Full platform (the real product)
 
 Two services on one host:
