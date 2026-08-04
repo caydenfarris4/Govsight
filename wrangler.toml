@@ -8,12 +8,38 @@ compatibility_date = "2026-07-01"
 keep_vars = true
 
 # The worker gates every request behind login before serving the static
-# application in public/. The full Streamlit platform is containerized
-# separately (see Dockerfile and documentation/DEPLOYMENT.md).
+# application in public/. The full platform (React SPA + FastAPI) runs
+# as a Cloudflare Container attached to this worker and is served on
+# app.thegovsight.com; the static demo stays on demo.thegovsight.com.
 [assets]
 directory = "./public"
 binding = "ASSETS"
 run_worker_first = true
+
+# ── Full platform container ────────────────────────────────────────────
+# Built from the repo Dockerfile by Workers Builds on each push.
+# Requires the Workers paid plan (Containers). If a build fails with a
+# plan/containers error, the previous deployment stays live - revert
+# this block to unblock builds.
+[[containers]]
+class_name = "GovsightPlatform"
+image = "./Dockerfile"
+max_instances = 1
+instance_type = "standard-1"
+
+[[durable_objects.bindings]]
+name = "PLATFORM"
+class_name = "GovsightPlatform"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GovsightPlatform"]
+
+# The platform's public hostname (DNS record is created automatically
+# because the zone is on this Cloudflare account)
+[[routes]]
+pattern = "app.thegovsight.com"
+custom_domain = true
 
 # Development defaults live in worker/index.js. For production, set real
 # values as secrets (they override the defaults):

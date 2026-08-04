@@ -1,0 +1,18 @@
+# Keep the container image lean: build artifacts and local state stay out
+.git
+.wrangler
+node_modules
+frontend/node_modules
+frontend/dist
+databases
+production_data
+admin_archive
+credentials
+configs/security/api_keys.json
+configs/security/.encryption_key
+ai_encryption.key
+*.log
+__pycache__
+**/__pycache__
+.pytest_cache
+tests

@@ -238,10 +238,67 @@ function handleLogout() {
   });
 }
 
+/**
+ * Durable Object hosting the full-platform container (React SPA +
+ * FastAPI). The container image is the repo Dockerfile; it serves
+ * everything on port 8000 in single-port platform mode. Worker secrets
+ * (SESSION_SECRET, AI keys) flow into the container's environment, so
+ * the platform's AI features use the same keys as the demo chat.
+ */
+export class GovsightPlatform {
+  constructor(ctx, env) {
+    this.ctx = ctx;
+    this.env = env;
+  }
+
+  async fetch(request) {
+    const container = this.ctx.container;
+    if (!container) {
+      return new Response('Container runtime not available on this plan.', { status: 503 });
+    }
+    if (!container.running) {
+      container.start({
+        env: {
+          GOVSIGHT_MODE: 'platform',
+          PORT: '8000',
+          SEED_SAMPLE_DATA: '1',
+          SESSION_SECRET: this.env.SESSION_SECRET || 'govsight-dev-session-secret-change-me',
+          ANTHROPIC_API_KEY: this.env.ANTHROPIC_API_KEY || '',
+          OPENAI_API_KEY: this.env.OPENAI_API_KEY || this.env.OPEN_AI_Key || '',
+        },
+        enableInternet: true,
+      });
+    }
+    try {
+      // Proxy into the container over its TCP port; http inside the tunnel
+      return await container.getTcpPort(8000)
+        .fetch(request.url.replace('https:', 'http:'), request);
+    } catch (err) {
+      // Cold start: image pull + Python boot takes a little while
+      return new Response(
+        '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="8">' +
+        '<body style="font-family:system-ui;background:#f4f6f8;color:#12263a;' +
+        'display:flex;align-items:center;justify-content:center;height:100vh">' +
+        '<div style="text-align:center"><h2>GovSight is starting up</h2>' +
+        '<p style="color:#5b6b7a">First load after idle takes up to a minute. ' +
+        'This page refreshes automatically.</p></div></body>',
+        { status: 503, headers: { 'Content-Type': 'text/html' } });
+    }
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // The full platform lives on its own hostname; everything there is
+    // handled inside the container (it has its own auth and APIs).
+    if (url.hostname.startsWith('app.')) {
+      const id = env.PLATFORM.idFromName('platform');
+      return env.PLATFORM.get(id).fetch(request);
+    }
+
     const config = getConfig(env);
 
     if (path === '/api/login' && request.method === 'POST') {
