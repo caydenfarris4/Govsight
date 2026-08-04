@@ -85,7 +85,22 @@ def _get_config_service():
         return None
 
 
+def _tenant_config_path() -> Optional[str]:
+    """Per-city classifications when running inside a non-default tenant
+    request (the founding city keeps the legacy locations)."""
+    try:
+        from modules.tenancy.context import DEFAULT_TENANT, current_tenant, tenant_db_path
+        if current_tenant() != DEFAULT_TENANT:
+            return tenant_db_path("fund_classifications.json")
+    except Exception:
+        pass
+    return None
+
+
 def _find_config_path() -> Optional[str]:
+    tenant_path = _tenant_config_path()
+    if tenant_path is not None:
+        return tenant_path if os.path.exists(tenant_path) else None
     for path in FUND_CLASSIFICATIONS_PATHS:
         if os.path.exists(path):
             return path
@@ -93,6 +108,15 @@ def _find_config_path() -> Optional[str]:
 
 
 def load_fund_classifications() -> Dict[str, str]:
+    # Non-default tenants read only their own file - the shared
+    # ConfigService belongs to the founding city
+    tenant_path = _tenant_config_path()
+    if tenant_path is not None:
+        try:
+            with open(tenant_path) as f:
+                return json.load(f)
+        except Exception:
+            return {}
     svc = _get_config_service()
     if svc:
         try:
@@ -119,6 +143,16 @@ def load_fund_classifications() -> Dict[str, str]:
 
 
 def save_fund_classifications(classifications: Dict[str, str], updated_by: str = "admin") -> bool:
+    tenant_path = _tenant_config_path()
+    if tenant_path is not None:
+        try:
+            os.makedirs(os.path.dirname(tenant_path) or ".", exist_ok=True)
+            with open(tenant_path, "w") as f:
+                json.dump(classifications, f, indent=4)
+            return True
+        except IOError as e:
+            logger.error(f"Error saving tenant fund classifications: {e}")
+            return False
     svc = _get_config_service()
     if svc:
         try:

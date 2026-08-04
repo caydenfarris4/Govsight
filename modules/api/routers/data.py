@@ -156,9 +156,28 @@ def data_bundle(user: dict = Depends(require_user)):
 
     # Sections with no live pipeline yet ship bundled defaults, labeled
     for key in ("balance_sheet", "scenarios", "economic",
-                "funds", "departments", "city"):
-        bundle[key] = demo.get(key, [] if key != "city" else {})
+                "funds", "departments"):
+        bundle[key] = demo.get(key, [])
         sources[key] = "sample"
+
+    # City block comes from the admin-managed City Profile - it drives
+    # Economic Indicators localization (Census FIPS, weather lat/lon),
+    # branding, and AI context
+    from modules.tenancy.city_profile import bundle_city
+    bundle["city"] = bundle_city(current_tenant(), user.get("tenant_name", ""),
+                                 current_tenant() == DEFAULT_TENANT)
+    sources["city"] = "profile" if bundle["city"].get("name") else "sample"
+
+    # Live GL can supply the fund and department lists directly
+    if bundle.get("accounts"):
+        live_funds = sorted({a.get("fund") for a in bundle["accounts"] if a.get("fund")})
+        live_depts = sorted({a.get("department") for a in bundle["accounts"]
+                             if a.get("department")})
+        if not bundle.get("departments") and live_depts:
+            bundle["departments"] = live_depts
+        if not bundle.get("funds") and live_funds:
+            bundle["funds"] = [{"code": f, "name": f"Fund {f}",
+                                "classification": "Unclassified"} for f in live_funds]
     if conn:
         conn.close()
 
@@ -166,7 +185,7 @@ def data_bundle(user: dict = Depends(require_user)):
     bundle["reserve_policy_months"] = demo.get("reserve_policy_months", 2.0)
     bundle["meta"] = {
         "label": "GovSight data bundle",
-        "organization": (demo.get("city") or {}).get("name", "")
+        "organization": (bundle.get("city") or {}).get("name", "")
                         or user.get("tenant_name", ""),
         "tenant": current_tenant(),
         "current_fiscal_year": max(

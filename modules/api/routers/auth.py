@@ -89,10 +89,27 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/login")
-def login(body: LoginRequest, response: Response):
+def login(body: LoginRequest, response: Response, request: Request):
     user = directory.authenticate(body.username, body.password)
+    ip = request.client.host if request.client else ""
     if not user:
+        # A failed attempt may not map to a tenant; log it against the
+        # attempted user's city when we can resolve one.
+        try:
+            from modules.tenancy import audit as admin_audit
+            known = directory.get_user(body.username)
+            if known:
+                admin_audit.record(body.username, "auth.login_failed", "",
+                                   {}, ip, tenant_id=known["tenant_id"])
+        except Exception:
+            pass
         raise HTTPException(status_code=401, detail="Invalid username or password")
+    try:
+        from modules.tenancy import audit as admin_audit
+        admin_audit.record(user["username"], "auth.login", "", {}, ip,
+                           tenant_id=user["tenant_id"])
+    except Exception:
+        pass
     tenant = directory.get_tenant(user["tenant_id"]) or {}
     if not tenant.get("active", 1):
         raise HTTPException(status_code=403, detail="This city's account is suspended")

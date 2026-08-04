@@ -254,6 +254,18 @@ Rules:
             sources = source if isinstance(source, list) else [source]
             if transform != "constant" and not all(s in source_fields for s in sources):
                 continue
+            # Enforce dtype consistency: identifiers and codes declared as
+            # strings must stay strings - an AI-proposed to_number would
+            # corrupt fund/account codes ("10" -> 10.0, "010" -> 10).
+            target_dtype = entity.field_map()[target].dtype
+            if target_dtype == "string" and transform in ("to_number", "to_integer"):
+                transform = "direct"
+            elif target_dtype == "number" and transform == "direct":
+                transform = "to_number"
+            elif target_dtype == "integer" and transform == "direct":
+                transform = "to_integer"
+            elif target_dtype == "date" and transform == "direct":
+                transform = "to_date"
             clean.append({
                 "target": target,
                 "source": source,
