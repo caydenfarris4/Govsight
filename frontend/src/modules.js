@@ -4,7 +4,6 @@ export const MODULES = {
   navi: {
     name: 'Navi',
     tagline: 'Navigation & Planning Hub',
-    color: '#2450b8',
     tabs: [
       { name: 'Scenario Planner', component: 'ScenarioPlanner' },
       { name: 'Budget', component: 'BudgetHub' },
@@ -19,7 +18,6 @@ export const MODULES = {
   mantis: {
     name: 'Mantis',
     tagline: 'AI Intelligence Hub',
-    color: '#4169e1',
     tabs: [
       { name: 'AI Chat', component: 'MantisChat' },
       { name: 'Ledger Insights', component: 'LedgerInsights' },
@@ -28,7 +26,6 @@ export const MODULES = {
   vatica: {
     name: 'Vatica',
     tagline: 'Departmental Insights & Reporting',
-    color: '#1c6e64',
     tabs: [
       { name: 'BI Sandbox', component: 'BISandbox' },
       { name: 'Historical Analysis', component: 'Historical' },

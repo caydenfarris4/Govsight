@@ -47,7 +47,7 @@ export default function FundsSection() {
         Fund Classifications (GASB 54)
       </SectionTitle>
       {data.funds.length === 0 && (
-        <div style={{ fontSize: 13, color: '#8fa1b0' }}>
+        <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>
           No funds found yet - funds appear here once your data source has synced
           general ledger data.
         </div>
@@ -55,12 +55,12 @@ export default function FundsSection() {
       {data.funds.map((f) => (
         <div key={f} style={{
           display: 'flex', gap: 12, alignItems: 'center',
-          borderTop: '1px solid #eef2f5', padding: '9px 0',
+          borderTop: '1px solid color-mix(in srgb, var(--ink) 8%, transparent)', padding: '9px 0',
         }}>
           <div style={{ minWidth: 160 }}>
             <span style={{ fontWeight: 700, fontSize: 13.5 }}>Fund {f}</span>
             {data.fund_names[f] && (
-              <div style={{ fontSize: 12, color: '#5b6b7a' }}>{data.fund_names[f]}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{data.fund_names[f]}</div>
             )}
           </div>
           <select style={input} value={cls[f] || ''}
@@ -70,7 +70,7 @@ export default function FundsSection() {
           </select>
           {badgeFor(f)}
           {cls[f] && data.categories[cls[f]] && (
-            <span style={{ fontSize: 11.5, color: '#8a97a3' }}>
+            <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>
               {data.categories[cls[f]].reference}
             </span>
           )}
