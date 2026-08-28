@@ -1,0 +1,406 @@
+/* Cardinal — color tokens. Derived from the Broadsheet press palette:
+   paper, ink, process cyan and process magenta ("cardinal"), used at full
+   strength. Cyan is the interactive color; cardinal is the brand and
+   data-emphasis color. Never both in one small component. */
+:root {
+  /* ground */
+  --paper: #f3f2f2;
+  --surface: #eae9e9;
+  --ink: #201e1d;
+
+  --color-bg: var(--paper);
+  --color-surface: var(--surface);
+  --color-text: var(--ink);
+  --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
+
+  /* process accents */
+  --color-accent: #0088b0;    /* cyan — interactive */
+  --color-cardinal: #d6006c;  /* magenta — brand + data emphasis */
+  --color-accent-2: var(--color-cardinal);
+  --color-process-yellow: #edbb00; /* print treatments only, never chrome */
+
+  /* neutral ramp */
+  --color-neutral-100: #f8f4f4;
+  --color-neutral-200: #eae7e7;
+  --color-neutral-300: #d7d3d3;
+  --color-neutral-400: #bab6b6;
+  --color-neutral-500: #9b9797;
+  --color-neutral-600: #7d7979;
+  --color-neutral-700: #605d5d;
+  --color-neutral-800: #444141;
+  --color-neutral-900: #2d2b2b;
+
+  /* cyan ramp */
+  --color-accent-100: #e9f8ff;
+  --color-accent-200: #cbeeff;
+  --color-accent-300: #99e0ff;
+  --color-accent-400: #62c5ee;
+  --color-accent-500: #38a6cf;
+  --color-accent-600: #1186ac;
+  --color-accent-700: #006786;
+  --color-accent-800: #004961;
+  --color-accent-900: #0a303e;
+
+  /* cardinal ramp */
+  --color-cardinal-100: #fff1f4;
+  --color-cardinal-200: #ffdee6;
+  --color-cardinal-300: #ffc0d0;
+  --color-cardinal-400: #ff90b1;
+  --color-cardinal-500: #ff458e;
+  --color-cardinal-600: #d82071;
+  --color-cardinal-700: #aa0b56;
+  --color-cardinal-800: #790e3d;
+  --color-cardinal-900: #4b1528;
+
+  /* semantic — text */
+  --text-body: var(--ink);
+  --text-muted: color-mix(in srgb, var(--ink) 55%, transparent);
+  --text-faint: color-mix(in srgb, var(--ink) 40%, transparent);
+  --text-on-accent: var(--paper);
+
+  /* semantic — surfaces */
+  --surface-card: var(--surface);
+  --surface-raised: var(--color-neutral-100);
+  --surface-ink: var(--ink); /* the bold inversion: full-ink panels for hero numbers */
+  --text-on-ink: var(--paper);
+
+  /* semantic — data */
+  --data-up: var(--color-accent-700);      /* gains print in deep cyan */
+  --data-down: var(--color-cardinal-600);  /* losses print in cardinal */
+  --data-neutral: var(--color-neutral-600);
+  --series-1: var(--color-cardinal);
+  --series-2: var(--color-accent);
+  --series-3: var(--color-neutral-800);
+  --series-4: var(--color-cardinal-400);
+  --series-5: var(--color-accent-400);
+  --chart-grid: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+/* Cardinal — spacing & radii. Airy 1.25x density; near-square corners. */
+:root {
+  --space-1: 5px;
+  --space-2: 10px;
+  --space-3: 15px;
+  --space-4: 20px;
+  --space-6: 30px;
+  --space-8: 40px;
+  --space-12: 60px;
+
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 4px;
+}
+/* Cardinal — elevation & motion. Soft ink-tinted shadows on the light ground. */
+:root {
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-med: 220ms;
+}
+/* Cardinal — type. One family: Source Serif 4, the chrome and the data.
+   Numerals in data contexts are always tabular (--nums-data). */
+
+:root {
+  --font-heading: "Source Serif 4", Georgia, serif;
+  --font-body: "Source Serif 4", Georgia, serif;
+  --font-heading-weight: 600;
+
+  --text-display: 56px;   /* hero figures, page-title numerals */
+  --text-h1: 42px;
+  --text-h2: 32px;
+  --text-h3: 25px;
+  --text-h4: 20px;
+  --text-lg: 17px;
+  --text-md: 15px;
+  --text-sm: 13px;
+  --text-xs: 11px;
+  --text-kicker: 10px;    /* uppercase, letter-spacing 0.1em */
+
+  --nums-data: "tnum" 1, "lnum" 1; /* font-feature-settings for tables & KPIs */
+  --tracking-kicker: 0.1em;
+}
+/* Cardinal — base rules. Whitespace does the structuring; no boxes, no rules
+   between sections. */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--color-bg); color: var(--color-text);
+  font-family: var(--font-body); font-size: var(--text-md); line-height: 1.55;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 var(--space-2);
+}
+h1 { font-size: var(--text-h1); }
+h2 { font-size: var(--text-h2); }
+h3 { font-size: var(--text-h3); }
+h4 { font-size: var(--text-h4); }
+h6 { font-size: var(--text-sm); letter-spacing: var(--tracking-kicker); text-transform: uppercase; }
+p { margin: 0 0 var(--space-3); }
+a { color: var(--color-accent); text-underline-offset: 3px; }
+a:hover { color: var(--color-accent-600); }
+img { display: block; max-width: 100%; }
+figure { margin: 0; }
+.text-muted { color: var(--text-muted); }
+.kicker {
+  font-size: var(--text-kicker); letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase; color: var(--color-cardinal);
+}
+.num { font-feature-settings: var(--nums-data); font-variant-numeric: tabular-nums lining-nums; }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+/* Govsight — component layer. Plain CSS on plain HTML; the JSX primitives in
+   the sibling directories are thin wrappers over these classes. Cyan is the
+   interactive ink; cardinal is data emphasis and brand moments. */
+
+/* — buttons — */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; text-decoration: none;
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 14px; line-height: 1.2; color: var(--color-text);
+  background: transparent; border: 1px solid transparent;
+  padding: var(--space-2) calc(var(--space-3) * 1.2);
+  border-radius: var(--radius-md);
+  transition: background var(--dur-fast) var(--ease-out);
+}
+.btn i { font-size: 17px; line-height: 1; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--color-accent); color: var(--text-on-accent); }
+.btn-primary:hover { background: var(--color-accent-600); }
+.btn-primary:active { background: var(--color-accent-700); }
+.btn-ink { background: var(--ink); color: var(--text-on-ink); }
+.btn-ink:hover { background: var(--color-neutral-800); }
+.btn-ink:active { background: var(--color-neutral-900); }
+.btn-secondary { border-color: var(--color-divider); }
+.btn-secondary:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.btn-secondary:active { background: color-mix(in srgb, var(--ink) 14%, transparent); }
+.btn-ghost { color: var(--color-accent); padding-inline: var(--space-1); }
+.btn-ghost:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.btn-ghost:active { background: color-mix(in srgb, var(--color-accent) 18%, transparent); }
+.btn-icon { width: 36px; height: 36px; padding: 0; }
+.btn-sm { font-size: 13px; padding: 6px 12px; }
+.btn-block { width: 100%; }
+
+/* — tags — */
+.tag {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+  letter-spacing: 0.02em; padding: 3px 10px; border-radius: var(--radius-sm);
+}
+.tag-accent { background: var(--color-accent-100); color: var(--color-accent-800); }
+.tag-cardinal { background: var(--color-cardinal-100); color: var(--color-cardinal-800); }
+.tag-neutral { background: var(--color-neutral-200); color: var(--color-neutral-800); }
+.tag-outline { border: 1px solid var(--color-accent); color: var(--color-accent-700); }
+.tag-solid { background: var(--color-cardinal); color: var(--paper); }
+
+/* — delta (data movement) — */
+.delta { display: inline-flex; align-items: baseline; gap: 3px; font-size: 13px;
+  font-feature-settings: var(--nums-data); }
+.delta-up { color: var(--data-up); }
+.delta-down { color: var(--data-down); }
+.delta-flat { color: var(--data-neutral); }
+
+/* — forms — */
+.field > label {
+  display: block; font-size: 12px; margin-bottom: 5px;
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+}
+.input, .select {
+  width: 100%; min-height: 36px; padding: 6px 10px; font: inherit;
+  font-size: 14px; color: var(--color-text); caret-color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+}
+.input::placeholder { color: color-mix(in srgb, var(--ink) 65%, transparent); opacity: 1; }
+.input:hover, .select:hover { border-color: color-mix(in srgb, var(--ink) 45%, transparent); }
+.input:focus-visible, .select:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+textarea.input { min-height: 90px; resize: vertical; }
+.select { appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23201e1d' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+
+.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+.check input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.check .box {
+  width: 16px; height: 16px; flex: none; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-divider); display: grid; place-items: center;
+  color: transparent; font-size: 11px; line-height: 1;
+}
+.check:hover .box { border-color: var(--color-accent); }
+.check input:checked + .box { border-color: var(--color-accent); background: var(--color-accent); color: var(--paper); }
+.check input:focus-visible + .box { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.switch .track {
+  width: 34px; height: 18px; flex: none; border-radius: 9px; position: relative;
+  background: var(--color-neutral-400); transition: background var(--dur-fast) var(--ease-out);
+}
+.switch .track::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--paper); transition: translate var(--dur-fast) var(--ease-out);
+}
+.switch:hover .track { background: var(--color-neutral-500); }
+.switch input:checked + .track { background: var(--color-accent); }
+.switch input:checked + .track::after { translate: 16px 0; }
+.switch input:focus-visible + .track { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.seg { display: inline-flex; overflow: hidden; border: 1px solid var(--color-divider); border-radius: var(--radius-md); }
+.seg-opt { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+.seg-opt + .seg-opt { border-left: 1px solid var(--color-divider); }
+.seg-opt:has(input:checked) { background: var(--color-accent); color: var(--paper); }
+.seg-opt:not(:has(input:checked)):hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.seg-opt:has(input:focus-visible) { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+.seg-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+
+/* — cards & panels — */
+.card {
+  display: flex; flex-direction: column; gap: var(--space-2);
+  padding: var(--space-3); border-radius: var(--radius-md); background: var(--surface-card);
+}
+.card-kicker { font-size: var(--text-kicker); letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase; color: var(--color-cardinal); }
+.card-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 17px; line-height: 1.2; }
+.card-body { margin: 0; font-size: 13px; opacity: 0.8; flex: 1; }
+.card-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-faint); }
+.panel-ink { background: var(--surface-ink); color: var(--text-on-ink); border-radius: var(--radius-md); }
+.panel-ink .kicker { color: var(--color-cardinal-400); }
+.elev-sm { box-shadow: var(--shadow-sm); }
+.elev-md { box-shadow: var(--shadow-md); }
+.elev-lg { box-shadow: var(--shadow-lg); }
+
+/* — stat (KPI) — */
+.stat { display: flex; flex-direction: column; gap: 4px; }
+.stat-label { font-size: var(--text-kicker); letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase; color: var(--text-muted); }
+.stat-value { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 40px; line-height: 1; letter-spacing: -0.02em;
+  font-feature-settings: var(--nums-data); }
+.stat-value.stat-lg { font-size: var(--text-display); }
+.stat-note { font-size: 12px; color: var(--text-muted); }
+
+/* — tables — */
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th {
+  text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink) 60%, transparent);
+  padding: var(--space-2); border-bottom: 1px solid var(--color-divider);
+}
+.table td { padding: var(--space-2); border-bottom: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+  font-feature-settings: var(--nums-data); }
+.table th.num-col, .table td.num-col { text-align: right; }
+.table tbody tr:hover { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.table tbody tr.selected { background: var(--color-accent-100); }
+
+/* — navigation — */
+.nav { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4); }
+.nav-brand { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 18px; margin-right: auto; color: inherit; text-decoration: none; }
+.nav a { color: inherit; text-decoration: none; font-size: 14px; }
+.nav a:hover, .nav a[aria-current='page'] { color: var(--color-accent); }
+
+.sidenav { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2) 0; min-width: 200px; }
+.sidenav-section { font-size: var(--text-kicker); letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase; color: var(--text-faint); padding: var(--space-3) var(--space-3) var(--space-1); }
+.sidenav a {
+  display: flex; align-items: center; gap: 10px; padding: 7px var(--space-3);
+  color: inherit; text-decoration: none; font-size: 14px; border-radius: var(--radius-md);
+}
+.sidenav a i { font-size: 17px; color: var(--text-muted); }
+.sidenav a:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: inherit; }
+.sidenav a[aria-current='page'] { color: var(--color-accent-700); background: var(--color-accent-100); }
+.sidenav a[aria-current='page'] i { color: var(--color-accent-700); }
+
+.tabs { display: flex; gap: var(--space-4); border-bottom: 1px solid var(--color-divider); }
+.tab {
+  background: none; border: 0; cursor: pointer; font: inherit; font-size: 14px;
+  padding: var(--space-2) 0; color: var(--text-muted);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tab:hover { color: var(--color-text); }
+.tab[aria-selected='true'] { color: var(--color-text); border-bottom-color: var(--color-cardinal); }
+
+/* — dialog — */
+.dialog-backdrop { position: fixed; inset: 0; display: grid; place-items: center;
+  padding: var(--space-4); background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent); z-index: 100; }
+.dialog { width: min(440px, 100%); display: flex; flex-direction: column; gap: var(--space-3);
+  padding: var(--space-4); border-radius: var(--radius-lg);
+  background: var(--surface-card); box-shadow: var(--shadow-lg); }
+.dialog-title { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 20px; }
+.dialog-body { font-size: 14px; opacity: 0.85; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
+
+/* — toast — */
+.toast {
+  display: flex; align-items: center; gap: var(--space-2); width: fit-content;
+  padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
+  background: var(--ink); color: var(--paper); font-size: 14px; box-shadow: var(--shadow-md);
+}
+.toast i { font-size: 17px; color: var(--color-cardinal-400); }
+.toast .toast-action { color: var(--color-accent-300); background: none; border: 0;
+  font: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+/* — charts — */
+.chart-note { font-size: 11px; color: var(--text-faint); }
+.legend { display: flex; gap: var(--space-3); flex-wrap: wrap; font-size: 12px; }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.legend-swatch { width: 10px; height: 10px; border-radius: var(--radius-sm); }
+
+/* ————————————————————————————————————————————————————————————————
+   GovSight app layer — semantics and shell patterns composed from the
+   tokens above. Cyan is interactive; cardinal is data emphasis. */
+
+:root {
+  /* functional status, derived from the process accents */
+  --status-ok-bg: var(--color-accent-100);
+  --status-ok-fg: var(--color-accent-800);
+  --status-warn-bg: color-mix(in srgb, var(--color-process-yellow) 20%, var(--paper));
+  --status-warn-fg: #6d5504;
+  --status-err-bg: var(--color-cardinal-100);
+  --status-err-fg: var(--color-cardinal-800);
+  --status-neutral-bg: var(--color-neutral-200);
+  --status-neutral-fg: var(--color-neutral-800);
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--color-neutral-400); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-neutral-500); }
+::-webkit-scrollbar-track { background: transparent; }
+
+button, input, select, textarea { font-family: inherit; }
+
+/* inline messages */
+.msg { border-radius: var(--radius-md); padding: 9px 13px; font-size: 13px; }
+.msg-ok { background: var(--status-ok-bg); color: var(--status-ok-fg); }
+.msg-err { background: var(--status-err-bg); color: var(--status-err-fg); }
+.msg-warn { background: var(--status-warn-bg); color: var(--status-warn-fg); }
+
+/* chat (Mantis) */
+.chat-bubble-user {
+  background: var(--surface-ink); color: var(--text-on-ink);
+  border-radius: var(--radius-lg); border-bottom-right-radius: var(--radius-sm);
+  padding: 10px 14px; font-size: 14px; max-width: 78%;
+}
+.chat-bubble-assistant {
+  background: var(--surface-card);
+  border-radius: var(--radius-lg); border-bottom-left-radius: var(--radius-sm);
+  padding: 12px 16px; font-size: 14px; max-width: 85%;
+}
+
+/* module tab rail (ModulePage) */
+.module-head { background: var(--paper); flex-shrink: 0; }
+.module-head-inner { max-width: 1240px; margin: 0 auto; padding: var(--space-3) var(--space-4) 0; width: 100%; }
+
+/* admin side navigation buttons */
+.adminnav { display: flex; flex-direction: column; gap: 2px; min-width: 190px; position: sticky; top: var(--space-3); }
+.adminnav button {
+  display: block; width: 100%; text-align: left; background: none; border: 0;
+  cursor: pointer; font: inherit; font-size: 14px; color: var(--color-text);
+  padding: 7px var(--space-3); border-radius: var(--radius-md);
+}
+.adminnav button:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.adminnav button[aria-current='true'] { color: var(--color-accent-700); background: var(--color-accent-100); }
+.tag-warn { background: var(--status-warn-bg); color: var(--status-warn-fg); }

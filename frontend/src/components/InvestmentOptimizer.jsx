@@ -8,5 +8,5 @@ export default function InvestmentOptimizer() {
     const el = ref.current;
     return () => { el.innerHTML = ''; };
   }, []);
-  return <div ref={ref} style={{ width: '100%' }} />;
+  return <div ref={ref} className="gs-invest" style={{ width: '100%' }} />;
 }

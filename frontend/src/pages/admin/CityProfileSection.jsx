@@ -45,7 +45,7 @@ export default function CityProfileSection({ user }) {
         gap: 12,
       }}>
         {fields.map((f) => (
-          <label key={f.key} style={{ fontSize: 12, fontWeight: 600, color: '#5b6b7a' }}>
+          <label key={f.key} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
             {f.label}
             <input
               style={{ ...input, display: 'block', width: '100%', marginTop: 4 }}
@@ -57,7 +57,7 @@ export default function CityProfileSection({ user }) {
           </label>
         ))}
       </div>
-      <div style={{ fontSize: 11.5, color: '#8a97a3', marginTop: 10 }}>
+      <div style={{ fontSize: 11.5, color: 'var(--text-faint)', marginTop: 10 }}>
         FIPS codes come from the US Census (census.gov geography reference); they are
         what make demographics, income, and housing data resolve to this exact city.
         Placeholder values show what is currently in effect.

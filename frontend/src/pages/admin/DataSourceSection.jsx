@@ -55,7 +55,7 @@ function AddSource({ onDone }) {
     );
   }
   return (
-    <div style={{ padding: 14, background: '#fafbfc', border: '1px solid #eef2f5', borderRadius: 8 }}>
+    <div style={{ padding: 14, background: 'var(--surface-raised)', border: '1px solid color-mix(in srgb, var(--ink) 8%, transparent)', borderRadius: 'var(--radius-md)' }}>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
         <input style={input} placeholder="Source name (e.g. Tyler Munis GL)"
                value={name} onChange={(e) => setName(e.target.value)} />
@@ -85,9 +85,9 @@ function AddSource({ onDone }) {
                                       (mode === 'rest_api' && !endpoint)}
                 onClick={submit}>Add source</button>
         <button style={btnGhost} onClick={() => setMode('')}>Cancel</button>
-        {error && <span style={{ color: '#a4271c', fontSize: 12.5 }}>{error}</span>}
+        {error && <span style={{ color: 'var(--status-err-fg)', fontSize: 12.5 }}>{error}</span>}
       </div>
-      <div style={{ fontSize: 11.5, color: '#8a97a3', marginTop: 8 }}>
+      <div style={{ fontSize: 11.5, color: 'var(--text-faint)', marginTop: 8 }}>
         Credentials are never stored: API sources read their token from a named
         environment variable on the server.
       </div>
@@ -137,10 +137,10 @@ function MappingWorkflow({ source, entities, onDone }) {
   };
 
   return (
-    <div style={{ marginTop: 10, padding: 12, background: '#fafbfc',
-                  border: '1px solid #eef2f5', borderRadius: 8 }}>
+    <div style={{ marginTop: 10, padding: 12, background: 'var(--surface-raised)',
+                  border: '1px solid color-mix(in srgb, var(--ink) 8%, transparent)', borderRadius: 'var(--radius-md)' }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: '#5b6b7a' }}>Map into</span>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)' }}>Map into</span>
         <select style={input} value={entity} onChange={(e) => setEntity(e.target.value)}>
           {entities.map((e2) => <option key={e2}>{e2}</option>)}
         </select>
@@ -150,7 +150,7 @@ function MappingWorkflow({ source, entities, onDone }) {
       </div>
       {proposal && (
         <div style={{ marginTop: 10 }}>
-          <div style={{ fontSize: 12, color: '#5b6b7a', marginBottom: 6 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
             Review the proposed field mapping - edit source fields or transforms,
             then approve. {proposal.notes ? proposal.notes : ''}
           </div>
@@ -159,8 +159,8 @@ function MappingWorkflow({ source, entities, onDone }) {
               <thead><tr>
                 {['Canonical field', 'Source field', 'Transform', 'Confidence'].map((h) => (
                   <th key={h} style={{ textAlign: 'left', padding: '6px 8px',
-                                       borderBottom: '2px solid #dde4ea',
-                                       color: '#5b6b7a', fontSize: 11.5 }}>{h}</th>
+                                       borderBottom: '1px solid var(--color-divider)',
+                                       color: 'var(--text-muted)', fontSize: 11.5 }}>{h}</th>
                 ))}
               </tr></thead>
               <tbody>
@@ -186,7 +186,7 @@ function MappingWorkflow({ source, entities, onDone }) {
             </table>
           </div>
           {(proposal.unmapped_required || []).length > 0 && (
-            <div style={{ fontSize: 12, color: '#8a5a12', marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: 'var(--status-warn-fg)', marginTop: 6 }}>
               Unmapped required fields: {proposal.unmapped_required.join(', ')}
             </div>
           )}
@@ -238,7 +238,7 @@ export default function DataSourceSection() {
       </SectionTitle>
       <AddSource onDone={reload} />
       {data.sources.map((s) => (
-        <div key={s.id} style={{ borderTop: '1px solid #eef2f5', padding: '10px 0', marginTop: 10 }}>
+        <div key={s.id} style={{ borderTop: '1px solid color-mix(in srgb, var(--ink) 8%, transparent)', padding: '10px 0', marginTop: 10 }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 700, fontSize: 14 }}>{s.name}</span>
             <Badge tone="gray">{s.source_type}</Badge>

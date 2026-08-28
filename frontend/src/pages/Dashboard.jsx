@@ -1,55 +1,67 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MODULES } from '../modules.js';
 
+const MODULE_ICONS = {
+  navi: 'ph-duotone ph-compass',
+  mantis: 'ph-duotone ph-sparkle',
+  vatica: 'ph-duotone ph-chart-bar',
+};
+
 export default function Dashboard({ user }) {
+  const navigate = useNavigate();
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '40px 24px', width: '100%' }}>
-      <h1 style={{ fontSize: 24, color: '#12263a', marginBottom: 6 }}>
-        Welcome to GovSight Financial Analyzer
+    <div style={{
+      maxWidth: 1080, margin: '0 auto', width: '100%',
+      padding: 'var(--space-8) var(--space-4) var(--space-12)',
+    }}>
+      <span className="kicker">Overview</span>
+      <h1 style={{ marginTop: 'var(--space-1)' }}>
+        Welcome back{user.username ? `, ${user.username}` : ''}.
       </h1>
-      <p style={{ color: '#5b6b7a', marginBottom: 28 }}>
-        Select a module below to access different analytical tools.
+      <p className="text-muted" style={{ maxWidth: '52ch', fontSize: 'var(--text-lg)' }}>
+        Three modules over your ERP data. Pick where to start.
       </p>
+
       <div style={{
-        display: 'grid', gap: 20,
+        display: 'grid', gap: 'var(--space-6)', marginTop: 'var(--space-8)',
         gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
       }}>
         {Object.entries(MODULES).map(([id, m]) => (
-          <Link key={id} to={`/${id}/0`} style={{
-            background: m.color, borderRadius: 12, padding: '34px 24px',
-            color: '#fff', textAlign: 'center', textDecoration: 'none',
-            boxShadow: '0 8px 24px rgba(18,38,58,.18)',
-          }}>
-            <div style={{ fontSize: 12, letterSpacing: '.12em', opacity: 0.85 }}>
-              GOVSIGHT {m.name.toUpperCase()}
+          <div key={id} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            <i className={MODULE_ICONS[id] || 'ph-duotone ph-squares-four'}
+               style={{ fontSize: 30, color: 'var(--color-cardinal)' }} aria-hidden="true" />
+            <h3 style={{ margin: 0 }}>{m.name}</h3>
+            <p className="text-muted" style={{ margin: 0, fontSize: 14, flex: 1 }}>
+              {m.tagline}
+            </p>
+            <div>
+              <Link to={`/${id}/0`} className="btn btn-secondary">
+                Enter {m.name} <i className="ph-duotone ph-arrow-right" aria-hidden="true" />
+              </Link>
             </div>
-            <div style={{ fontSize: 26, fontWeight: 700, margin: '8px 0 6px' }}>
-              {m.name}
-            </div>
-            <div style={{ fontSize: 14, opacity: 0.95 }}>{m.tagline}</div>
-            <div style={{
-              display: 'inline-block', marginTop: 18, padding: '8px 22px',
-              border: '1px solid rgba(255,255,255,.45)', borderRadius: 999,
-              background: 'rgba(255,255,255,.16)', fontSize: 14, fontWeight: 600,
-            }}>Enter {m.name}</div>
-          </Link>
+          </div>
         ))}
       </div>
+
       {user.role === 'admin' && (
-        <div style={{
-          marginTop: 28, background: '#1d3a56', borderRadius: 12,
-          padding: '22px 24px', color: '#fff', textAlign: 'center',
+        <div className="panel-ink" style={{
+          marginTop: 'var(--space-12)', padding: 'var(--space-6)',
+          display: 'flex', alignItems: 'center', gap: 'var(--space-6)', flexWrap: 'wrap',
         }}>
-          <div style={{ fontSize: 17, fontWeight: 600 }}>Administration</div>
-          <div style={{ fontSize: 13, opacity: 0.85, margin: '6px 0 14px' }}>
-            User management, ERP connections, AI data mapping, and system settings
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <span className="kicker">Administration</span>
+            <h3 style={{ margin: 'var(--space-1) 0 var(--space-1)' }}>
+              Run the platform
+            </h3>
+            <p style={{ margin: 0, fontSize: 14, opacity: 0.75 }}>
+              User management, ERP connections, AI data mapping, and system
+              settings.
+            </p>
           </div>
-          <Link to="/admin" style={{
-            color: '#fff', border: '1px solid rgba(255,255,255,.45)',
-            borderRadius: 999, padding: '8px 22px', textDecoration: 'none',
-            fontSize: 14, fontWeight: 600, background: 'rgba(255,255,255,.12)',
-          }}>Open Admin Settings</Link>
+          <button className="btn btn-primary" onClick={() => navigate('/admin')}>
+            Open admin settings
+          </button>
         </div>
       )}
     </div>

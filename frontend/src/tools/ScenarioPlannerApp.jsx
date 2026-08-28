@@ -118,7 +118,7 @@ const SAMPLE_DEPTS = [
 ];
 
 const CATS = ['Infrastructure','Staffing','Maintenance','Technology','Other'];
-const CAT_COLORS = {Infrastructure:'#1976d2',Staffing:'#4caf50',Maintenance:'#ff9800',Technology:'#9c27b0',Other:'#607d8b'};
+const CAT_COLORS = {Infrastructure:'#0088b0',Staffing:'#006786',Maintenance:'#edbb00',Technology:'#d6006c',Other:'#7d7979'};
 
 // ════════════════════════════════════════════════════════════════════════════
 // COLLABORATION SIDEBAR
@@ -167,20 +167,20 @@ function CollabSidebar({ annotations, setAnnotations, currentTab, scenarioName }
                     <button className="collab-close" onClick={() => setOpen(false)}>Close</button>
                 </div>
                 {scenarioName && (
-                    <div style={{padding:'6px 14px',background:'#f0f4f8',borderBottom:'1px solid #e0e4e8',fontSize:11,color:'#555'}}>
+                    <div style={{padding:'6px 14px',background:'#f8f4f4',borderBottom:'1px solid #d7d3d3',fontSize:11,color:'#605d5d'}}>
                         Scenario: <strong>{scenarioName}</strong>
                     </div>
                 )}
                 <div className="collab-body">
                     {annotations.length === 0 && (
-                        <p style={{color:'#aaa',fontSize:13,textAlign:'center',marginTop:20}}>No notes yet. Add the first one below.</p>
+                        <p style={{color:'#bab6b6',fontSize:13,textAlign:'center',marginTop:20}}>No notes yet. Add the first one below.</p>
                     )}
                     {annotations.slice().reverse().map(a => (
                         <div key={a.id} className="ann-item">
                             <div className="ann-meta">
                                 <span>
                                     <strong>{a.authorName}</strong>
-                                    {a.authorRole && <span style={{marginLeft:5,fontSize:10,background:'#e8eaf6',color:'#3949ab',padding:'1px 5px',borderRadius:3,verticalAlign:'middle'}}>{fmtRole(a.authorRole)}</span>}
+                                    {a.authorRole && <span style={{marginLeft:5,fontSize:10,background:'#e9f8ff',color:'#0088b0',padding:'1px 5px',borderRadius:3,verticalAlign:'middle'}}>{fmtRole(a.authorRole)}</span>}
                                     {' '}&bull;{' '}{timeAgo(a.timestamp)}
                                 </span>
                                 <button className="ann-remove" onClick={() => remove(a.id)}>remove</button>
@@ -194,19 +194,19 @@ function CollabSidebar({ annotations, setAnnotations, currentTab, scenarioName }
                 </div>
                 <div className="collab-add">
                     {/* Identity badge — shows the server-authenticated user, not a free-text field */}
-                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,padding:'6px 8px',background:'#f5f5f5',borderRadius:4,border:'1px solid #e0e0e0'}}>
-                        <div style={{width:28,height:28,borderRadius:'50%',background:'#1565c0',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,flexShrink:0}}>
+                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8,padding:'6px 8px',background:'#f8f4f4',borderRadius:4,border:'1px solid #d7d3d3'}}>
+                        <div style={{width:28,height:28,borderRadius:'50%',background:'#1186ac',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,flexShrink:0}}>
                             {authorName.charAt(0)}
                         </div>
                         <div style={{lineHeight:1.3}}>
-                            <div style={{fontSize:12,fontWeight:600,color:'#222'}}>{authorName}</div>
-                            {authorRole && <div style={{fontSize:10,color:'#888'}}>{fmtRole(authorRole)}</div>}
+                            <div style={{fontSize:12,fontWeight:600,color:'#201e1d'}}>{authorName}</div>
+                            {authorRole && <div style={{fontSize:10,color:'#7d7979'}}>{fmtRole(authorRole)}</div>}
                         </div>
                     </div>
                     <div style={{marginBottom:6}}>
                         <textarea value={text} onChange={e => setText(e.target.value)}
                             placeholder={`Add a note about ${TAB_LABELS[currentTab] || 'this section'}...`}
-                            rows={3} style={{width:'100%',padding:'5px 8px',border:'1px solid #ddd',borderRadius:4,fontSize:12,resize:'vertical'}} />
+                            rows={3} style={{width:'100%',padding:'5px 8px',border:'1px solid #d7d3d3',borderRadius:4,fontSize:12,resize:'vertical'}} />
                     </div>
                     <button className="btn btn-primary" onClick={add} style={{width:'100%',fontSize:12}}>Add Note</button>
                 </div>
@@ -234,12 +234,12 @@ function ScenarioTab({ scenario, setScenario, fundingSources, setFundingSources,
         if (chartInst.current) chartInst.current.destroy();
         const grouped = fundingSources.reduce((acc,s) => { acc[s.type]=(acc[s.type]||0)+s.amount; return acc; }, {});
         if (!Object.keys(grouped).length) return;
-        const TYPE_COLORS = {tax:'#1976d2',grant:'#2e7d32',bond:'#ff9800',private:'#9c27b0',reallocation:'#0097a7',other:'#607d8b'};
+        const TYPE_COLORS = {tax:'#0088b0',grant:'#006786',bond:'#edbb00',private:'#d6006c',reallocation:'#0088b0',other:'#7d7979'};
         chartInst.current = new Chart(ctx, {
             type: 'pie',
             data: {
                 labels: Object.keys(grouped).map(t => ({tax:'Tax Revenue',grant:'Grant',bond:'Bond',private:'Private',reallocation:'Dept. Reallocation',other:'Other'})[t]||t),
-                datasets: [{data:Object.values(grouped), backgroundColor:Object.keys(grouped).map(t=>TYPE_COLORS[t]||'#90a4ae')}]
+                datasets: [{data:Object.values(grouped), backgroundColor:Object.keys(grouped).map(t=>TYPE_COLORS[t]||'#9b9797')}]
             },
             options: { responsive:true, maintainAspectRatio:false, plugins: { legend:{position:'right'}, tooltip:{callbacks:{label:c=>`${c.label}: ${fc(c.parsed)}`}} } }
         });
@@ -270,36 +270,36 @@ function ScenarioTab({ scenario, setScenario, fundingSources, setFundingSources,
                         <div className="form-group"><label>Project Duration (Years)</label><input type="number" min={1} max={10} value={scenario.years} onChange={e=>setScenario({...scenario,years:parseInt(e.target.value)||5})} /></div>
 
                         {/* Summary totals — live-synced from Revenue and Expenses tabs */}
-                        <div style={{borderTop:'1px solid #eee',paddingTop:14,marginTop:6}}>
+                        <div style={{borderTop:'1px solid #eae7e7',paddingTop:14,marginTop:6}}>
                             <div style={{display:'flex',gap:10}}>
-                                <div style={{flex:1,padding:'10px 12px',background:'#e8f5e9',borderRadius:6,border:'1px solid #c8e6c9'}}>
-                                    <div style={{fontSize:11,color:'#555',marginBottom:2}}>Total Revenue</div>
-                                    <div style={{fontWeight:700,fontSize:17,color:'#2e7d32'}}>{fc(totalRevenue)}</div>
-                                    <div style={{fontSize:10,color:'#888'}}>{fundingSources.length} source{fundingSources.length!==1?'s':''}</div>
+                                <div style={{flex:1,padding:'10px 12px',background:'#e9f8ff',borderRadius:6,border:'1px solid #cbeeff'}}>
+                                    <div style={{fontSize:11,color:'#605d5d',marginBottom:2}}>Total Revenue</div>
+                                    <div style={{fontWeight:700,fontSize:17,color:'#006786'}}>{fc(totalRevenue)}</div>
+                                    <div style={{fontSize:10,color:'#7d7979'}}>{fundingSources.length} source{fundingSources.length!==1?'s':''}</div>
                                 </div>
-                                <div style={{flex:1,padding:'10px 12px',background:'#fce4ec',borderRadius:6,border:'1px solid #f8bbd0'}}>
-                                    <div style={{fontSize:11,color:'#555',marginBottom:2}}>
+                                <div style={{flex:1,padding:'10px 12px',background:'#fff1f4',borderRadius:6,border:'1px solid #ffdee6'}}>
+                                    <div style={{fontSize:11,color:'#605d5d',marginBottom:2}}>
                                         {hasContingency ? 'Total Required' : 'Total Expenses'}
                                     </div>
-                                    <div style={{fontWeight:700,fontSize:17,color:'#c62828'}}>{fc(effectiveCost)}</div>
+                                    <div style={{fontWeight:700,fontSize:17,color:'#d82071'}}>{fc(effectiveCost)}</div>
                                     {hasContingency ? (
-                                        <div style={{fontSize:10,color:'#888',lineHeight:1.5}}>
+                                        <div style={{fontSize:10,color:'#7d7979',lineHeight:1.5}}>
                                             Base: {fc(totalExpenses)}<br/>
                                             + {adjContingencyPct}% contingency: {fc(contingencyAmt)}
                                         </div>
                                     ) : (
-                                        <div style={{fontSize:10,color:'#888'}}>
+                                        <div style={{fontSize:10,color:'#7d7979'}}>
                                             {(expenses||[]).length} line item{(expenses||[]).length!==1?'s':''}
-                                            {(expenses||[]).length > 0 && <span style={{display:'block',color:'#aaa',fontStyle:'italic'}}>Visit Expenses tab to include contingency</span>}
+                                            {(expenses||[]).length > 0 && <span style={{display:'block',color:'#bab6b6',fontStyle:'italic'}}>Visit Expenses tab to include contingency</span>}
                                         </div>
                                     )}
                                 </div>
-                                <div style={{flex:1,padding:'10px 12px',background:netPosition>=0?'#e3f2fd':'#fff3e0',borderRadius:6,border:`1px solid ${netPosition>=0?'#bbdefb':'#ffe0b2'}`}}>
-                                    <div style={{fontSize:11,color:'#555',marginBottom:2}}>Net Position</div>
-                                    <div style={{fontWeight:700,fontSize:17,color:netPosition>=0?'#1565c0':'#e65100'}}>{netPosition>=0?'+':''}{fc(netPosition)}</div>
-                                    <div style={{fontSize:10,color:netPosition>=0?'#888':'#bf360c',fontWeight:netPosition<0?600:400}}>
+                                <div style={{flex:1,padding:'10px 12px',background:netPosition>=0?'#e9f8ff':'#f2e7c2',borderRadius:6,border:`1px solid ${netPosition>=0?'#cbeeff':'#f2e7c2'}`}}>
+                                    <div style={{fontSize:11,color:'#605d5d',marginBottom:2}}>Net Position</div>
+                                    <div style={{fontWeight:700,fontSize:17,color:netPosition>=0?'#1186ac':'#6d5504'}}>{netPosition>=0?'+':''}{fc(netPosition)}</div>
+                                    <div style={{fontSize:10,color:netPosition>=0?'#7d7979':'#6d5504',fontWeight:netPosition<0?600:400}}>
                                         {netPosition>=0?'Surplus':'Funding Gap'}
-                                        {hasContingency && <span style={{display:'block',fontWeight:400,color:'#aaa',fontStyle:'italic'}}>incl. {adjContingencyPct}% contingency</span>}
+                                        {hasContingency && <span style={{display:'block',fontWeight:400,color:'#bab6b6',fontStyle:'italic'}}>incl. {adjContingencyPct}% contingency</span>}
                                     </div>
                                 </div>
                             </div>
@@ -310,7 +310,7 @@ function ScenarioTab({ scenario, setScenario, fundingSources, setFundingSources,
                     <div className="card-header">Funding Mix</div>
                     <div className="card-body">
                         <div className="chart-box"><canvas ref={chartRef}></canvas></div>
-                        {fundingSources.length > 0 && <div style={{textAlign:'center',marginTop:10,fontWeight:700,fontSize:18,color:'var(--primary)'}}>{fc(totalRevenue)} <span style={{fontSize:13,fontWeight:400,color:'#777'}}>total funding</span></div>}
+                        {fundingSources.length > 0 && <div style={{textAlign:'center',marginTop:10,fontWeight:700,fontSize:18,color:'var(--primary)'}}>{fc(totalRevenue)} <span style={{fontSize:13,fontWeight:400,color:'#7d7979'}}>total funding</span></div>}
                     </div>
                 </div>
             </div>
@@ -352,7 +352,7 @@ function ScenarioTab({ scenario, setScenario, fundingSources, setFundingSources,
                     }
                     onNew();
                 }}>New Scenario</button>
-                {saveMsg && <span style={{fontSize:13,color:'#2e7d32',fontWeight:600}}>{saveMsg}</span>}
+                {saveMsg && <span style={{fontSize:13,color:'#006786',fontWeight:600}}>{saveMsg}</span>}
             </div>
 
             {showSaved && (
@@ -361,10 +361,10 @@ function ScenarioTab({ scenario, setScenario, fundingSources, setFundingSources,
                     <div className="card-body">
                         {savedScenarios.length === 0 && <div className="alert alert-info" style={{marginBottom:0}}>No saved scenarios yet. Click "Save Scenario" to save your current work.</div>}
                         {savedScenarios.map(s => (
-                            <div key={s.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',background:'#f9f9f9',borderRadius:6,border:'1px solid #e0e0e0',marginBottom:8}}>
+                            <div key={s.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',background:'#f8f4f4',borderRadius:6,border:'1px solid #d7d3d3',marginBottom:8}}>
                                 <div style={{flex:1,minWidth:0}}>
                                     <div style={{fontWeight:600,fontSize:14}}>{s.name}</div>
-                                    <div style={{fontSize:11,color:'#888'}}>
+                                    <div style={{fontSize:11,color:'#7d7979'}}>
                                         Saved {new Date(s.savedAt).toLocaleString()} &bull;{' '}
                                         {fc((s.fundingSources||[]).reduce((t,f)=>t+(f.amount||0),0))} funding &bull;{' '}
                                         {(s.expenses||[]).length} expense item{(s.expenses||[]).length!==1?'s':''}
@@ -614,12 +614,12 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                                 const already = pipeline.some(p=>p.name===r.name);
                                 const amountDisplay = r.max ? `${fc(r.min||0)} – ${fc(r.max)}` : r.amount ? `Up to ${fc(r.amount)}` : null;
                                 return (
-                                    <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 12px',border:'1px solid #e3f2fd',borderRadius:6,marginBottom:7,background:'#fafeff'}}>
+                                    <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 12px',border:'1px solid #e9f8ff',borderRadius:6,marginBottom:7,background:'#e9f8ff'}}>
                                         <div style={{flex:1,minWidth:0}}>
                                             <div style={{fontWeight:600,fontSize:13}}>{r.name||r.title}</div>
-                                            <div style={{fontSize:11,color:'#777',marginTop:1}}>{r.agency||r.funder} {r.category&&<span className="badge badge-blue" style={{marginLeft:4}}>{r.category}</span>} {r._live&&<span className="badge badge-green" style={{marginLeft:4}}>LIVE{r.source?` — ${r.source}`:''}</span>} {r._library&&<span className="badge badge-gray" style={{marginLeft:4}} title="Recurring federal program from the built-in reference library — verify the current cycle with the agency">REFERENCE</span>}</div>
-                                            {amountDisplay&&<div style={{fontSize:11,color:'#2e7d32',marginTop:2}}>{amountDisplay}</div>}
-                                            {(r.deadline||r.close_date)&&<div style={{fontSize:11,color:'#888'}}>{r._library?'Typical deadline':'Deadline'}: {r.deadline||r.close_date}</div>}
+                                            <div style={{fontSize:11,color:'#7d7979',marginTop:1}}>{r.agency||r.funder} {r.category&&<span className="badge badge-blue" style={{marginLeft:4}}>{r.category}</span>} {r._live&&<span className="badge badge-green" style={{marginLeft:4}}>LIVE{r.source?` — ${r.source}`:''}</span>} {r._library&&<span className="badge badge-gray" style={{marginLeft:4}} title="Recurring federal program from the built-in reference library — verify the current cycle with the agency">REFERENCE</span>}</div>
+                                            {amountDisplay&&<div style={{fontSize:11,color:'#006786',marginTop:2}}>{amountDisplay}</div>}
+                                            {(r.deadline||r.close_date)&&<div style={{fontSize:11,color:'#7d7979'}}>{r._library?'Typical deadline':'Deadline'}: {r.deadline||r.close_date}</div>}
                                         </div>
                                         <div style={{display:'flex',gap:6,flexShrink:0}}>
                                             {(r.url||r.link)&&<a href={r.url||r.link} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">View</a>}
@@ -641,7 +641,7 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                     )}
 
                     {showPortals && (
-                        <div style={{borderTop:'1px solid #eee',paddingTop:16}}>
+                        <div style={{borderTop:'1px solid #eae7e7',paddingTop:16}}>
                             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
                                 <strong style={{fontSize:14}}>Federal Grant Portals</strong>
                                 <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
@@ -652,9 +652,9 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                             </div>
                             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:10,marginBottom:18}}>
                                 {filteredPortals.map((p,i) => (
-                                    <div key={i} style={{border:'1px solid #e0e0e0',borderRadius:6,padding:'10px 12px',background:'#fafafa',display:'flex',flexDirection:'column',gap:5}}>
+                                    <div key={i} style={{border:'1px solid #d7d3d3',borderRadius:6,padding:'10px 12px',background:'#f8f4f4',display:'flex',flexDirection:'column',gap:5}}>
                                         <div style={{fontWeight:600,fontSize:13}}>{p.name}</div>
-                                        <div style={{fontSize:11,color:'#777',flex:1}}>{p.desc}</div>
+                                        <div style={{fontSize:11,color:'#7d7979',flex:1}}>{p.desc}</div>
                                         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                                             <span className="badge badge-blue">{p.category}</span>
                                             <a href={p.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm">Open Portal</a>
@@ -663,11 +663,11 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                                 ))}
                             </div>
 
-                            <div style={{borderTop:'1px solid #eee',paddingTop:14}}>
+                            <div style={{borderTop:'1px solid #eae7e7',paddingTop:14}}>
                                 <strong style={{fontSize:14}}>State Grant Portals</strong>
-                                <p style={{fontSize:12,color:'#888',margin:'6px 0 10px'}}>Select a state to open its official grant portal in a new tab.</p>
+                                <p style={{fontSize:12,color:'#7d7979',margin:'6px 0 10px'}}>Select a state to open its official grant portal in a new tab.</p>
                                 <div style={{display:'flex',gap:10,alignItems:'center'}}>
-                                    <select value={selectedState} onChange={e=>setSelectedState(e.target.value)} style={{flex:1,padding:'7px 10px',border:'1px solid #ddd',borderRadius:4,fontSize:14}}>
+                                    <select value={selectedState} onChange={e=>setSelectedState(e.target.value)} style={{flex:1,padding:'7px 10px',border:'1px solid #d7d3d3',borderRadius:4,fontSize:14}}>
                                         <option value="">-- Select a state --</option>
                                         {Object.keys(STATE_PORTALS).sort().map(s=><option key={s} value={s}>{s}</option>)}
                                     </select>
@@ -686,22 +686,22 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                 <div className="card" style={{marginBottom:18}}>
                     <div className="card-header">
                         Auto-Matched Grants for Your Funding Gap
-                        <span style={{fontSize:12,fontWeight:400,color:'#777'}}>Shortfall: {gapDetails.map(d=>`Yr ${d.year}: ${fc(d.shortfall)}`).join(', ')}</span>
+                        <span style={{fontSize:12,fontWeight:400,color:'#7d7979'}}>Shortfall: {gapDetails.map(d=>`Yr ${d.year}: ${fc(d.shortfall)}`).join(', ')}</span>
                     </div>
                     <div className="card-body">
-                        <p style={{fontSize:13,color:'#777',marginBottom:12}}>Recurring federal programs matched to your project's categories and funding gap — verify the current cycle with the agency, and use Grant Search above for live open notices. Click "Track Grant" to add any to your pipeline.</p>
+                        <p style={{fontSize:13,color:'#7d7979',marginBottom:12}}>Recurring federal programs matched to your project's categories and funding gap — verify the current cycle with the agency, and use Grant Search above for live open notices. Click "Track Grant" to add any to your pipeline.</p>
                         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:12}}>
                             {GRANT_TEMPLATES.map((g,i) => {
                                 const tracked = pipeline.some(p=>p.name===g.name);
                                 const d = daysUntil(g.deadline);
                                 return (
-                                    <div key={i} style={{border:'1px solid #ddd',borderRadius:8,padding:12,background:'#fafafa'}}>
+                                    <div key={i} style={{border:'1px solid #d7d3d3',borderRadius:8,padding:12,background:'#f8f4f4'}}>
                                         <div style={{fontWeight:600,fontSize:13,marginBottom:3}}>{g.name}</div>
-                                        <div style={{fontSize:11,color:'#777',marginBottom:6}}>{g.agency}</div>
+                                        <div style={{fontSize:11,color:'#7d7979',marginBottom:6}}>{g.agency}</div>
                                         <div style={{display:'flex',gap:5,flexWrap:'wrap',marginBottom:8}}>
                                             <span className="badge badge-blue">{g.category}</span>
-                                            <span style={{fontSize:11,color:'#444'}}>{fc(g.min)}–{fc(g.max)}</span>
-                                            {d!==null&&<span style={{fontSize:11,color:d<30?'#e65100':'#888'}}>Due {new Date(g.deadline).toLocaleDateString()}</span>}
+                                            <span style={{fontSize:11,color:'#444141'}}>{fc(g.min)}–{fc(g.max)}</span>
+                                            {d!==null&&<span style={{fontSize:11,color:d<30?'#6d5504':'#7d7979'}}>Due {new Date(g.deadline).toLocaleDateString()}</span>}
                                         </div>
                                         <div style={{display:'flex',gap:6}}>
                                             <button className={`btn btn-sm ${tracked?'btn-secondary':'btn-primary'}`} disabled={tracked} onClick={()=>track(g)}>{tracked?'Tracking':'Track Grant'}</button>
@@ -728,7 +728,7 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                     <button className="btn btn-secondary btn-sm" onClick={()=>track(GRANT_TEMPLATES[0])}>Add Sample</button>
                 </div>
                 {pipeline.length===0
-                    ? <div style={{padding:18,color:'#999',fontSize:13,textAlign:'center'}}>No grants tracked yet. Use the search above, open a portal, or accept an auto-matched suggestion.</div>
+                    ? <div style={{padding:18,color:'#9b9797',fontSize:13,textAlign:'center'}}>No grants tracked yet. Use the search above, open a portal, or accept an auto-matched suggestion.</div>
                     : <div style={{padding:10}}>
                         {pipeline.map(g => {
                             const d = daysUntil(g.deadline);
@@ -738,12 +738,12 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                                         <div style={{fontWeight:600,fontSize:13}}>
                                             {g.url ? <a href={g.url} target="_blank" rel="noopener noreferrer" style={{color:'inherit',textDecoration:'none'}} title="Open grant page">{g.name}</a> : g.name}
                                         </div>
-                                        <div style={{fontSize:11,color:'#777'}}>{g.agency} &bull; {g.category}</div>
-                                        {g.deadline && <div style={{fontSize:11,color:d!==null&&d<0?'#c62828':d!==null&&d<30?'#e65100':'#888'}}>
+                                        <div style={{fontSize:11,color:'#7d7979'}}>{g.agency} &bull; {g.category}</div>
+                                        {g.deadline && <div style={{fontSize:11,color:d!==null&&d<0?'#d82071':d!==null&&d<30?'#6d5504':'#7d7979'}}>
                                             Deadline: {new Date(g.deadline).toLocaleDateString()} {d!==null&&d>=0&&`(${d}d)`} {d!==null&&d<0&&'OVERDUE'}
                                         </div>}
                                     </div>
-                                    <input type="number" value={g.amount} onChange={e=>updateG(g.id,'amount',e.target.value)} style={{width:110,padding:'4px 8px',border:'1px solid #ddd',borderRadius:4,fontSize:12,textAlign:'right'}} />
+                                    <input type="number" value={g.amount} onChange={e=>updateG(g.id,'amount',e.target.value)} style={{width:110,padding:'4px 8px',border:'1px solid #d7d3d3',borderRadius:4,fontSize:12,textAlign:'right'}} />
                                     <span className={`badge ${S_BADGE[g.status]}`}>{g.status}</span>
                                     <button className="btn btn-secondary btn-sm" disabled={g.status==='Denied'||g.status==='Awarded'} onClick={()=>advance(g.id)}>Advance</button>
                                     {(() => { const inScenario = grantInScenario(g.name, g.agency); return (
@@ -764,15 +764,15 @@ function GrantPipeline({ fundingGap, gapDetails, expenses, fundingSources, setFu
                 <div className="card">
                     <div className="card-header">Awarded Grant — Budget Mapping</div>
                     <div className="card-body">
-                        <p style={{fontSize:13,color:'#777',marginBottom:12}}>Assign each awarded grant to a specific expense line item.</p>
+                        <p style={{fontSize:13,color:'#7d7979',marginBottom:12}}>Assign each awarded grant to a specific expense line item.</p>
                         {awarded.map(g => (
-                            <div key={g.id} style={{display:'flex',alignItems:'center',gap:12,padding:10,background:'#f9f9f9',borderRadius:6,marginBottom:8,border:'1px solid #e8f5e9'}}>
+                            <div key={g.id} style={{display:'flex',alignItems:'center',gap:12,padding:10,background:'#f8f4f4',borderRadius:6,marginBottom:8,border:'1px solid #e9f8ff'}}>
                                 <div style={{flex:1}}>
                                     <span className="badge badge-green" style={{marginRight:6}}>Awarded</span>
                                     <strong style={{fontSize:13}}>{g.name}</strong>
-                                    <span style={{marginLeft:8,color:'#1565c0',fontWeight:600}}>{fc(g.amount)}</span>
+                                    <span style={{marginLeft:8,color:'#1186ac',fontWeight:600}}>{fc(g.amount)}</span>
                                 </div>
-                                <select value={mappings[g.id]||''} onChange={e=>setMappings(m=>({...m,[g.id]:e.target.value}))} style={{padding:'4px 8px',border:'1px solid #ddd',borderRadius:4,fontSize:12}}>
+                                <select value={mappings[g.id]||''} onChange={e=>setMappings(m=>({...m,[g.id]:e.target.value}))} style={{padding:'4px 8px',border:'1px solid #d7d3d3',borderRadius:4,fontSize:12}}>
                                     <option value="">-- Assign to expense --</option>
                                     {expenses.map(exp => <option key={exp.id} value={exp.id}>Yr {exp.year}: {exp.label||exp.category} ({fc(exp.amount)})</option>)}
                                 </select>
@@ -828,7 +828,7 @@ function DeptReallocation({ fundingGap, fundingSources, setFundingSources }) {
                                 <input type="range" min={70} max={100} value={safetyFloor} onChange={e=>setSafetyFloor(+e.target.value)} />
                                 <span className="slider-val">{safetyFloor}%</span>
                             </div>
-                            <div style={{fontSize:12,color:'#888',marginTop:4}}>At {safetyFloor}%, each department can contribute at most {100-safetyFloor}% of its total budget. Departments with more unspent budget are ranked first.</div>
+                            <div style={{fontSize:12,color:'#7d7979',marginTop:4}}>At {safetyFloor}%, each department can contribute at most {100-safetyFloor}% of its total budget. Departments with more unspent budget are ranked first.</div>
                         </div>
                         {fundingGap && (
                             <div className="form-group">
@@ -841,7 +841,7 @@ function DeptReallocation({ fundingGap, fundingSources, setFundingSources }) {
                 <div>
                     <div className="grid-2" style={{marginBottom:12}}>
                         <div className="stat-card">
-                            <div className="stat-value" style={{color:'#2e7d32'}}>{fc(totalAvailable)}</div>
+                            <div className="stat-value" style={{color:'#006786'}}>{fc(totalAvailable)}</div>
                             <div className="stat-label">Total Realloc. Potential</div>
                         </div>
                         <div className="stat-card">
@@ -881,21 +881,21 @@ function DeptReallocation({ fundingGap, fundingSources, setFundingSources }) {
                                 const utilized = (dept.actual / dept.budget) * 100;
                                 const maxContrib = dept.budget * (1 - safetyFloor / 100);
                                 const avail = computeRealloc(dept);
-                                const barColor = utilized > 95 ? '#f44336' : utilized > 80 ? '#ff9800' : '#4caf50';
+                                const barColor = utilized > 95 ? '#d82071' : utilized > 80 ? '#edbb00' : '#006786';
                                 return (
                                     <tr key={dept.id}>
                                         <td><strong>{dept.name}</strong></td>
                                         <td style={{textAlign:'right'}}>{fc(dept.budget)}</td>
                                         <td style={{textAlign:'right'}}>{fc(dept.actual)}</td>
-                                        <td style={{textAlign:'right',color:variance>0?'#2e7d32':'#c62828'}}>{variance>0?'+':''}{fc(variance)}</td>
+                                        <td style={{textAlign:'right',color:variance>0?'#006786':'#d82071'}}>{variance>0?'+':''}{fc(variance)}</td>
                                         <td style={{textAlign:'right'}}>{fp(utilized)}</td>
                                         <td style={{minWidth:120}}>
                                             <div className="realloc-bar-track">
                                                 <div className="realloc-bar-fill" style={{width:`${Math.min(utilized,100)}%`,background:barColor}} />
                                             </div>
                                         </td>
-                                        <td style={{textAlign:'right',color:'#999'}}>{fc(maxContrib)}</td>
-                                        <td style={{textAlign:'right',fontWeight:avail>0?700:400,color:avail>0?'#1565c0':'#999'}}>
+                                        <td style={{textAlign:'right',color:'#9b9797'}}>{fc(maxContrib)}</td>
+                                        <td style={{textAlign:'right',fontWeight:avail>0?700:400,color:avail>0?'#1186ac':'#9b9797'}}>
                                             {avail>0 ? fc(avail) : '—'}
                                         </td>
                                     </tr>
@@ -910,21 +910,21 @@ function DeptReallocation({ fundingGap, fundingSources, setFundingSources }) {
                 <div className="card">
                     <div className="card-header">Reallocation Recommendations</div>
                     <div className="card-body">
-                        <p style={{fontSize:13,color:'#777',marginBottom:14}}>These departments have budget headroom above the {safetyFloor}% safety floor. Listed from highest to lowest available capacity.</p>
+                        <p style={{fontSize:13,color:'#7d7979',marginBottom:14}}>These departments have budget headroom above the {safetyFloor}% safety floor. Listed from highest to lowest available capacity.</p>
                         {recomDepts.map((dept,i) => {
                             const avail = computeRealloc(dept);
                             const pct = (avail / totalAvailable * 100).toFixed(0);
                             const inScenario = reallocInScenario(dept.name);
                             return (
-                                <div key={dept.id} style={{display:'flex',alignItems:'center',gap:14,marginBottom:12,padding:'10px 14px',background:'#f0f7ff',borderRadius:6,border:`1px solid ${inScenario?'#a5d6a7':'#bbdefb'}`}}>
-                                    <div style={{width:22,height:22,background:'#1976d2',borderRadius:'50%',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,flexShrink:0}}>{i+1}</div>
+                                <div key={dept.id} style={{display:'flex',alignItems:'center',gap:14,marginBottom:12,padding:'10px 14px',background:'#e9f8ff',borderRadius:6,border:`1px solid ${inScenario?'#99e0ff':'#cbeeff'}`}}>
+                                    <div style={{width:22,height:22,background:'#0088b0',borderRadius:'50%',color:'white',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,flexShrink:0}}>{i+1}</div>
                                     <div style={{flex:1}}>
                                         <div style={{fontWeight:600,fontSize:13}}>{dept.name}</div>
-                                        <div style={{fontSize:11,color:'#777'}}>Actual {fc(dept.actual)} of {fc(dept.budget)} budget ({fp(dept.actual/dept.budget*100)} utilized)</div>
+                                        <div style={{fontSize:11,color:'#7d7979'}}>Actual {fc(dept.actual)} of {fc(dept.budget)} budget ({fp(dept.actual/dept.budget*100)} utilized)</div>
                                     </div>
                                     <div style={{textAlign:'right',marginRight:4}}>
-                                        <div style={{fontWeight:700,color:'#1565c0',fontSize:16}}>{fc(avail)}</div>
-                                        <div style={{fontSize:11,color:'#888'}}>{pct}% of potential</div>
+                                        <div style={{fontWeight:700,color:'#1186ac',fontSize:16}}>{fc(avail)}</div>
+                                        <div style={{fontSize:11,color:'#7d7979'}}>{pct}% of potential</div>
                                     </div>
                                     <button
                                         className={`btn btn-sm ${inScenario?'btn-secondary':'btn-success'}`}
@@ -1097,16 +1097,16 @@ function ExpensePlanner({ expenses, setExpenses, fundingSources, onGapChange, an
                             <tbody>
                                 {expenses.map(exp=>(
                                     <React.Fragment key={exp.id}>
-                                        <tr style={{background: dupState&&dupState.id===exp.id ? '#fff8e1' : undefined}}>
-                                            <td><input type="number" min={1} max={numYrs} value={exp.year} onChange={e=>updExp(exp.id,'year',e.target.value)} style={{width:55,padding:'3px 6px',border:'1px solid #ddd',borderRadius:4}} /></td>
-                                            <td><input type="text" value={exp.label} placeholder="Description" onChange={e=>updExp(exp.id,'label',e.target.value)} style={{width:'100%',padding:'3px 8px',border:'1px solid #ddd',borderRadius:4}} /></td>
+                                        <tr style={{background: dupState&&dupState.id===exp.id ? '#f2e7c2' : undefined}}>
+                                            <td><input type="number" min={1} max={numYrs} value={exp.year} onChange={e=>updExp(exp.id,'year',e.target.value)} style={{width:55,padding:'3px 6px',border:'1px solid #d7d3d3',borderRadius:4}} /></td>
+                                            <td><input type="text" value={exp.label} placeholder="Description" onChange={e=>updExp(exp.id,'label',e.target.value)} style={{width:'100%',padding:'3px 8px',border:'1px solid #d7d3d3',borderRadius:4}} /></td>
                                             <td>
-                                                <select value={exp.category} onChange={e=>updExp(exp.id,'category',e.target.value)} style={{padding:'3px 6px',border:'1px solid #ddd',borderRadius:4}}>
+                                                <select value={exp.category} onChange={e=>updExp(exp.id,'category',e.target.value)} style={{padding:'3px 6px',border:'1px solid #d7d3d3',borderRadius:4}}>
                                                     {CATS.map(c=><option key={c}>{c}</option>)}
                                                 </select>
                                             </td>
-                                            <td style={{textAlign:'right'}}><input type="number" min={0} value={exp.amount} onChange={e=>updExp(exp.id,'amount',e.target.value)} style={{width:110,padding:'3px 8px',border:'1px solid #ddd',borderRadius:4,textAlign:'right'}} /></td>
-                                            {applyInfl&&<td style={{textAlign:'right',color:'#1565c0',fontWeight:500}}>{fc(inflated(exp))}</td>}
+                                            <td style={{textAlign:'right'}}><input type="number" min={0} value={exp.amount} onChange={e=>updExp(exp.id,'amount',e.target.value)} style={{width:110,padding:'3px 8px',border:'1px solid #d7d3d3',borderRadius:4,textAlign:'right'}} /></td>
+                                            {applyInfl&&<td style={{textAlign:'right',color:'#1186ac',fontWeight:500}}>{fc(inflated(exp))}</td>}
                                             <td>
                                                 <span className="comment-link" onClick={()=>{setOpenRow(openRow===exp.id?null:exp.id);setDupState(null);}}>
                                                     [{rowNotes(exp.id).length}] notes
@@ -1124,35 +1124,35 @@ function ExpensePlanner({ expenses, setExpenses, fundingSources, onGapChange, an
                                         {dupState&&dupState.id===exp.id&&(
                                             <tr>
                                                 <td colSpan={applyInfl?7:6} style={{padding:0}}>
-                                                    <div style={{padding:'12px 16px',background:'#fffde7',borderBottom:'2px solid #ffe57f'}}>
-                                                        <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:'#555'}}>
+                                                    <div style={{padding:'12px 16px',background:'#f2e7c2',borderBottom:'2px solid #edbb00'}}>
+                                                        <div style={{fontWeight:600,fontSize:13,marginBottom:10,color:'#605d5d'}}>
                                                             Copy "{exp.label||'this expense'}" ({fc(exp.amount)}) to other years
                                                         </div>
                                                         <div style={{display:'flex',flexWrap:'wrap',gap:16,alignItems:'flex-start'}}>
                                                             <div>
-                                                                <div style={{fontSize:12,fontWeight:600,marginBottom:6,color:'#555'}}>Annual adjustment %</div>
+                                                                <div style={{fontSize:12,fontWeight:600,marginBottom:6,color:'#605d5d'}}>Annual adjustment %</div>
                                                                 <div style={{display:'flex',alignItems:'center',gap:8}}>
                                                                     <input type="number" step={0.1} value={dupState.pct}
                                                                         onChange={e=>setDupState(ds=>({...ds,pct:parseFloat(e.target.value)||0}))}
-                                                                        style={{width:80,padding:'5px 8px',border:'1px solid #ddd',borderRadius:4,fontSize:13,textAlign:'center'}} />
-                                                                    <span style={{fontSize:12,color:'#888'}}>% per year<br/>(0 = exact copy, 3 = +3%/yr)</span>
+                                                                        style={{width:80,padding:'5px 8px',border:'1px solid #d7d3d3',borderRadius:4,fontSize:13,textAlign:'center'}} />
+                                                                    <span style={{fontSize:12,color:'#7d7979'}}>% per year<br/>(0 = exact copy, 3 = +3%/yr)</span>
                                                                 </div>
                                                             </div>
                                                             <div style={{flex:1}}>
-                                                                <div style={{fontSize:12,fontWeight:600,marginBottom:6,color:'#555'}}>
+                                                                <div style={{fontSize:12,fontWeight:600,marginBottom:6,color:'#605d5d'}}>
                                                                     Copy to years
-                                                                    <button style={{marginLeft:8,fontSize:11,padding:'2px 7px',border:'1px solid #bbb',borderRadius:3,cursor:'pointer',background:'#fff'}} onClick={()=>setDupState(ds=>({...ds,targetYears:years.filter(y=>y!==ds.sourceYear)}))}>All</button>
-                                                                    <button style={{marginLeft:4,fontSize:11,padding:'2px 7px',border:'1px solid #bbb',borderRadius:3,cursor:'pointer',background:'#fff'}} onClick={()=>setDupState(ds=>({...ds,targetYears:[]}))}>None</button>
+                                                                    <button style={{marginLeft:8,fontSize:11,padding:'2px 7px',border:'1px solid #bab6b6',borderRadius:3,cursor:'pointer',background: '#eae9e9'}} onClick={()=>setDupState(ds=>({...ds,targetYears:years.filter(y=>y!==ds.sourceYear)}))}>All</button>
+                                                                    <button style={{marginLeft:4,fontSize:11,padding:'2px 7px',border:'1px solid #bab6b6',borderRadius:3,cursor:'pointer',background: '#eae9e9'}} onClick={()=>setDupState(ds=>({...ds,targetYears:[]}))}>None</button>
                                                                 </div>
                                                                 <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                                                                     {years.filter(y=>y!==dupState.sourceYear).map(yr=>{
                                                                         const checked = dupState.targetYears.includes(yr);
                                                                         const previewAmt = Math.round((parseFloat(exp.amount)||0)*Math.pow(1+dupState.pct/100,yr-dupState.sourceYear));
                                                                         return (
-                                                                            <label key={yr} style={{display:'flex',alignItems:'center',gap:4,padding:'4px 8px',border:`1px solid ${checked?'#1976d2':'#ddd'}`,borderRadius:4,cursor:'pointer',background:checked?'#e3f2fd':'#fafafa',fontSize:12}}>
+                                                                            <label key={yr} style={{display:'flex',alignItems:'center',gap:4,padding:'4px 8px',border:`1px solid ${checked?'#0088b0':'#d7d3d3'}`,borderRadius:4,cursor:'pointer',background:checked?'#e9f8ff':'#f8f4f4',fontSize:12}}>
                                                                                 <input type="checkbox" checked={checked} onChange={()=>toggleDupYear(yr)} style={{margin:0}} />
                                                                                 <span>Yr {yr}</span>
-                                                                                {dupState.pct!==0&&<span style={{color:'#1565c0',fontWeight:600,fontSize:11}}>{fc(previewAmt)}</span>}
+                                                                                {dupState.pct!==0&&<span style={{color:'#1186ac',fontWeight:600,fontSize:11}}>{fc(previewAmt)}</span>}
                                                                             </label>
                                                                         );
                                                                     })}
@@ -1176,13 +1176,13 @@ function ExpensePlanner({ expenses, setExpenses, fundingSources, onGapChange, an
                                                     <div className="inline-note">
                                                         {rowNotes(exp.id).map(n=>(
                                                             <div key={n.id} style={{marginBottom:6}}>
-                                                                <div style={{fontSize:11,color:'#888'}}><strong>{n.authorName}</strong> &bull; {timeAgo(n.timestamp)}</div>
+                                                                <div style={{fontSize:11,color:'#7d7979'}}><strong>{n.authorName}</strong> &bull; {timeAgo(n.timestamp)}</div>
                                                                 <div style={{fontSize:13}}>{n.text}</div>
                                                             </div>
                                                         ))}
                                                         <div style={{display:'flex',gap:6,marginTop:6,alignItems:'center'}}>
-                                                            <span style={{fontSize:12,color:'#555',fontWeight:600,flexShrink:0}}>{cmtAuthor}</span>
-                                                            <input type="text" placeholder="Add note..." value={cmtText} onChange={e=>setCmtText(e.target.value)} style={{flex:1,padding:'4px 7px',border:'1px solid #ddd',borderRadius:4,fontSize:12}} />
+                                                            <span style={{fontSize:12,color:'#605d5d',fontWeight:600,flexShrink:0}}>{cmtAuthor}</span>
+                                                            <input type="text" placeholder="Add note..." value={cmtText} onChange={e=>setCmtText(e.target.value)} style={{flex:1,padding:'4px 7px',border:'1px solid #d7d3d3',borderRadius:4,fontSize:12}} />
                                                             <button className="btn btn-primary btn-sm" onClick={()=>addNote(exp.id)}>Add</button>
                                                         </div>
                                                     </div>
@@ -1218,20 +1218,20 @@ function ExpensePlanner({ expenses, setExpenses, fundingSources, onGapChange, an
                                     <tr key={d.yr} className={d.gap>=0?'row-surplus':'row-gap'}>
                                         <td><strong>Year {d.yr}</strong></td>
                                         <td style={{textAlign:'right'}}>{fc(d.raw)}</td>
-                                        <td style={{textAlign:'right',color:'#e65100'}}>{fc(d.cont)}</td>
+                                        <td style={{textAlign:'right',color:'#6d5504'}}>{fc(d.cont)}</td>
                                         <td style={{textAlign:'right',fontWeight:600}}>{fc(d.total)}</td>
                                         <td style={{textAlign:'right'}}>{fc(fundPerYr)}</td>
-                                        <td style={{textAlign:'right',fontWeight:700,color:d.gap>=0?'#2e7d32':'#c62828'}}>{d.gap>=0?'+':''}{fc(d.gap)}</td>
+                                        <td style={{textAlign:'right',fontWeight:700,color:d.gap>=0?'#006786':'#d82071'}}>{d.gap>=0?'+':''}{fc(d.gap)}</td>
                                         <td>{d.gap>=0?<span className="badge badge-green">Funded</span>:<span className="badge badge-red">Gap</span>}</td>
                                     </tr>
                                 ))}
-                                <tr style={{fontWeight:700,background:'#f5f5f5'}}>
+                                <tr style={{fontWeight:700,background:'#f8f4f4'}}>
                                     <td>Total</td>
                                     <td style={{textAlign:'right'}}>{fc(yearData.reduce((s,d)=>s+d.raw,0))}</td>
-                                    <td style={{textAlign:'right',color:'#e65100'}}>{fc(yearData.reduce((s,d)=>s+d.cont,0))}</td>
+                                    <td style={{textAlign:'right',color:'#6d5504'}}>{fc(yearData.reduce((s,d)=>s+d.cont,0))}</td>
                                     <td style={{textAlign:'right'}}>{fc(yearData.reduce((s,d)=>s+d.total,0))}</td>
                                     <td style={{textAlign:'right'}}>{fc(totalFunding)}</td>
-                                    <td style={{textAlign:'right',color:totalGap>=0?'#2e7d32':'#c62828'}}>{totalGap>=0?'+':''}{fc(totalGap)}</td>
+                                    <td style={{textAlign:'right',color:totalGap>=0?'#006786':'#d82071'}}>{totalGap>=0?'+':''}{fc(totalGap)}</td>
                                     <td>{totalGap>=0?<span className="badge badge-green">Fully Funded</span>:<span className="badge badge-red">Gap</span>}</td>
                                 </tr>
                             </tbody>
@@ -1284,7 +1284,7 @@ function Analytics({ expenses, fundingSources, projectYears }) {
         if (!divRef.current||!Object.keys(typeGroups).length) return;
         if (divChart.current) divChart.current.destroy();
         const ctx = divRef.current.getContext('2d');
-        divChart.current = new Chart(ctx,{type:'bar',data:{labels:Object.keys(typeGroups),datasets:[{label:'Funding ($)',data:Object.values(typeGroups),backgroundColor:['#1976d2','#4caf50','#ff9800','#9c27b0','#607d8b']}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fc(v)}}}}});
+        divChart.current = new Chart(ctx,{type:'bar',data:{labels:Object.keys(typeGroups),datasets:[{label:'Funding ($)',data:Object.values(typeGroups),backgroundColor:['#0088b0','#006786','#edbb00','#d6006c','#7d7979']}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fc(v)}}}}});
     },[fundingSources]);
 
     const calcROI = () => {
@@ -1320,7 +1320,7 @@ function Analytics({ expenses, fundingSources, projectYears }) {
                                         const pct = totalFund>0?a/totalFund*100:0;
                                         return <div key={t} className="diversity-bar-wrap">
                                             <div className="diversity-bar-lbl"><span>{t}</span><span>{fp(pct,0)} — {fc(a)}</span></div>
-                                            <div className="diversity-bar-track"><div className="diversity-bar-fill" style={{width:`${pct}%`,background:pct>70?'#e65100':'#1976d2'}} /></div>
+                                            <div className="diversity-bar-track"><div className="diversity-bar-fill" style={{width:`${pct}%`,background:pct>70?'#6d5504':'#0088b0'}} /></div>
                                         </div>;
                                     })}
                                 </div>
@@ -1343,8 +1343,8 @@ function Analytics({ expenses, fundingSources, projectYears }) {
                             <div style={{marginTop:14}}>
                                 {roiRes.bcr<1&&<div className="alert alert-danger">BCR below 1.0 — project does not generate positive returns at these inputs.</div>}
                                 <div className="grid-2" style={{gap:10}}>
-                                    <div className="roi-box"><div className="roi-val" style={{color:roiRes.npv>=0?'#1976d2':'#c62828'}}>{fc(roiRes.npv)}</div><div className="roi-lbl">Net Present Value</div></div>
-                                    <div className="roi-box"><div className="roi-val" style={{color:roiRes.bcr>=1?'#2e7d32':'#c62828'}}>{roiRes.bcr.toFixed(2)}x</div><div className="roi-lbl">Benefit-Cost Ratio</div></div>
+                                    <div className="roi-box"><div className="roi-val" style={{color:roiRes.npv>=0?'#0088b0':'#d82071'}}>{fc(roiRes.npv)}</div><div className="roi-lbl">Net Present Value</div></div>
+                                    <div className="roi-box"><div className="roi-val" style={{color:roiRes.bcr>=1?'#006786':'#d82071'}}>{roiRes.bcr.toFixed(2)}x</div><div className="roi-lbl">Benefit-Cost Ratio</div></div>
                                     <div className="roi-box"><div className="roi-val">{roiRes.payback.toFixed(1)} yrs</div><div className="roi-lbl">Payback Period</div></div>
                                     <div className="roi-box"><div className="roi-val">{roiRes.irr.toFixed(1)}%</div><div className="roi-lbl">Estimated IRR</div></div>
                                 </div>
@@ -1384,7 +1384,7 @@ function ComparisonTab({ fundingSources, expenses, scenario, savedScenarios }) {
     ];
     const [scenarios, setScenarios] = useState(defaults);
     const [openLoader, setOpenLoader] = useState(null); // key of the panel showing load dropdown
-    const COLORS = {opt:'#2e7d32',base:'#1565c0',worst:'#e65100'};
+    const COLORS = {opt:'#006786',base:'#1186ac',worst:'#6d5504'};
 
     const upd = (key,f,v) => setScenarios(p=>p.map(s=>s.key===key?{...s,[f]:parseFloat(v)||0}:s));
     const updLabel = (key,label) => setScenarios(p=>p.map(s=>s.key===key?{...s,label}:s));
@@ -1418,7 +1418,7 @@ function ComparisonTab({ fundingSources, expenses, scenario, savedScenarios }) {
         {label:'Contingency $',fn:s=>fc(calc(s).cont)},
         {label:'Infl.-Adjusted Cost',fn:s=>fc(calc(s).infl)},
         {label:'Total Cost (w/ contingency)',fn:s=>fc(calc(s).total)},
-        {label:'Net Position',fn:(s)=>{const g=calc(s).gap;return <span style={{color:g>=0?'#2e7d32':'#c62828',fontWeight:700}}>{g>=0?'+':''}{fc(g)}</span>;}},
+        {label:'Net Position',fn:(s)=>{const g=calc(s).gap;return <span style={{color:g>=0?'#006786':'#d82071',fontWeight:700}}>{g>=0?'+':''}{fc(g)}</span>;}},
     ];
 
     return (
@@ -1459,18 +1459,18 @@ function ComparisonTab({ fundingSources, expenses, scenario, savedScenarios }) {
                                     Load from saved scenario...
                                 </button>
                                 {openLoader===s.key && (
-                                    <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:100,background:'#fff',border:'1px solid #ddd',borderRadius:4,boxShadow:'0 4px 12px rgba(0,0,0,.12)',maxHeight:220,overflowY:'auto'}}>
+                                    <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:100,background: '#eae9e9',border:'1px solid #d7d3d3',borderRadius:4,boxShadow:'0 4px 12px rgba(0,0,0,.12)',maxHeight:220,overflowY:'auto'}}>
                                         {allScenarioOptions.map(opt=>(
                                             <div key={opt.id} onClick={()=>seedPanel(s.key,opt)}
-                                                style={{padding:'9px 12px',cursor:'pointer',borderBottom:'1px solid #f0f0f0'}}
-                                                onMouseEnter={e=>e.currentTarget.style.background='#f0f7ff'}
+                                                style={{padding:'9px 12px',cursor:'pointer',borderBottom:'1px solid #eae7e7'}}
+                                                onMouseEnter={e=>e.currentTarget.style.background='#e9f8ff'}
                                                 onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
                                                 <div style={{fontWeight:600,fontSize:13}}>{opt.id==='__live__'?'Current working scenario':opt.name}</div>
-                                                <div style={{fontSize:11,color:'#888'}}>{fc(opt.funding)} funding / {fc(opt.cost)} expenses</div>
+                                                <div style={{fontSize:11,color:'#7d7979'}}>{fc(opt.funding)} funding / {fc(opt.cost)} expenses</div>
                                             </div>
                                         ))}
                                         {allScenarioOptions.length === 1 && (
-                                            <div style={{padding:'9px 12px',color:'#aaa',fontSize:12}}>No saved scenarios yet — save one from the Scenario tab.</div>
+                                            <div style={{padding:'9px 12px',color:'#bab6b6',fontSize:12}}>No saved scenarios yet — save one from the Scenario tab.</div>
                                         )}
                                     </div>
                                 )}
@@ -1490,10 +1490,10 @@ function ComparisonTab({ fundingSources, expenses, scenario, savedScenarios }) {
                                 <input type="range" min={0} max={30} value={s.contingency} onChange={e=>upd(s.key,'contingency',e.target.value)} style={{width:'100%'}} /></div>
                             <div className="form-group"><label>Inflation: <strong>{s.inflation}%</strong></label>
                                 <input type="range" min={0} max={10} step={.5} value={s.inflation} onChange={e=>upd(s.key,'inflation',e.target.value)} style={{width:'100%'}} /></div>
-                            <div className="net-box" style={{background:c.gap>=0?'#e8f5e9':'#ffebee'}}>
+                            <div className="net-box" style={{background:c.gap>=0?'#e9f8ff':'#fff1f4'}}>
                                 <div className="net-label">Net Position</div>
-                                <div className="net-val" style={{color:c.gap>=0?'#2e7d32':'#c62828'}}>{c.gap>=0?'+':''}{fc(c.gap)}</div>
-                                <div style={{fontSize:11,color:'#777'}}>{c.gap>=0?'Surplus':'Funding Gap'}</div>
+                                <div className="net-val" style={{color:c.gap>=0?'#006786':'#d82071'}}>{c.gap>=0?'+':''}{fc(c.gap)}</div>
+                                <div style={{fontSize:11,color:'#7d7979'}}>{c.gap>=0?'Surplus':'Funding Gap'}</div>
                             </div>
                         </div>
                     );
@@ -1532,7 +1532,7 @@ function ComparisonTab({ fundingSources, expenses, scenario, savedScenarios }) {
                                             const v=nums?vals[si]:null;
                                             const isNet=m.label==='Net Position';
                                             let bg='';
-                                            if(nums&&v!==null){bg=isNet?(v>=0&&v===maxV?'#e8f5e9':v<0&&v===minV?'#ffebee':''):(v===minV?'#e8f5e9':v===maxV?'#ffebee':'');}
+                                            if(nums&&v!==null){bg=isNet?(v>=0&&v===maxV?'#e9f8ff':v<0&&v===minV?'#fff1f4':''):(v===minV?'#e9f8ff':v===maxV?'#fff1f4':'');}
                                             return <td key={s.key} style={{textAlign:'right',background:bg}}>{m.fn(s)}</td>;
                                         })}
                                     </tr>
@@ -1551,13 +1551,13 @@ function ComparisonTab({ fundingSources, expenses, scenario, savedScenarios }) {
 // ════════════════════════════════════════════════════════════════════════════
 // Helper: currency formatter (reused from outer scope)
 const FACTOR_COLORS = {
-    revenue_loss:    '#c62828',
-    revenue_gain:    '#2e7d32',
-    expense_removed: '#1565c0',
-    expense_added:   '#e65100',
-    onetime_cost:    '#6a1b9a',
-    budget_change:   '#0277bd',
-    unknown:         '#757575',
+    revenue_loss:    '#d82071',
+    revenue_gain:    '#006786',
+    expense_removed: '#1186ac',
+    expense_added:   '#6d5504',
+    onetime_cost:    '#aa0b56',
+    budget_change:   '#0088b0',
+    unknown:         '#7d7979',
 };
 const FACTOR_LABELS = {
     revenue_loss:    'Revenue Loss',
@@ -1842,7 +1842,7 @@ function WhatIfTab({ fundingSources, expenses, scenario }) {
         if (!chartRef.current) return;
         const ctx = chartRef.current.getContext('2d');
         if (chartInst.current) chartInst.current.destroy();
-        const BRANCH_COLORS = ['#66bb6a','#1976d2','#f44336'];
+        const BRANCH_COLORS = ['#38a6cf','#0088b0','#d82071'];
         chartInst.current = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -1850,8 +1850,8 @@ function WhatIfTab({ fundingSources, expenses, scenario }) {
                 datasets: [{
                     label: 'Net Annual Impact',
                     data: data.proposed,
-                    backgroundColor: data.proposed.map(v => v >= 0 ? '#66bb6a' : '#ef9a9a'),
-                    borderColor:     data.proposed.map(v => v >= 0 ? '#2e7d32' : '#c62828'),
+                    backgroundColor: data.proposed.map(v => v >= 0 ? '#38a6cf' : '#ffc0d0'),
+                    borderColor:     data.proposed.map(v => v >= 0 ? '#006786' : '#d82071'),
                     borderWidth: 2,
                 }],
             },
@@ -1866,7 +1866,7 @@ function WhatIfTab({ fundingSources, expenses, scenario }) {
         });
     };
 
-    const BRANCH_COLOR = {optimistic:'#2e7d32', expected:'#1565c0', worstCase:'#c62828'};
+    const BRANCH_COLOR = {optimistic:'#006786', expected:'#1186ac', worstCase:'#d82071'};
     const BRANCH_LABEL = {optimistic:'Optimistic', expected:'Expected', worstCase:'Worst Case'};
 
     return (
@@ -1907,13 +1907,13 @@ function WhatIfTab({ fundingSources, expenses, scenario }) {
                             <p style={{fontSize:14,lineHeight:1.7,marginBottom:16}}>{results.interpretation}</p>
                             <div className="grid-3">
                                 <div className="stat-card">
-                                    <div className="stat-value" style={{color:results.totalImpact>=0?'#2e7d32':'#c62828'}}>
+                                    <div className="stat-value" style={{color:results.totalImpact>=0?'#006786':'#d82071'}}>
                                         {results.totalImpact>=0?'+':''}{fc(results.totalImpact)}
                                     </div>
                                     <div className="stat-label">Expected Net Annual Impact</div>
                                 </div>
                                 <div className="stat-card">
-                                    <div className="stat-value" style={{color:results.pctChange>=0?'#2e7d32':'#c62828'}}>
+                                    <div className="stat-value" style={{color:results.pctChange>=0?'#006786':'#d82071'}}>
                                         {results.pctChange>=0?'+':''}{fp(Math.abs(results.pctChange))}
                                     </div>
                                     <div className="stat-label">% of Total Revenue</div>
@@ -1944,18 +1944,18 @@ function WhatIfTab({ fundingSources, expenses, scenario }) {
                                     {results.factors.map((f,i) => (
                                         <tr key={i}>
                                             <td>
-                                                <span style={{display:'inline-block',padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:700,background:FACTOR_COLORS[f.type]||'#999',color:'white',whiteSpace:'nowrap'}}>
+                                                <span style={{display:'inline-block',padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:700,background:FACTOR_COLORS[f.type]||'#9b9797',color:'white',whiteSpace:'nowrap'}}>
                                                     {FACTOR_LABELS[f.type]||f.type}
                                                 </span>
                                             </td>
                                             <td style={{fontSize:13}}>{f.label}</td>
-                                            <td style={{textAlign:'right',fontWeight:700,color:(f.annualImpact||0)>=0?'#2e7d32':'#c62828'}}>
+                                            <td style={{textAlign:'right',fontWeight:700,color:(f.annualImpact||0)>=0?'#006786':'#d82071'}}>
                                                 {f.annualImpact!==0?`${(f.annualImpact||0)>=0?'+':''}${fc(f.annualImpact||0)}`:'—'}
                                             </td>
-                                            <td style={{textAlign:'right',color:'#6a1b9a',fontWeight:f.onetimeCost?700:400}}>
+                                            <td style={{textAlign:'right',color:'#aa0b56',fontWeight:f.onetimeCost?700:400}}>
                                                 {f.onetimeCost?fc(f.onetimeCost):'—'}
                                             </td>
-                                            <td style={{fontSize:11,color:'#666'}}>
+                                            <td style={{fontSize:11,color:'#605d5d'}}>
                                                 {(f.matchedAccounts||[]).length > 0
                                                     ? (f.matchedAccounts||[]).map(a=>a.name).slice(0,2).join(', ') + ((f.matchedAccounts||[]).length>2?` +${(f.matchedAccounts||[]).length-2} more`:'')
                                                     : '—'}
@@ -1971,28 +1971,28 @@ function WhatIfTab({ fundingSources, expenses, scenario }) {
                     <div className="card" style={{marginTop:16}}>
                         <div className="card-header">Scenario Branch Comparison</div>
                         <div className="card-body">
-                            <p style={{fontSize:12,color:'#777',marginBottom:14}}>
+                            <p style={{fontSize:12,color:'#7d7979',marginBottom:14}}>
                                 Optimistic assumes 70% of expected impact + 50% cleanup costs.
                                 Expected uses stated values.
                                 Worst Case assumes 130% of expected impact + 200% cleanup costs.
                             </p>
                             <div className="grid-3">
                                 {Object.entries(results.branches).map(([key, branch]) => (
-                                    <div key={key} style={{background:'#f9f9f9',border:`2px solid ${BRANCH_COLOR[key]}`,borderRadius:8,padding:16}}>
+                                    <div key={key} style={{background:'#f8f4f4',border:`2px solid ${BRANCH_COLOR[key]}`,borderRadius:8,padding:16}}>
                                         <div style={{fontWeight:700,fontSize:15,color:BRANCH_COLOR[key],marginBottom:12}}>{BRANCH_LABEL[key]}</div>
                                         <div style={{marginBottom:8}}>
-                                            <div style={{fontSize:11,color:'#888',marginBottom:2}}>Net Annual Impact</div>
-                                            <div style={{fontWeight:700,fontSize:20,color:branch.annualNet>=0?'#2e7d32':'#c62828'}}>
+                                            <div style={{fontSize:11,color:'#7d7979',marginBottom:2}}>Net Annual Impact</div>
+                                            <div style={{fontWeight:700,fontSize:20,color:branch.annualNet>=0?'#006786':'#d82071'}}>
                                                 {branch.annualNet>=0?'+':''}{fc(branch.annualNet)}
                                             </div>
                                         </div>
                                         {branch.onetimeCost > 0 && (
                                             <div>
-                                                <div style={{fontSize:11,color:'#888',marginBottom:2}}>One-Time Remediation</div>
-                                                <div style={{fontWeight:600,fontSize:15,color:'#6a1b9a'}}>{fc(branch.onetimeCost)}</div>
+                                                <div style={{fontSize:11,color:'#7d7979',marginBottom:2}}>One-Time Remediation</div>
+                                                <div style={{fontWeight:600,fontSize:15,color:'#aa0b56'}}>{fc(branch.onetimeCost)}</div>
                                             </div>
                                         )}
-                                        <div style={{marginTop:10,paddingTop:8,borderTop:'1px solid #e0e0e0',fontSize:11,color:'#666'}}>
+                                        <div style={{marginTop:10,paddingTop:8,borderTop:'1px solid #d7d3d3',fontSize:11,color:'#605d5d'}}>
                                             Year 1 total: {fc(branch.annualNet - branch.onetimeCost)}
                                         </div>
                                     </div>
@@ -2011,7 +2011,7 @@ function WhatIfTab({ fundingSources, expenses, scenario }) {
                         <div className="card" style={{marginTop:16}}>
                             <div className="card-header" style={{cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}} onClick={()=>setShowAccounts(v=>!v)}>
                                 <span>Matched GL Accounts ({results.matchedAccounts.length})</span>
-                                <span style={{fontSize:12,color:'#888'}}>{showAccounts?'Hide':'Show'}</span>
+                                <span style={{fontSize:12,color:'#7d7979'}}>{showAccounts?'Hide':'Show'}</span>
                             </div>
                             {showAccounts && (
                                 <div style={{overflowX:'auto'}}>
@@ -2031,10 +2031,10 @@ function WhatIfTab({ fundingSources, expenses, scenario }) {
                                                 <tr key={i}>
                                                     <td style={{fontFamily:'monospace',fontSize:12}}>{a.number}</td>
                                                     <td>{a.name}</td>
-                                                    <td><span style={{fontSize:11,padding:'1px 6px',borderRadius:10,background:a.type==='Revenue'?'#e8f5e9':'#fff3e0',color:a.type==='Revenue'?'#2e7d32':'#e65100',fontWeight:600}}>{a.type}</span></td>
-                                                    <td style={{fontSize:12,color:'#666'}}>{a.department}</td>
+                                                    <td><span style={{fontSize:11,padding:'1px 6px',borderRadius:10,background:a.type==='Revenue'?'#e9f8ff':'#f2e7c2',color:a.type==='Revenue'?'#006786':'#6d5504',fontWeight:600}}>{a.type}</span></td>
+                                                    <td style={{fontSize:12,color:'#605d5d'}}>{a.department}</td>
                                                     <td style={{textAlign:'right'}}>{fc(a.budget||0)}</td>
-                                                    <td style={{textAlign:'right',color:(a.actual||0)>(a.budget||0)?'#c62828':'#555'}}>{fc(a.actual||0)}</td>
+                                                    <td style={{textAlign:'right',color:(a.actual||0)>(a.budget||0)?'#d82071':'#605d5d'}}>{fc(a.actual||0)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -2102,8 +2102,8 @@ const POLICY_IMPACT_MAP = {
 };
 
 const IMPACT_LEVEL_COLOR = {
-    'High':'#c62828', 'Medium':'#e65100', 'Low-Medium':'#f9a825',
-    'Low':'#2e7d32', 'Minimal':'#1565c0', 'Unknown':'#757575',
+    'High':'#d82071', 'Medium':'#6d5504', 'Low-Medium':'#edbb00',
+    'Low':'#006786', 'Minimal':'#1186ac', 'Unknown':'#7d7979',
 };
 
 // Parse "HR 22", "S. 5", "H.R. 1234" etc into {type, number}
@@ -2270,7 +2270,7 @@ function LegislativeTab() {
     };
 
     const impactLevel = billData?.found ? (POLICY_IMPACT_MAP[billData.policy_area]?.level || 'Unknown') : null;
-    const impactColor = impactLevel ? (IMPACT_LEVEL_COLOR[impactLevel] || '#757575') : null;
+    const impactColor = impactLevel ? (IMPACT_LEVEL_COLOR[impactLevel] || '#7d7979') : null;
 
     return (
         <div>
@@ -2292,7 +2292,7 @@ function LegislativeTab() {
                             <input type="text" value={bill} onChange={e=>setBill(e.target.value)}
                                 placeholder={level==='federal'?'e.g., HR 22, S 5, H.R. 1234':'e.g., HB 100, SB 200'}
                                 onKeyDown={e=>e.key==='Enter'&&lookup()} />
-                            {level==='federal'&&<div style={{fontSize:11,color:'#888',marginTop:4}}>Examples: HR 22, S 5, HJRES 7, SCONRES 2</div>}
+                            {level==='federal'&&<div style={{fontSize:11,color:'#7d7979',marginTop:4}}>Examples: HR 22, S 5, HJRES 7, SCONRES 2</div>}
                         </div>
                         {level==='federal'&&<div className="form-group"><label>Congress</label><select value={congress} onChange={e=>setCongress(+e.target.value)}><option value={119}>Current (119th, 2025–2026)</option><option value={118}>118th (2023–2024)</option><option value={117}>117th (2021–2022)</option></select></div>}
                         <div className="form-group"><label>Your Annual Budget (for impact sizing)</label><input type="number" value={budget} step={100000} onChange={e=>setBudget(+e.target.value||0)} /></div>
@@ -2322,18 +2322,18 @@ function LegislativeTab() {
                                 <div className="card-body">
                                     <h3 style={{marginBottom:10,lineHeight:1.4}}>{billData.title}</h3>
                                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:12}}>
-                                        {billData.introduced_date&&<div style={{background:'#f8f9fa',padding:8,borderRadius:4,textAlign:'center'}}><div style={{fontSize:11,color:'#777'}}>Introduced</div><div style={{fontWeight:700,fontSize:13}}>{billData.introduced_date}</div></div>}
-                                        {billData.policy_area&&<div style={{background:'#f8f9fa',padding:8,borderRadius:4,textAlign:'center'}}><div style={{fontSize:11,color:'#777'}}>Policy Area</div><div style={{fontWeight:700,fontSize:12}}>{billData.policy_area}</div></div>}
+                                        {billData.introduced_date&&<div style={{background:'#f8f4f4',padding:8,borderRadius:4,textAlign:'center'}}><div style={{fontSize:11,color:'#7d7979'}}>Introduced</div><div style={{fontWeight:700,fontSize:13}}>{billData.introduced_date}</div></div>}
+                                        {billData.policy_area&&<div style={{background:'#f8f4f4',padding:8,borderRadius:4,textAlign:'center'}}><div style={{fontSize:11,color:'#7d7979'}}>Policy Area</div><div style={{fontWeight:700,fontSize:12}}>{billData.policy_area}</div></div>}
                                     </div>
-                                    {billData.status&&<div style={{fontSize:12,color:'#555',marginBottom:10,fontStyle:'italic'}}>Latest action: {billData.status}</div>}
+                                    {billData.status&&<div style={{fontSize:12,color:'#605d5d',marginBottom:10,fontStyle:'italic'}}>Latest action: {billData.status}</div>}
                                     {billData.financial_keywords?.length>0&&(
                                         <div style={{marginBottom:10}}>
-                                            <div style={{fontSize:11,color:'#777',marginBottom:4}}>Financial Relevance Keywords</div>
+                                            <div style={{fontSize:11,color:'#7d7979',marginBottom:4}}>Financial Relevance Keywords</div>
                                             <div style={{display:'flex',flexWrap:'wrap',gap:5}}>{billData.financial_keywords.map((kw,i)=><span key={i} className="badge badge-blue">{kw}</span>)}</div>
                                         </div>
                                     )}
                                     {billData.congress_url&&<p style={{fontSize:13}}><a href={billData.congress_url} target="_blank" rel="noopener noreferrer">View full text on Congress.gov</a></p>}
-                                    {billData.ai_enhanced&&<div style={{fontSize:11,color:'#2e7d32',marginTop:6}}>AI-enhanced analysis available</div>}
+                                    {billData.ai_enhanced&&<div style={{fontSize:11,color:'#006786',marginTop:6}}>AI-enhanced analysis available</div>}
                                 </div>
                             </div>
                             {billData.summary&&(
@@ -2363,7 +2363,7 @@ function LegislativeTab() {
                                 <a href={billData.legUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{display:'inline-block'}}>
                                     Search {billData.stateName} Legislature
                                 </a>
-                                <p style={{marginTop:14,fontSize:12,color:'#777'}}>
+                                <p style={{marginTop:14,fontSize:12,color:'#7d7979'}}>
                                     After finding the bill, return here and use the What-If Simulator to model its financial impact on your budget.
                                 </p>
                             </div>
@@ -2428,7 +2428,7 @@ function MonteCarloTab() {
         if (!chartRef.current) return;
         const ctx = chartRef.current.getContext('2d');
         if (chartInst.current) chartInst.current.destroy();
-        chartInst.current = new Chart(ctx,{type:'bar',data:{labels:d.bins,datasets:[{label:'Net Budget Outcome Frequency',data:d.frequencies,backgroundColor:'#1976d2',borderColor:'#0d47a1',borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Simulated Budget Outcome Distribution'},legend:{display:false}},scales:{x:{ticks:{callback:function(v){return fc(this.getLabelForValue(v));},maxTicksLimit:8}},y:{beginAtZero:true,title:{display:true,text:'Frequency'}}}}});
+        chartInst.current = new Chart(ctx,{type:'bar',data:{labels:d.bins,datasets:[{label:'Net Budget Outcome Frequency',data:d.frequencies,backgroundColor:'#0088b0',borderColor:'#006786',borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Simulated Budget Outcome Distribution'},legend:{display:false}},scales:{x:{ticks:{callback:function(v){return fc(this.getLabelForValue(v));},maxTicksLimit:8}},y:{beginAtZero:true,title:{display:true,text:'Frequency'}}}}});
     };
 
     const upd = (f,v) => setParams(p=>({...p,[f]:parseFloat(v)||0}));
@@ -2442,12 +2442,12 @@ function MonteCarloTab() {
                     <div className="card-header">Simulation Parameters</div>
                     <div className="card-body">
                         <h3>Revenue Range (Triangular Distribution)</h3>
-                        <div style={{fontSize:12,color:'#777',marginBottom:10}}>Enter the pessimistic, most likely, and optimistic revenue amounts.</div>
+                        <div style={{fontSize:12,color:'#7d7979',marginBottom:10}}>Enter the pessimistic, most likely, and optimistic revenue amounts.</div>
                         <div className="form-group"><label>Minimum Revenue</label><input type="number" value={params.revenueMin} onChange={e=>upd('revenueMin',e.target.value)} /></div>
                         <div className="form-group"><label>Most Likely Revenue</label><input type="number" value={params.revenueLikely} onChange={e=>upd('revenueLikely',e.target.value)} /></div>
                         <div className="form-group"><label>Maximum Revenue</label><input type="number" value={params.revenueMax} onChange={e=>upd('revenueMax',e.target.value)} /></div>
                         <h3 style={{marginTop:16}}>Cost Range (Triangular Distribution)</h3>
-                        <div style={{fontSize:12,color:'#777',marginBottom:10}}>Enter the best-case, expected, and worst-case total operating costs.</div>
+                        <div style={{fontSize:12,color:'#7d7979',marginBottom:10}}>Enter the best-case, expected, and worst-case total operating costs.</div>
                         <div className="form-group"><label>Minimum Cost (best case)</label><input type="number" value={params.costMin} onChange={e=>upd('costMin',e.target.value)} /></div>
                         <div className="form-group"><label>Most Likely Cost</label><input type="number" value={params.costLikely} onChange={e=>upd('costLikely',e.target.value)} /></div>
                         <div className="form-group"><label>Maximum Cost (worst case)</label><input type="number" value={params.costMax} onChange={e=>upd('costMax',e.target.value)} /></div>
@@ -2604,7 +2604,7 @@ function App() {
     ];
 
     return (
-        <div className="app-shell">
+        <div className="gs-scenario app-shell">
             {isSharedView && (
                 <div className="shared-banner">
                     Viewing a shared scenario — changes are local only.
