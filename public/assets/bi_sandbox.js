@@ -10,8 +10,9 @@
 (function () {
   'use strict';
 
-  const PALETTE = ['#2e6fa3', '#1c6e64', '#8a5a12', '#4169e1', '#a4271c',
-                   '#5b6b7a', '#12263a', '#2e7d32', '#7b5aa6', '#c05621'];
+  // Design-system series ramp: cardinal leads, cyan follows, warm neutrals fill
+  const PALETTE = ['#d6006c', '#0088b0', '#444141', '#ff90b1', '#62c5ee',
+                   '#aa0b56', '#006786', '#9b9797', '#ff458e', '#38a6cf'];
   const CALC_LS = 'gs_bi_calc_fields_v1';
   const SAVED_LS = 'gs_bi_saved_charts_v1';
 
@@ -231,24 +232,24 @@
       const all = result.datasets[0] ? result.datasets[0].values : [];
       const grand = Object.values(result.totals || {}).reduce(function (s, v) { return s + v; }, 0);
       host.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%">' +
-        '<div style="text-align:center"><div style="font-size:44px;font-weight:800;color:#12263a">' +
+        '<div style="text-align:center"><div style="font-size:44px;font-weight:800;color:#201e1d">' +
         fcM(cfg.agg === 'average' && all.length ? grand / all.length : grand) + '</div>' +
-        '<div style="color:#5b6b7a;font-size:14px;margin-top:6px">' + esc(cfg.agg) + ' of ' +
+        '<div style="color:#605d5d;font-size:14px;margin-top:6px">' + esc(cfg.agg) + ' of ' +
         esc(cfg.measure) + (cfg.filterField ? ' (filtered)' : '') + '</div></div></div>';
       return;
     }
     if (cfg.type === 'table') {
       let html = '<div style="overflow:auto;max-height:460px"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
-        '<thead><tr><th style="text-align:left;padding:8px;border-bottom:2px solid #dde4ea;position:sticky;top:0;background:#fff">' + esc(cfg.dim) + '</th>';
+        '<thead><tr><th style="text-align:left;padding:8px;border-bottom:2px solid #d7d3d3;position:sticky;top:0;background: #eae9e9">' + esc(cfg.dim) + '</th>';
       result.datasets.forEach(function (d) {
-        html += '<th style="text-align:right;padding:8px;border-bottom:2px solid #dde4ea;position:sticky;top:0;background:#fff">' +
+        html += '<th style="text-align:right;padding:8px;border-bottom:2px solid #d7d3d3;position:sticky;top:0;background: #eae9e9">' +
           esc(d.name === '_' ? cfg.agg + ' of ' + cfg.measure : d.name) + '</th>';
       });
       html += '</tr></thead><tbody>';
       result.keys.forEach(function (k, i) {
-        html += '<tr><td style="padding:7px 8px;border-bottom:1px solid #eef2f5">' + esc(k) + '</td>';
+        html += '<tr><td style="padding:7px 8px;border-bottom:1px solid #eae7e7">' + esc(k) + '</td>';
         result.datasets.forEach(function (d) {
-          html += '<td style="padding:7px 8px;text-align:right;border-bottom:1px solid #eef2f5">' +
+          html += '<td style="padding:7px 8px;text-align:right;border-bottom:1px solid #eae7e7">' +
             Number(d.values[i]).toLocaleString('en-US', { maximumFractionDigits: 2 }) + '</td>';
         });
         html += '</tr>';
@@ -257,7 +258,7 @@
       return;
     }
     if (typeof Chart === 'undefined') {
-      host.innerHTML = '<div style="padding:30px;color:#5b6b7a;font-size:13px">Chart library unavailable - ' +
+      host.innerHTML = '<div style="padding:30px;color:#605d5d;font-size:13px">Chart library unavailable - ' +
         'use the Table type, or reconnect to the internet for chart rendering.</div>';
       return;
     }
@@ -318,7 +319,7 @@
 
   // ── UI ─────────────────────────────────────────────────────────────────
   function selectHtml(id, options, selected, allowNone) {
-    return '<select id="' + id + '" style="width:100%;padding:6px 8px;border:1px solid #cfd8e0;border-radius:6px;font-size:13px">' +
+    return '<select id="' + id + '" style="width:100%;padding:6px 8px;border:1px solid #d7d3d3;border-radius:6px;font-size:13px">' +
       (allowNone ? '<option value="">(none)</option>' : '') +
       options.map(function (o) {
         const val = typeof o === 'string' ? o : o.id;
@@ -348,14 +349,14 @@
       : [];
 
     const label = function (text) {
-      return '<div style="font-size:11px;color:#5b6b7a;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 4px">' + text + '</div>';
+      return '<div style="font-size:11px;color:#605d5d;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 4px">' + text + '</div>';
     };
 
     container.innerHTML =
       '<div style="display:grid;grid-template-columns:250px 1fr;gap:16px;align-items:start">' +
 
       // ── left rail: data panel ──
-      '<div style="background:#fff;border:1px solid #dde4ea;border-radius:10px;padding:14px;position:sticky;top:10px">' +
+      '<div style="background: #eae9e9;border:1px solid #d7d3d3;border-radius:10px;padding:14px;position:sticky;top:10px">' +
         label('Data table') + selectHtml('bi-table', Object.keys(buildTables(DATA)).map(function (k) {
           return { id: k, label: buildTables(DATA)[k].label };
         }), state.table) +
@@ -367,7 +368,7 @@
         label('Filter field') + selectHtml('bi-filter-field', t.dims, state.filterField, true) +
         (state.filterField
           ? label('Filter values (multi-select)') +
-            '<select id="bi-filter-values" multiple size="5" style="width:100%;border:1px solid #cfd8e0;border-radius:6px;font-size:12px">' +
+            '<select id="bi-filter-values" multiple size="5" style="width:100%;border:1px solid #d7d3d3;border-radius:6px;font-size:12px">' +
             filterOptions.map(function (v) {
               return '<option value="' + esc(v) + '"' + (state.filterValues.indexOf(v) >= 0 ? ' selected' : '') + '>' + esc(v) + '</option>';
             }).join('') + '</select>'
@@ -377,33 +378,33 @@
           { id: 'value_asc', label: 'Value (low to high)' },
           { id: 'label', label: 'Label (A-Z)' }], state.sort) +
         label('Top N categories') +
-        '<input id="bi-topn" type="number" min="0" value="' + state.topN + '" style="width:100%;padding:6px 8px;border:1px solid #cfd8e0;border-radius:6px;font-size:13px">' +
-        '<div style="margin-top:14px;border-top:1px solid #eef2f5;padding-top:10px">' +
+        '<input id="bi-topn" type="number" min="0" value="' + state.topN + '" style="width:100%;padding:6px 8px;border:1px solid #d7d3d3;border-radius:6px;font-size:13px">' +
+        '<div style="margin-top:14px;border-top:1px solid #eae7e7;padding-top:10px">' +
         label('Calculated fields') +
         (t.calc.map(function (c) {
           return '<div style="font-size:12px;display:flex;justify-content:space-between;margin-bottom:4px">' +
             '<span title="' + esc(c.expr) + '"><strong>' + esc(c.name) + '</strong></span>' +
-            '<button data-delcalc="' + esc(c.name) + '" style="border:none;background:none;color:#a4271c;cursor:pointer;font-weight:700">&times;</button></div>';
-        }).join('') || '<div style="font-size:12px;color:#8a97a3">none yet</div>') +
-        '<button id="bi-addcalc" style="margin-top:6px;width:100%;background:#fff;border:1px dashed #2e6fa3;color:#2e6fa3;border-radius:6px;padding:6px;font-size:12px;font-weight:600;cursor:pointer">+ Add calculated field</button>' +
+            '<button data-delcalc="' + esc(c.name) + '" style="border:none;background:none;color:#aa0b56;cursor:pointer;font-weight:700">&times;</button></div>';
+        }).join('') || '<div style="font-size:12px;color:#9b9797">none yet</div>') +
+        '<button id="bi-addcalc" style="margin-top:6px;width:100%;background: #eae9e9;border:1px dashed #0088b0;color:#0088b0;border-radius:6px;padding:6px;font-size:12px;font-weight:600;cursor:pointer">+ Add calculated field</button>' +
         '</div>' +
       '</div>' +
 
       // ── main pane ──
       '<div>' +
-        '<div style="background:#fff;border:1px solid #dde4ea;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+        '<div style="background: #eae9e9;border:1px solid #d7d3d3;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
         CHART_TYPES.map(function (ct) {
           const active = ct.id === state.type;
           return '<button data-charttype="' + ct.id + '" style="padding:6px 12px;border-radius:99px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid ' +
-            (active ? '#12263a' : '#cfd8e0') + ';background:' + (active ? '#12263a' : '#fff') + ';color:' + (active ? '#fff' : '#5b6b7a') + '">' +
+            (active ? '#201e1d' : '#d7d3d3') + ';background:' + (active ? '#201e1d' : '#fff') + ';color:' + (active ? '#fff' : '#605d5d') + '">' +
             ct.label + '</button>';
         }).join('') +
         '<span style="flex:1"></span>' +
-        '<button id="bi-save" style="padding:6px 14px;border-radius:8px;border:none;background:#1e6b3c;color:#fff;font-size:12px;font-weight:600;cursor:pointer">Save chart</button>' +
-        '<button id="bi-export" style="padding:6px 14px;border-radius:8px;border:1px solid #cfd8e0;background:#fff;color:#12263a;font-size:12px;font-weight:600;cursor:pointer">Export CSV</button>' +
+        '<button id="bi-save" style="padding:6px 14px;border-radius:8px;border:none;background:#006786;color:#fff;font-size:12px;font-weight:600;cursor:pointer">Save chart</button>' +
+        '<button id="bi-export" style="padding:6px 14px;border-radius:8px;border:1px solid #d7d3d3;background: #eae9e9;color:#201e1d;font-size:12px;font-weight:600;cursor:pointer">Export CSV</button>' +
         '</div>' +
-        '<div style="background:#fff;border:1px solid #dde4ea;border-radius:10px;padding:16px">' +
-          '<div id="bi-chart-title" style="font-weight:600;color:#12263a;margin-bottom:8px"></div>' +
+        '<div style="background: #eae9e9;border:1px solid #d7d3d3;border-radius:10px;padding:16px">' +
+          '<div id="bi-chart-title" style="font-weight:600;color:#201e1d;margin-bottom:8px"></div>' +
           '<div id="bi-chart-host" style="height:440px"></div>' +
         '</div>' +
         '<div id="bi-saved" style="margin-top:12px"></div>' +
@@ -422,12 +423,12 @@
     // saved gallery
     const saved = loadSaved();
     document.getElementById('bi-saved').innerHTML = saved.length
-      ? '<div style="background:#fff;border:1px solid #dde4ea;border-radius:10px;padding:12px 14px">' +
-        '<div style="font-size:11px;color:#5b6b7a;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Saved charts</div>' +
+      ? '<div style="background: #eae9e9;border:1px solid #d7d3d3;border-radius:10px;padding:12px 14px">' +
+        '<div style="font-size:11px;color:#605d5d;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Saved charts</div>' +
         saved.map(function (s, i) {
-          return '<span style="display:inline-flex;align-items:center;gap:6px;background:#eef3f8;border-radius:99px;padding:4px 10px;margin:0 6px 6px 0;font-size:12px">' +
-            '<a href="#" data-loadsaved="' + i + '" style="color:#12263a;font-weight:600;text-decoration:none">' + esc(s.name) + '</a>' +
-            '<button data-delsaved="' + i + '" style="border:none;background:none;color:#a4271c;cursor:pointer;font-weight:700">&times;</button></span>';
+          return '<span style="display:inline-flex;align-items:center;gap:6px;background:#f8f4f4;border-radius:99px;padding:4px 10px;margin:0 6px 6px 0;font-size:12px">' +
+            '<a href="#" data-loadsaved="' + i + '" style="color:#201e1d;font-weight:600;text-decoration:none">' + esc(s.name) + '</a>' +
+            '<button data-delsaved="' + i + '" style="border:none;background:none;color:#aa0b56;cursor:pointer;font-weight:700">&times;</button></span>';
         }).join('') + '</div>'
       : '';
 

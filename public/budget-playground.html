@@ -10,114 +10,114 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;background:#f0f2f5;color:#1a1a2e;}
+body{font-family: "Source Serif 4", Georgia, serif;font-size:13px;background:#f3f2f2;color:#201e1d;}
 #root{padding:0;}
 /* ── Layout ── */
 .app-shell{display:flex;flex-direction:column;min-height:100vh;}
-.top-bar{background:#1565c0;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:100;}
+.top-bar{background: #201e1d;color: #f3f2f2;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:100;}
 .top-bar h1{font-size:16px;font-weight:700;letter-spacing:.3px;}
 .top-bar .tagline{font-size:11px;opacity:.8;margin-top:2px;}
 .scenario-selector{display:flex;align-items:center;gap:8px;font-size:12px;}
-.scenario-selector select{padding:4px 10px;border-radius:4px;border:none;font-size:12px;background:#fff;color:#1a1a2e;cursor:pointer;}
-.dirty-badge{background:#ff7043;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;animation:pulse 1.5s infinite;}
+.scenario-selector select{padding:4px 10px;border-radius: 2px;border:none;font-size:12px;background: #eae9e9;color:#201e1d;cursor:pointer;}
+.dirty-badge{background:#ff458e;color: #f3f2f2;font-size:10px;font-weight:700;padding:2px 8px;border-radius: 4px;animation:pulse 1.5s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.6;}}
 /* ── Tabs ── */
-.tab-bar{background:#fff;border-bottom:2px solid #e0e0e0;display:flex;gap:0;overflow-x:auto;padding:0 20px;}
-.tab-btn{padding:11px 18px;font-size:13px;font-weight:500;color:#555;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s;}
-.tab-btn:hover{color:#1565c0;}
-.tab-btn.active{color:#1565c0;border-bottom-color:#1565c0;font-weight:700;}
+.tab-bar{background: #eae9e9;border-bottom:2px solid #d7d3d3;display:flex;gap:0;overflow-x:auto;padding:0 20px;}
+.tab-btn{padding:11px 18px;font-size:13px;font-weight:500;color:#605d5d;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s;}
+.tab-btn:hover{color:#1186ac;}
+.tab-btn.active{color:#1186ac;border-bottom-color:#1186ac;font-weight:700;}
 .tab-content{padding:20px;}
 /* ── Cards ── */
-.card{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px;}
-.card-header{padding:12px 16px;border-bottom:1px solid #f0f0f0;font-weight:700;font-size:13px;color:#1565c0;display:flex;justify-content:space-between;align-items:center;}
+.card{background: #eae9e9;border-radius: 2px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px;}
+.card-header{padding:12px 16px;border-bottom:1px solid #eae7e7;font-weight:700;font-size:13px;color:#1186ac;display:flex;justify-content:space-between;align-items:center;}
 .card-body{padding:16px;}
 /* ── Buttons ── */
-.btn{padding:7px 16px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;transition:background .15s;}
-.btn-primary{background:#1565c0;color:#fff;}.btn-primary:hover{background:#0d47a1;}
-.btn-success{background:#2e7d32;color:#fff;}.btn-success:hover{background:#1b5e20;}
-.btn-warning{background:#e65100;color:#fff;}.btn-warning:hover{background:#bf360c;}
-.btn-secondary{background:#e8eaf6;color:#1565c0;}.btn-secondary:hover{background:#c5cae9;}
-.btn-danger{background:#c62828;color:#fff;}.btn-danger:hover{background:#b71c1c;}
+.btn{padding:7px 16px;border-radius: 2px;font-size:12px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:6px;transition:background .15s;}
+.btn-primary{background:#1186ac;color: #f3f2f2;}.btn-primary:hover{background:#006786;}
+.btn-success{background:#006786;color: #f3f2f2;}.btn-success:hover{background:#004961;}
+.btn-warning{background:#6d5504;color: #f3f2f2;}.btn-warning:hover{background:#6d5504;}
+.btn-secondary{background:#e9f8ff;color:#1186ac;}.btn-secondary:hover{background:#cbeeff;}
+.btn-danger{background:#d82071;color: #f3f2f2;}.btn-danger:hover{background:#aa0b56;}
 .btn-sm{padding:4px 10px;font-size:11px;}
 .btn:disabled{opacity:.5;cursor:not-allowed;}
 /* ── Forms ── */
 .form-group{margin-bottom:14px;}
-.form-group label{display:block;font-weight:600;font-size:11px;color:#555;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
-input[type=text],input[type=number],select,textarea{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px;color:#1a1a2e;}
+.form-group label{display:block;font-weight:600;font-size:11px;color:#605d5d;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+input[type=text],input[type=number],select,textarea{width:100%;padding:7px 10px;border:1px solid #d7d3d3;border-radius: 2px;font-size:13px;color:#201e1d;}
 textarea{min-height:70px;resize:vertical;}
-input:focus,select:focus,textarea:focus{outline:none;border-color:#1565c0;box-shadow:0 0 0 2px rgba(21,101,192,.15);}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#1186ac;box-shadow:0 0 0 2px rgba(0,136,176,.15);}
 /* ── Spreadsheet ── */
 .spreadsheet-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:12px;}
-th{background:#e8eaf6;color:#1565c0;font-weight:700;padding:8px 10px;text-align:left;white-space:nowrap;position:sticky;top:0;z-index:5;}
+th{background:#e9f8ff;color:#1186ac;font-weight:700;padding:8px 10px;text-align:left;white-space:nowrap;position:sticky;top:0;z-index:5;}
 th.right,td.right{text-align:right;}
-td{padding:5px 8px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
-tr:hover td{background:#f9faff;}
-tr.dept-header td{background:#e3f2fd;font-weight:700;color:#0d47a1;font-size:12px;cursor:pointer;}
-tr.dept-header td:hover{background:#bbdefb;}
-tr.subtotal-row td{background:#fafafa;font-weight:700;border-top:2px solid #e0e0e0;}
+td{padding:5px 8px;border-bottom:1px solid #f8f4f4;vertical-align:middle;}
+tr:hover td{background:#f8f4f4;}
+tr.dept-header td{background:#e9f8ff;font-weight:700;color:#006786;font-size:12px;cursor:pointer;}
+tr.dept-header td:hover{background:#cbeeff;}
+tr.subtotal-row td{background:#f8f4f4;font-weight:700;border-top:2px solid #d7d3d3;}
 /* Editable cell inputs */
-.cell-input{width:100%;padding:3px 6px;border:1px solid transparent;border-radius:3px;font-size:12px;background:transparent;text-align:right;}
-.cell-input:focus{border-color:#1565c0;background:#fff;box-shadow:0 0 0 2px rgba(21,101,192,.12);}
-.cell-input.dirty{background:#fff9c4;border-color:#f9a825;}
-.cell-note{width:100%;padding:3px 6px;border:1px solid transparent;border-radius:3px;font-size:11px;background:transparent;}
-.cell-note:focus{border-color:#1565c0;background:#fff;}
+.cell-input{width:100%;padding:3px 6px;border:1px solid transparent;border-radius: 2px;font-size:12px;background:transparent;text-align:right;}
+.cell-input:focus{border-color:#1186ac;background: #eae9e9;box-shadow:0 0 0 2px rgba(21,101,192,.12);}
+.cell-input.dirty{background:#fff9c4;border-color:#edbb00;}
+.cell-note{width:100%;padding:3px 6px;border:1px solid transparent;border-radius: 2px;font-size:11px;background:transparent;}
+.cell-note:focus{border-color:#1186ac;background: #eae9e9;}
 /* Variance coloring */
-.pos{color:#2e7d32;font-weight:600;}
-.neg{color:#c62828;font-weight:600;}
+.pos{color:#006786;font-weight:600;}
+.neg{color:#d82071;font-weight:600;}
 /* Footer totals */
-.footer-totals{background:#e8eaf6;border-radius:6px;padding:12px 16px;display:flex;gap:24px;flex-wrap:wrap;margin-top:12px;}
+.footer-totals{background:#e9f8ff;border-radius: 2px;padding:12px 16px;display:flex;gap:24px;flex-wrap:wrap;margin-top:12px;}
 .footer-stat{text-align:center;}
-.footer-stat .label{font-size:10px;color:#666;text-transform:uppercase;font-weight:700;letter-spacing:.5px;}
+.footer-stat .label{font-size:10px;color:#605d5d;text-transform:uppercase;font-weight:700;letter-spacing:.5px;}
 .footer-stat .value{font-size:18px;font-weight:800;margin-top:2px;}
 /* ── Stats ── */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;}
-.stat-card{background:#fff;border-radius:8px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.stat-card{background: #eae9e9;border-radius: 2px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
 .stat-card .sv{font-size:22px;font-weight:800;margin-bottom:4px;}
-.stat-card .sl{font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.stat-card .sl{font-size:11px;color:#7d7979;font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
 /* ── Scenario cards ── */
 .scenario-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
-.sc-card{background:#fff;border-radius:8px;border:2px solid #e0e0e0;padding:16px;position:relative;transition:border-color .15s;}
-.sc-card.active{border-color:#1565c0;background:#f0f4ff;}
+.sc-card{background: #eae9e9;border-radius: 2px;border:2px solid #d7d3d3;padding:16px;position:relative;transition:border-color .15s;}
+.sc-card.active{border-color:#1186ac;background:#f0f4ff;}
 .sc-card .sc-name{font-weight:700;font-size:14px;margin-bottom:4px;}
-.sc-card .sc-meta{font-size:11px;color:#888;margin-bottom:10px;}
+.sc-card .sc-meta{font-size:11px;color:#7d7979;margin-bottom:10px;}
 .sc-card .sc-actions{display:flex;gap:6px;flex-wrap:wrap;}
-.lock-badge{position:absolute;top:10px;right:10px;background:#e65100;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;}
+.lock-badge{position:absolute;top:10px;right:10px;background:#6d5504;color: #f3f2f2;font-size:9px;font-weight:700;padding:2px 6px;border-radius: 2px;}
 /* ── Supplementals ── */
 .sup-table td,th{font-size:12px;}
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;}
-.badge-pending{background:#fff3e0;color:#e65100;}
-.badge-approved{background:#e8f5e9;color:#2e7d32;}
-.badge-denied{background:#fce4ec;color:#c62828;}
-.badge-rev{background:#e8f5e9;color:#2e7d32;}
-.badge-exp{background:#fff3e0;color:#e65100;}
+.badge{display:inline-block;padding:2px 8px;border-radius: 4px;font-size:10px;font-weight:700;}
+.badge-pending{background:#f2e7c2;color:#6d5504;}
+.badge-approved{background:#e9f8ff;color:#006786;}
+.badge-denied{background:#fff1f4;color:#d82071;}
+.badge-rev{background:#e9f8ff;color:#006786;}
+.badge-exp{background:#f2e7c2;color:#6d5504;}
 /* ── Reforecast ── */
-.rf-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 80px 140px;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid #f0f0f0;}
-.rf-header{background:#e8eaf6;font-weight:700;font-size:11px;color:#555;}
-.rf-over{color:#c62828;}
-.rf-under{color:#2e7d32;}
+.rf-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 80px 140px;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid #eae7e7;}
+.rf-header{background:#e9f8ff;font-weight:700;font-size:11px;color:#605d5d;}
+.rf-over{color:#d82071;}
+.rf-under{color:#006786;}
 /* ── Chart containers ── */
-.chart-box{background:#fff;border-radius:8px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px;}
+.chart-box{background: #eae9e9;border-radius: 2px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px;}
 .chart-box canvas{max-height:280px;}
 /* ── Alerts ── */
-.alert{padding:10px 14px;border-radius:6px;font-size:12px;margin-bottom:14px;}
-.alert-info{background:#e3f2fd;color:#0d47a1;border-left:4px solid #1565c0;}
-.alert-warning{background:#fff3e0;color:#e65100;border-left:4px solid #ff9800;}
-.alert-success{background:#e8f5e9;color:#2e7d32;border-left:4px solid #4caf50;}
+.alert{padding:10px 14px;border-radius: 2px;font-size:12px;margin-bottom:14px;}
+.alert-info{background:#e9f8ff;color:#006786;border-left:4px solid #1186ac;}
+.alert-warning{background:#f2e7c2;color:#6d5504;border-left:4px solid #edbb00;}
+.alert-success{background:#e9f8ff;color:#006786;border-left:4px solid #006786;}
 /* ── Modals ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;}
-.modal-box{background:#fff;border-radius:10px;width:92%;max-width:480px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.2);}
-.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;color:#1565c0;}
+.modal-box{background: #eae9e9;border-radius: 4px;width:92%;max-width:480px;padding:24px;box-shadow:0 8px 32px rgba(0,0,0,.2);}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;color:#1186ac;}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
 /* ── Toolbar ── */
 .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
 /* ── Filter bar ── */
 .filter-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
-.filter-bar select,input.filter-input{padding:5px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px;}
+.filter-bar select,input.filter-input{padding:5px 10px;border:1px solid #d7d3d3;border-radius: 2px;font-size:12px;}
 /* ── Empty state ── */
-.empty{text-align:center;padding:40px;color:#888;font-size:13px;}
+.empty{text-align:center;padding:40px;color:#7d7979;font-size:13px;}
 /* Spinner */
-.spinner{display:inline-block;width:16px;height:16px;border:2px solid #ccc;border-top-color:#1565c0;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid #bab6b6;border-top-color:#1186ac;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;}
 @keyframes spin{to{transform:rotate(360deg);}}
 /* ── Dept collapse toggle ── */
 .dept-toggle{font-size:10px;margin-right:6px;user-select:none;}
@@ -191,7 +191,7 @@ tr.subtotal-row td{background:#fafafa;font-weight:700;border-top:2px solid #e0e0
     if (document.getElementById('bp-local-banner')) return;
     const div = document.createElement('div');
     div.id = 'bp-local-banner';
-    div.style.cssText = 'background:#e8eef7;color:#24508f;padding:8px 16px;font-size:12px;font-weight:600';
+    div.style.cssText = 'background:#e9f8ff;color:#004961;padding:8px 16px;font-size:12px;font-weight:600';
     div.textContent = 'DEMO MODE - the platform API is not connected, so edits run against the bundled demo ledger and save in this browser only.';
     document.body.insertBefore(div, document.body.firstChild);
   }
@@ -614,7 +614,7 @@ function LedgerTab({ scenario, setScenario, activeId, dirty, setDirty, exportCSV
                 <button className="btn btn-success" onClick={save} disabled={!dirty||saving}>{saving?<><span className="spinner"></span> Saving...</>:'Save Changes'}</button>
                 <button className="btn btn-secondary" onClick={resetToAdopted} disabled={!dirty}>Reset to Adopted</button>
                 <button className="btn btn-secondary" onClick={exportCSV}>Export CSV</button>
-                {saveMsg && <span style={{fontSize:12,color:saveMsg.includes('fail')?'#c62828':'#2e7d32',fontWeight:700}}>{saveMsg}</span>}
+                {saveMsg && <span style={{fontSize:12,color:saveMsg.includes('fail')?'#d82071':'#006786',fontWeight:700}}>{saveMsg}</span>}
             </div>
             <div className="filter-bar">
                 <select value={filterDept} onChange={e=>setFilterDept(e.target.value)}>
@@ -673,13 +673,13 @@ function LedgerTab({ scenario, setScenario, activeId, dirty, setDirty, exportCSV
                                         const variance  = revised - adopted;
                                         const isDirtyCell = !!edits[line.account_number];
                                         return (
-                                            <tr key={line.account_number} style={{background:isDirtyCell?'#fffde7':undefined}}>
-                                                <td style={{fontFamily:'monospace',fontSize:11,color:'#666'}}>{line.account_number}</td>
+                                            <tr key={line.account_number} style={{background:isDirtyCell?'#f2e7c2':undefined}}>
+                                                <td style={{fontFamily:'monospace',fontSize:11,color:'#605d5d'}}>{line.account_number}</td>
                                                 <td>{line.account_name}</td>
                                                 <td><span className={'badge '+(line.account_type==='Revenue'?'badge-rev':'badge-exp')}>{line.account_type}</span></td>
                                                 <td className="right">{fc(adopted)}</td>
                                                 <td className="right">{fc(ytd)}</td>
-                                                <td className="right" style={{color:adopted&&ytd/adopted>1?'#c62828':'#555'}}>{pctUsed}</td>
+                                                <td className="right" style={{color:adopted&&ytd/adopted>1?'#d82071':'#605d5d'}}>{pctUsed}</td>
                                                 <td><input type="text" className={'cell-input'+(isDirtyCell?' dirty':'')}
                                                     value={focusedCell?.acct===line.account_number&&focusedCell?.field==='revised_budget' ? String(val(line.account_number,'revised_budget')||'') : numFmt(val(line.account_number,'revised_budget'))}
                                                     onFocus={()=>setFocusedCell({acct:line.account_number,field:'revised_budget'})}
@@ -709,33 +709,33 @@ function LedgerTab({ scenario, setScenario, activeId, dirty, setDirty, exportCSV
             <div className="footer-totals">
                 <div className="footer-stat">
                     <div className="label">Revenue — Adopted</div>
-                    <div className="value" style={{color:'#1565c0'}}>{fc(totals.totalRevAdopted)}</div>
+                    <div className="value" style={{color:'#1186ac'}}>{fc(totals.totalRevAdopted)}</div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Revenue — Revised</div>
-                    <div className="value" style={{color:totals.totalRevRevised>=totals.totalRevAdopted?'#2e7d32':'#e65100'}}>{fc(totals.totalRevRevised)}</div>
+                    <div className="value" style={{color:totals.totalRevRevised>=totals.totalRevAdopted?'#006786':'#6d5504'}}>{fc(totals.totalRevRevised)}</div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Expense — Adopted</div>
-                    <div className="value" style={{color:'#1565c0'}}>{fc(totals.totalExpAdopted)}</div>
+                    <div className="value" style={{color:'#1186ac'}}>{fc(totals.totalExpAdopted)}</div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Expense — Revised</div>
-                    <div className="value" style={{color:totals.totalExpRevised<=totals.totalExpAdopted?'#2e7d32':'#e65100'}}>{fc(totals.totalExpRevised)}</div>
+                    <div className="value" style={{color:totals.totalExpRevised<=totals.totalExpAdopted?'#006786':'#6d5504'}}>{fc(totals.totalExpRevised)}</div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Surplus/(Deficit) — Adopted</div>
-                    <div className="value" style={{color:surplusAdopted>=0?'#2e7d32':'#c62828'}}>{surplusAdopted>=0?'':'('+fc(-surplusAdopted)+')'}{surplusAdopted>=0?fc(surplusAdopted):''}</div>
+                    <div className="value" style={{color:surplusAdopted>=0?'#006786':'#d82071'}}>{surplusAdopted>=0?'':'('+fc(-surplusAdopted)+')'}{surplusAdopted>=0?fc(surplusAdopted):''}</div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Surplus/(Deficit) — Revised</div>
-                    <div className="value" style={{color:surplusRevised>=0?'#2e7d32':'#c62828',fontSize:22}}>
+                    <div className="value" style={{color:surplusRevised>=0?'#006786':'#d82071',fontSize:22}}>
                         {surplusRevised>=0?fc(surplusRevised):'('+fc(-surplusRevised)+')'}
                     </div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Net Change in Position</div>
-                    <div className="value" style={{color:netVariance>=0?'#2e7d32':'#c62828'}}>{fv(netVariance)}</div>
+                    <div className="value" style={{color:netVariance>=0?'#006786':'#d82071'}}>{fv(netVariance)}</div>
                 </div>
             </div>
         </div>
@@ -819,7 +819,7 @@ function ScenariosTab({ scenarios, activeId, onActivate, onRefresh }) {
         <div>
             <div className="toolbar">
                 <button className="btn btn-primary" onClick={openCreate}>New Scenario</button>
-                {msg && <span style={{fontSize:12,color:'#2e7d32',fontWeight:700}}>{msg}</span>}
+                {msg && <span style={{fontSize:12,color:'#006786',fontWeight:700}}>{msg}</span>}
             </div>
             <div className="alert alert-info">
                 Scenarios are independent versions of the budget. Create a "Current Forecast" to track re-estimates, or a "Conservative" to model downside risk. The Ledger always edits the active scenario selected at the top of the page.
@@ -830,7 +830,7 @@ function ScenariosTab({ scenarios, activeId, onActivate, onRefresh }) {
                         {s.is_locked && <span className="lock-badge">LOCKED</span>}
                         <div className="sc-name">{s.name}</div>
                         <div className="sc-meta">FY {s.fiscal_year} &bull; Created {new Date(s.created_at).toLocaleDateString()}</div>
-                        {s.description && <div style={{fontSize:12,color:'#555',marginBottom:10}}>{s.description}</div>}
+                        {s.description && <div style={{fontSize:12,color:'#605d5d',marginBottom:10}}>{s.description}</div>}
                         <div className="sc-actions">
                             <button className="btn btn-primary btn-sm" onClick={()=>onActivate(s.id)} disabled={s.id===activeId}>{s.id===activeId?'Active':'Load'}</button>
                             <button className="btn btn-secondary btn-sm" onClick={()=>openEdit(s)} disabled={!!s.is_locked}>Rename</button>
@@ -923,15 +923,15 @@ function SupplementalsTab({ activeId, scenarios, accounts, onApplied }) {
             <div className="toolbar">
                 <button className="btn btn-primary" onClick={()=>{setForm({scenario_id:activeId||'',account_number:'',department:'',category:'Supplemental',amount:'',justification:''});setMsg('');setShowModal(true);}}>Add Request</button>
                 <button className="btn btn-success" onClick={applyApproved} disabled={!activeId||!sups.some(s=>s.status==='approved')}>Apply Approved to Ledger</button>
-                {msg && <span style={{fontSize:12,color:'#2e7d32',fontWeight:700}}>{msg}</span>}
+                {msg && <span style={{fontSize:12,color:'#006786',fontWeight:700}}>{msg}</span>}
             </div>
             <div className="alert alert-info">
                 Track mid-year budget amendments — supplemental funding requests, budget reductions, or inter-departmental transfers. Approved supplementals can be applied directly to the Revised Forecast in the Ledger.
             </div>
             <div className="stat-grid" style={{gridTemplateColumns:'repeat(3,1fr)',maxWidth:500,marginBottom:16}}>
-                <div className="stat-card"><div className="sv" style={{color:'#e65100'}}>{sups.filter(s=>s.status==='pending').length}</div><div className="sl">Pending</div></div>
-                <div className="stat-card"><div className="sv" style={{color:'#2e7d32'}}>{fc(totalApproved)}</div><div className="sl">Total Approved</div></div>
-                <div className="stat-card"><div className="sv" style={{color:'#888'}}>{fc(totalPending)}</div><div className="sl">Pending Amount</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#6d5504'}}>{sups.filter(s=>s.status==='pending').length}</div><div className="sl">Pending</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#006786'}}>{fc(totalApproved)}</div><div className="sl">Total Approved</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#7d7979'}}>{fc(totalPending)}</div><div className="sl">Pending Amount</div></div>
             </div>
             <div className="card">
                 <div className="spreadsheet-wrap">
@@ -950,11 +950,11 @@ function SupplementalsTab({ activeId, scenarios, accounts, onApplied }) {
                                 const acctName = accounts.find(a=>a.account_number===s.account_number)?.account_name || s.account_number;
                                 return (
                                     <tr key={s.id}>
-                                        <td style={{fontSize:11,color:'#888'}}>{new Date(s.submitted_at).toLocaleDateString()}</td>
+                                        <td style={{fontSize:11,color:'#7d7979'}}>{new Date(s.submitted_at).toLocaleDateString()}</td>
                                         <td style={{fontSize:11}}>{scName}</td>
                                         <td>{s.department}</td>
                                         <td style={{fontSize:11}}>{acctName || '—'}</td>
-                                        <td><span className="badge" style={{background:'#e8eaf6',color:'#1565c0'}}>{s.category}</span></td>
+                                        <td><span className="badge" style={{background:'#e9f8ff',color:'#1186ac'}}>{s.category}</span></td>
                                         <td className={s.amount>=0?'right pos':'right neg'}>{s.amount>=0?'+':''}{fc(s.amount)}</td>
                                         <td style={{fontSize:11,maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={s.justification}>{s.justification || '—'}</td>
                                         <td><span className={'badge badge-'+s.status}>{s.status}</span></td>
@@ -1095,7 +1095,7 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
                         <label>Months elapsed: {months}</label>
                         <input type="range" min={1} max={12} value={months} onChange={e=>setMonths(parseInt(e.target.value))} style={{display:'block',width:200}} />
                     </div>
-                    <div style={{fontSize:12,color:'#888'}}>
+                    <div style={{fontSize:12,color:'#7d7979'}}>
                         Extrapolating full-year from {months} month{months!==1?'s':''} of actual data.
                         {curves?.available
                             ? ' Using each account\u2019s historical monthly seasonality curve (badge per row); accounts without history use straight-line.'
@@ -1104,15 +1104,15 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
                 </div>
             </div>
             <div className="stat-grid" style={{gridTemplateColumns:'repeat(3,1fr)',maxWidth:480,marginBottom:12}}>
-                <div className="stat-card"><div className="sv" style={{color:'#c62828'}}>{overBudget}</div><div className="sl">Accounts Over Budget</div></div>
-                <div className="stat-card"><div className="sv" style={{color:'#2e7d32'}}>{underBudget}</div><div className="sl">Accounts Under Budget</div></div>
-                <div className="stat-card"><div className="sv" style={{color:totalExtrap>=0?'#2e7d32':'#c62828'}}>{fc(totalExtrap)}</div><div className="sl">Projected Net Position</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#d82071'}}>{overBudget}</div><div className="sl">Accounts Over Budget</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#006786'}}>{underBudget}</div><div className="sl">Accounts Under Budget</div></div>
+                <div className="stat-card"><div className="sv" style={{color:totalExtrap>=0?'#006786':'#d82071'}}>{fc(totalExtrap)}</div><div className="sl">Projected Net Position</div></div>
             </div>
             <div className="toolbar">
                 <button className="btn btn-primary" onClick={apply} disabled={applying||!Object.values(accepted).some(Boolean)}>
                     {applying?'Applying...':'Apply Selected to Ledger'} ({Object.values(accepted).filter(Boolean).length} selected)
                 </button>
-                {msg && <span style={{fontSize:12,color:msg.includes('Error')?'#c62828':'#2e7d32',fontWeight:700}}>{msg}</span>}
+                {msg && <span style={{fontSize:12,color:msg.includes('Error')?'#d82071':'#006786',fontWeight:700}}>{msg}</span>}
             </div>
             <div className="alert alert-info">
                 Check accounts where you want to accept the extrapolated forecast. You can also enter a custom override. Click "Apply Selected to Ledger" to push chosen values to the Revised Forecast column.
@@ -1126,19 +1126,19 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
                     const finalVal = ov !== undefined ? parseFloat(ov)||0 : l.extrap;
                     const isOver = l.variance > 0;
                     return (
-                        <div key={l.account_number} className="rf-row" style={{background:accepted[l.account_number]?'#e8f5e9':undefined}}>
+                        <div key={l.account_number} className="rf-row" style={{background:accepted[l.account_number]?'#e9f8ff':undefined}}>
                             <div>
                                 <div style={{fontWeight:600,fontSize:12}}>{l.account_name}</div>
-                                <div style={{fontSize:10,color:'#888'}}>{l.account_number} &bull; {l.department}</div>
+                                <div style={{fontSize:10,color:'#7d7979'}}>{l.account_number} &bull; {l.department}</div>
                             </div>
                             <div className="right" style={{fontSize:12}}>{fc(l.adopted)}</div>
                             <div className="right" style={{fontSize:12}}>{fc(l.ytd)}</div>
                             <div className="right">
-                                <div style={{fontWeight:700,color:isOver&&l.account_type!=='Revenue'?'#c62828':'#2e7d32',fontSize:12}}>{fc(l.extrap)}</div>
-                                <div style={{fontSize:10,color:'#888'}}>{fv(l.variance)}
+                                <div style={{fontWeight:700,color:isOver&&l.account_type!=='Revenue'?'#d82071':'#006786',fontSize:12}}>{fc(l.extrap)}</div>
+                                <div style={{fontSize:10,color:'#7d7979'}}>{fv(l.variance)}
                                     {' '}<span style={{padding:'1px 5px',borderRadius:8,fontSize:9,fontWeight:700,
-                                        background:l.method==='straight-line'?'#f0f0f0':'#e3f0e6',
-                                        color:l.method==='straight-line'?'#777':'#1e6b3c'}}>
+                                        background:l.method==='straight-line'?'#eae7e7':'#e9f8ff',
+                                        color:l.method==='straight-line'?'#7d7979':'#006786'}}>
                                         {l.method==='seasonal'?'SEASONAL':l.method==='type-seasonal'?'TYPE AVG':'STRAIGHT-LINE'}
                                     </span>
                                 </div>
@@ -1153,7 +1153,7 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
                                     onFocus={()=>setRfFocused(l.account_number)}
                                     onBlur={()=>setRfFocused(null)}
                                     onChange={e=>setOverrides(p=>({...p,[l.account_number]:numStrip(e.target.value)}))}
-                                    style={{background:'#f9f9f9'}} />
+                                    style={{background:'#f8f4f4'}} />
                             </div>
                         </div>
                     );
@@ -1212,8 +1212,8 @@ function SummaryTab({ scenario }) {
             data:{
                 labels: depts.map(d=>d.dept),
                 datasets:[
-                    {label:'Adopted',data:depts.map(d=>d.adopted),backgroundColor:'rgba(21,101,192,.4)',borderColor:'#1565c0',borderWidth:1},
-                    {label:'Revised',data:depts.map(d=>d.revised),backgroundColor:'rgba(46,125,50,.4)',borderColor:'#2e7d32',borderWidth:1},
+                    {label:'Adopted',data:depts.map(d=>d.adopted),backgroundColor:'rgba(0,136,176,.4)',borderColor:'#1186ac',borderWidth:1},
+                    {label:'Revised',data:depts.map(d=>d.revised),backgroundColor:'rgba(0,103,134,.4)',borderColor:'#006786',borderWidth:1},
                 ]
             },
             options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Department Expense — Adopted vs Revised'}},scales:{y:{ticks:{callback:v=>'$'+Math.round(v/1000)+'K'}}}}
@@ -1232,8 +1232,8 @@ function SummaryTab({ scenario }) {
             data:{
                 labels:['Adopted','Revised','Yr+1','Yr+2'],
                 datasets:[
-                    {label:'Total Revenue',data:[totalRevAdopted,totalRevRevised,yr1Rev,yr2Rev],borderColor:'#1565c0',backgroundColor:'rgba(21,101,192,.1)',fill:true,tension:.3},
-                    {label:'Total Expense',data:[totalExpAdopted,totalExpRevised,yr1Exp,yr2Exp],borderColor:'#c62828',backgroundColor:'rgba(198,40,40,.08)',fill:true,tension:.3},
+                    {label:'Total Revenue',data:[totalRevAdopted,totalRevRevised,yr1Rev,yr2Rev],borderColor:'#1186ac',backgroundColor:'rgba(0,136,176,.1)',fill:true,tension:.3},
+                    {label:'Total Expense',data:[totalExpAdopted,totalExpRevised,yr1Exp,yr2Exp],borderColor:'#d82071',backgroundColor:'rgba(214,0,108,.08)',fill:true,tension:.3},
                 ]
             },
             options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'3-Year Budget Trajectory'}},scales:{y:{ticks:{callback:v=>'$'+Math.round(v/1000000)+'M'}}}}
@@ -1252,10 +1252,10 @@ function SummaryTab({ scenario }) {
     return (
         <div>
             <div className="stat-grid">
-                <div className="stat-card"><div className="sv" style={{color:'#1565c0'}}>{fc(totalRevRevised)}</div><div className="sl">Total Revenue (Revised)</div><div style={{fontSize:11,color:'#888',marginTop:2}}>{fv(totalRevRevised-totalRevAdopted)} vs adopted</div></div>
-                <div className="stat-card"><div className="sv" style={{color:'#e65100'}}>{fc(totalExpRevised)}</div><div className="sl">Total Expense (Revised)</div><div style={{fontSize:11,color:'#888',marginTop:2}}>{fv(totalExpRevised-totalExpAdopted)} vs adopted</div></div>
-                <div className="stat-card"><div className="sv" style={{color:surplusRevised>=0?'#2e7d32':'#c62828'}}>{surplusRevised>=0?fc(surplusRevised):'('+fc(-surplusRevised)+')'}</div><div className="sl">Net Surplus/(Deficit)</div><div style={{fontSize:11,color:'#888',marginTop:2}}>Adopted: {surplusAdopted>=0?fc(surplusAdopted):'('+fc(-surplusAdopted)+')'}</div></div>
-                <div className="stat-card"><div className="sv" style={{color:'#c62828'}}>{negCount}</div><div className="sl">Accounts with Negative Variance</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#1186ac'}}>{fc(totalRevRevised)}</div><div className="sl">Total Revenue (Revised)</div><div style={{fontSize:11,color:'#7d7979',marginTop:2}}>{fv(totalRevRevised-totalRevAdopted)} vs adopted</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#6d5504'}}>{fc(totalExpRevised)}</div><div className="sl">Total Expense (Revised)</div><div style={{fontSize:11,color:'#7d7979',marginTop:2}}>{fv(totalExpRevised-totalExpAdopted)} vs adopted</div></div>
+                <div className="stat-card"><div className="sv" style={{color:surplusRevised>=0?'#006786':'#d82071'}}>{surplusRevised>=0?fc(surplusRevised):'('+fc(-surplusRevised)+')'}</div><div className="sl">Net Surplus/(Deficit)</div><div style={{fontSize:11,color:'#7d7979',marginTop:2}}>Adopted: {surplusAdopted>=0?fc(surplusAdopted):'('+fc(-surplusAdopted)+')'}</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#d82071'}}>{negCount}</div><div className="sl">Accounts with Negative Variance</div></div>
             </div>
             <div className="chart-box">
                 <canvas ref={barRef} style={{maxHeight:260}}></canvas>
@@ -1286,8 +1286,8 @@ function SummaryTab({ scenario }) {
                 <div className="card">
                     <div className="card-header">Top 5 Favorable Changes</div>
                     <div className="card-body">
-                        {top5Fav.length === 0 ? <div style={{color:'#888',fontSize:12}}>No favorable variances</div> : top5Fav.map(l=>(
-                            <div key={l.account_number} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid #f5f5f5',fontSize:12}}>
+                        {top5Fav.length === 0 ? <div style={{color:'#7d7979',fontSize:12}}>No favorable variances</div> : top5Fav.map(l=>(
+                            <div key={l.account_number} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid #f8f4f4',fontSize:12}}>
                                 <span>{l.account_name}</span><span className="pos">{fv(l.variance)}</span>
                             </div>
                         ))}
@@ -1296,8 +1296,8 @@ function SummaryTab({ scenario }) {
                 <div className="card">
                     <div className="card-header">Top 5 Unfavorable Changes</div>
                     <div className="card-body">
-                        {top5Unf.length === 0 ? <div style={{color:'#888',fontSize:12}}>No unfavorable variances</div> : top5Unf.map(l=>(
-                            <div key={l.account_number} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid #f5f5f5',fontSize:12}}>
+                        {top5Unf.length === 0 ? <div style={{color:'#7d7979',fontSize:12}}>No unfavorable variances</div> : top5Unf.map(l=>(
+                            <div key={l.account_number} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid #f8f4f4',fontSize:12}}>
                                 <span>{l.account_name}</span><span className="neg">{fv(l.variance)}</span>
                             </div>
                         ))}
