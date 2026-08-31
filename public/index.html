@@ -4,144 +4,190 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GovSight Financial Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
+  /* GovSight — Broadsheet/Cardinal design system tokens */
   :root {
-    --navy: #12263a;
-    --navy-2: #1d3a56;
-    --accent: #2e6fa3;
-    --text: #22303c;
-    --muted: #5b6b7a;
-    --bg: #f5f7fa;
-    --card: #ffffff;
-    --border: #dde4ea;
+    --paper: #f3f2f2;
+    --surface: #eae9e9;
+    --ink: #201e1d;
+    --divider: rgba(32, 30, 29, 0.16);
+    --accent: #0088b0;        /* cyan — interactive */
+    --accent-600: #1186ac;
+    --accent-700: #006786;
+    --accent-100: #e9f8ff;
+    --cardinal: #d6006c;      /* magenta — brand + data emphasis */
+    --cardinal-400: #ff90b1;
+    --neutral-400: #bab6b6;
+    --neutral-900: #2d2b2b;
+    --muted: rgba(32, 30, 29, 0.55);
+    --warn-bg: #f2e7c2;
+    --warn-fg: #6d5504;
+    --font: "Source Serif 4", Georgia, serif;
+    --radius-sm: 1px;
+    --radius-md: 2px;
+    --shadow-md: 0 3px 10px rgba(45, 43, 43, 0.16);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; }
   body {
-    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
+    font-family: var(--font);
+    background: var(--paper);
+    color: var(--ink);
     display: flex;
     flex-direction: column;
   }
-  /* Top bar */
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  ::selection { background: rgba(0, 136, 176, 0.3); }
+  /* Top bar — paper nav, serif brand */
   .topbar {
-    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
-    color: #fff;
+    background: var(--paper);
+    color: var(--ink);
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 0.65rem 1.25rem;
+    padding: 0.85rem 1.5rem;
     flex-shrink: 0;
   }
-  .topbar img { height: 34px; background: #fff; border-radius: 6px; padding: 0.25rem 0.5rem; }
-  .topbar .title { font-weight: 600; font-size: 1.02rem; }
-  .topbar .org { font-size: 0.8rem; color: #b7c6d5; }
+  .topbar .title { font-weight: 600; font-size: 1.1rem; letter-spacing: -0.015em; }
+  .topbar .org {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cardinal);
+  }
   .topbar .spacer { flex-grow: 1; }
   .topbar a.logout {
-    color: #dbe9f5;
+    color: var(--ink);
     text-decoration: none;
     font-size: 0.85rem;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    padding: 0.35rem 0.85rem;
-    border-radius: 6px;
-  }
-  .topbar a.logout:hover { background: rgba(255, 255, 255, 0.1); }
-  .topbar .who {
-    font-size: 0.8rem;
-    color: #dbe9f5;
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 999px;
-    padding: 0.25rem 0.8rem;
     font-weight: 600;
+    border: 1px solid var(--divider);
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--radius-md);
   }
-  .topbar .who.employee { background: #fdeeda; color: #8a5a12; }
+  .topbar a.logout:hover { background: rgba(32, 30, 29, 0.07); }
+  .topbar .who {
+    font-size: 0.75rem;
+    color: var(--neutral-900);
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 0.25rem 0.8rem;
+  }
+  .topbar .who.employee { background: var(--warn-bg); color: var(--warn-fg); }
   .topbar button.persona {
-    color: #dbe9f5;
+    color: var(--accent-700);
     background: none;
     font-size: 0.85rem;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    padding: 0.35rem 0.85rem;
-    border-radius: 6px;
+    font-family: inherit;
+    border: none;
+    padding: 0.35rem 0.4rem;
+    border-radius: var(--radius-md);
     cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
-  .topbar button.persona:hover { background: rgba(255, 255, 255, 0.1); }
+  .topbar button.persona:hover { background: rgba(0, 136, 176, 0.1); }
   main { flex-grow: 1; display: flex; flex-direction: column; min-height: 0; }
 
-  /* Home */
+  /* Home — open broadsheet layout */
   .home { max-width: 1080px; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; width: 100%; }
-  .home h1 { font-size: 1.5rem; color: var(--navy); margin-bottom: 0.4rem; }
-  .home > p { color: var(--muted); margin-bottom: 2rem; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
-  .mcard {
-    border-radius: 12px;
-    padding: 2rem 1.5rem;
-    color: #fff;
-    cursor: pointer;
-    text-align: center;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  .home .kicker {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cardinal);
   }
-  .mcard:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(18, 38, 58, 0.28); }
-  .mcard .kicker { font-size: 0.75rem; letter-spacing: 0.12em; opacity: 0.85; text-transform: uppercase; }
-  .mcard h2 { font-size: 1.5rem; margin: 0.4rem 0 0.35rem; }
-  .mcard .sub { font-size: 0.9rem; opacity: 0.95; margin-bottom: 1.25rem; }
+  .home h1 { font-size: 2.3rem; letter-spacing: -0.015em; line-height: 1.12; margin: 0.3rem 0 0.4rem; }
+  .home > p { color: var(--muted); font-size: 1.05rem; margin-bottom: 2.5rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.8rem; }
+  .mcard {
+    cursor: pointer;
+    text-align: left;
+    padding-top: 0.9rem;
+    border-top: 2px solid var(--ink);
+  }
+  .mcard .kicker { font-size: 0.65rem; letter-spacing: 0.1em; color: var(--cardinal); text-transform: uppercase; }
+  .mcard h2 { font-size: 1.55rem; letter-spacing: -0.015em; margin: 0.35rem 0 0.3rem; }
+  .mcard .sub { font-size: 0.9rem; color: var(--muted); margin-bottom: 1.1rem; }
   .mcard .enter {
     display: inline-block;
-    background: rgba(255, 255, 255, 0.16);
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    padding: 0.45rem 1.3rem;
-    border-radius: 999px;
+    color: var(--ink);
+    border: 1px solid var(--divider);
+    padding: 0.45rem 1.1rem;
+    border-radius: var(--radius-md);
     font-size: 0.88rem;
     font-weight: 600;
   }
+  .mcard:hover .enter { background: rgba(32, 30, 29, 0.07); }
+  .mcard.admin {
+    background: var(--ink);
+    color: var(--paper);
+    border-top: none;
+    padding: 1.4rem 1.5rem;
+    border-radius: var(--radius-md);
+  }
+  .mcard.admin .kicker { color: var(--cardinal-400); }
+  .mcard.admin .sub { color: rgba(243, 242, 242, 0.7); }
+  .mcard.admin .enter { color: #fff; background: var(--accent); border-color: transparent; }
+  .mcard.admin:hover .enter { background: var(--accent-600); }
 
   /* Module view */
   .module-view { display: flex; flex-direction: column; flex-grow: 1; min-height: 0; }
-  .module-head { color: #fff; padding: 1.1rem 1.5rem; }
+  .module-head { background: var(--paper); color: var(--ink); padding: 1.1rem 1.5rem 0; }
   .module-head .row { max-width: 1240px; margin: 0 auto; display: flex; align-items: baseline; gap: 0.9rem; }
   .module-head a.back {
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--accent-700);
     text-decoration: none;
     font-size: 0.82rem;
     white-space: nowrap;
   }
-  .module-head a.back:hover { color: #fff; }
-  .module-head h1 { font-size: 1.35rem; }
-  .module-head .tag { font-size: 0.85rem; opacity: 0.9; }
+  .module-head a.back:hover { color: var(--accent); }
+  .module-head h1 { font-size: 1.55rem; letter-spacing: -0.015em; }
+  .module-head .tag {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cardinal);
+  }
   .tabbar {
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
+    background: var(--paper);
+    border-bottom: 1px solid var(--divider);
     overflow-x: auto;
     flex-shrink: 0;
   }
-  .tabbar .row { max-width: 1240px; margin: 0 auto; display: flex; }
+  .tabbar .row { max-width: 1240px; margin: 0 auto; display: flex; gap: 1.4rem; padding: 0 1.5rem; }
   .tabbar button {
     background: none;
     border: none;
-    border-bottom: 3px solid transparent;
-    padding: 0.75rem 1rem;
-    font-size: 0.88rem;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    padding: 0.75rem 0;
+    font-size: 0.9rem;
     font-family: inherit;
     color: var(--muted);
     cursor: pointer;
     white-space: nowrap;
   }
-  .tabbar button.active { color: var(--navy); border-bottom-color: var(--accent); font-weight: 600; }
-  .tabbar button:hover { color: var(--navy); }
+  .tabbar button.active { color: var(--ink); border-bottom-color: var(--cardinal); font-weight: 600; }
+  .tabbar button:hover { color: var(--ink); }
   .panel { flex-grow: 1; min-height: 0; display: flex; flex-direction: column; }
-  .panel iframe { border: none; width: 100%; flex-grow: 1; background: #fff; }
+  .panel iframe { border: none; width: 100%; flex-grow: 1; background: var(--paper); }
   .placeholder { max-width: 760px; margin: 3rem auto; padding: 0 1.5rem; text-align: center; }
-  .placeholder h2 { color: var(--navy); font-size: 1.3rem; margin-bottom: 0.75rem; }
+  .placeholder h2 { font-size: 1.4rem; letter-spacing: -0.015em; margin-bottom: 0.75rem; }
   .placeholder p { color: var(--muted); font-size: 0.95rem; line-height: 1.65; }
   .placeholder .note {
     display: inline-block;
     margin-top: 1.5rem;
-    background: #fdeeda;
-    color: #8a5a12;
+    background: var(--warn-bg);
+    color: var(--warn-fg);
     font-size: 0.82rem;
     font-weight: 600;
     padding: 0.45rem 1rem;
-    border-radius: 999px;
+    border-radius: var(--radius-sm);
   }
   .placeholder ul {
     text-align: left;
@@ -155,9 +201,8 @@
 </head>
 <body>
 <header class="topbar">
-  <img src="assets/govsight_logo.png" alt="GovSight logo">
   <div>
-    <div class="title">GovSight Financial Analyzer</div>
+    <div class="title"><strong>Gov</strong><span style="font-weight:400">Sight</span> Financial Analyzer</div>
     <div class="org">Organization: Spanish Fork</div>
   </div>
   <div class="spacer"></div>
@@ -168,6 +213,14 @@
 <main id="app"></main>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script>
+  // Charts speak the design system too: serif type, ink-tinted grid
+  if (window.Chart) {
+    Chart.defaults.font.family = '"Source Serif 4", Georgia, serif';
+    Chart.defaults.color = '#605d5d';
+    Chart.defaults.borderColor = 'rgba(32, 30, 29, 0.1)';
+  }
+</script>
 <script src="assets/bi_sandbox.js"></script>
 <script src="assets/demo_views.js"></script>
 <script>
@@ -176,7 +229,6 @@ const MODULES = {
     name: 'Navi',
     kicker: 'GovSight Navi',
     tagline: 'Navigation & Planning Hub',
-    color: '#2450b8',
     // Focused four-tab layout. Scenario Planner stays first and prominent
     // (the market differentiator vs. budget-book competitors). Market
     // Context renders as a subdued secondary link. Phase-2 tabs are
@@ -199,7 +251,6 @@ const MODULES = {
     name: 'Mantis',
     kicker: 'GovSight Mantis',
     tagline: 'AI Intelligence Hub',
-    color: '#4169e1',
     tabs: [
       { name: 'AI Chat', view: 'aiChat' },
       { name: 'Ledger Insights', view: 'mantisDemo' },
@@ -209,7 +260,6 @@ const MODULES = {
     name: 'Vatica',
     kicker: 'GovSight Vatica',
     tagline: 'Departmental Insights & Reporting',
-    color: '#1c6e64',
     tabs: [
       { name: 'BI Sandbox', view: 'bi' },
       { name: 'Historical Analysis', view: 'historical' },
@@ -259,16 +309,16 @@ function renderHome() {
   for (const key of Object.keys(MODULES)) {
     const m = MODULES[key];
     cards += `
-      <div class="mcard" style="background:${m.color}" onclick="location.hash='#/${key}/0'">
+      <div class="mcard" onclick="location.hash='#/${key}/0'">
         <div class="kicker">${esc(m.kicker)}</div>
         <h2>${esc(m.name)}</h2>
         <div class="sub">${esc(m.tagline)}</div>
-        <span class="enter">Enter ${esc(m.name)}</span>
+        <span class="enter">Enter ${esc(m.name)} &rarr;</span>
       </div>`;
   }
   if (persona() === 'admin') {
     cards += `
-      <div class="mcard" style="background:#1d3a56" onclick="location.hash='#/admin'">
+      <div class="mcard admin" onclick="location.hash='#/admin'">
         <div class="kicker">GOVSIGHT ADMIN</div>
         <h2>Administration</h2>
         <div class="sub">Users, roles &amp; department access</div>
@@ -276,12 +326,13 @@ function renderHome() {
       </div>`;
   }
   const note = persona() === 'employee'
-    ? `<p style="background:#fdeeda;color:#8a5a12;border-radius:8px;padding:0.6rem 1rem;font-size:0.85rem;margin-bottom:1.5rem">
+    ? `<p style="background:#f2e7c2;color:#6d5504;border-radius:2px;padding:0.6rem 1rem;font-size:0.85rem;margin-bottom:1.5rem">
          You are viewing GovSight as a department-restricted employee - budgets, transactions, and insights
          are limited to the departments your administrator granted.</p>` : '';
   app.innerHTML = `
     <div class="home">
-      <h1>Welcome to GovSight Financial Analyzer</h1>
+      <span class="kicker">Overview</span>
+      <h1>Welcome to GovSight.</h1>
       <p>Select a module below to access different analytical tools.</p>
       ${note}
       <div class="cards">${cards}</div>
@@ -292,14 +343,14 @@ function renderAdmin() {
   if (persona() !== 'admin') { location.hash = '#/'; return; }
   app.innerHTML = `
     <div class="module-view">
-      <div class="module-head" style="background:#1d3a56">
+      <div class="module-head">
         <div class="row">
           <a class="back" href="#/">&#8592; Dashboard</a>
           <h1>Administration</h1>
           <span class="tag">Users, roles &amp; department access</span>
         </div>
       </div>
-      <div class="panel" style="overflow-y:auto;background:#f5f7fa">
+      <div class="panel" style="overflow-y:auto">
         <div id="view-host" style="padding:20px;max-width:1240px;margin:0 auto;width:100%"></div>
       </div>
     </div>`;
@@ -337,7 +388,7 @@ function renderModule(key, tabIndex) {
 
   app.innerHTML = `
     <div class="module-view">
-      <div class="module-head" style="background:${m.color}">
+      <div class="module-head">
         <div class="row">
           <a class="back" href="#/">&#8592; Dashboard</a>
           <h1>${esc(m.name)}</h1>
@@ -345,7 +396,7 @@ function renderModule(key, tabIndex) {
         </div>
       </div>
       <nav class="tabbar"><div class="row">${tabButtons}</div></nav>
-      <div class="panel" style="${tab.view ? 'overflow-y:auto;background:#f5f7fa' : ''}">${panel}</div>
+      <div class="panel" style="${tab.view ? 'overflow-y:auto' : ''}">${panel}</div>
     </div>`;
   if (tab.view && window.DEMO_VIEWS) {
     window.DEMO_VIEWS.render(tab.view, document.getElementById('view-host'));

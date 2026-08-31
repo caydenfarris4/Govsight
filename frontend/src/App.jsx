@@ -38,7 +38,7 @@ export default function App() {
   }, [user]);
 
   if (user === undefined) {
-    return <div style={{ padding: 60, color: '#5b6b7a' }}>Loading…</div>;
+    return <div className="text-muted" style={{ padding: 60 }}>Loading…</div>;
   }
   if (!user) {
     return <Login onLogin={setUser} />;

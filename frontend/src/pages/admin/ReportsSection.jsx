@@ -31,7 +31,7 @@ function AddSchedule({ onDone }) {
 
   if (!open) return <button style={btn} onClick={() => setOpen(true)}>Add schedule</button>;
   return (
-    <div style={{ padding: 12, background: '#fafbfc', border: '1px solid #eef2f5', borderRadius: 8 }}>
+    <div style={{ padding: 12, background: 'var(--surface-raised)', border: '1px solid color-mix(in srgb, var(--ink) 8%, transparent)', borderRadius: 'var(--radius-md)' }}>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <select style={input} value={module}
                 onChange={(e) => { setModule(e.target.value); setReport(REPORTS[e.target.value][0]); }}>
@@ -47,7 +47,7 @@ function AddSchedule({ onDone }) {
         <button style={btn} onClick={create}>Create</button>
         <button style={btnGhost} onClick={() => setOpen(false)}>Cancel</button>
       </div>
-      {error && <div style={{ color: '#a4271c', fontSize: 12.5, marginTop: 6 }}>{error}</div>}
+      {error && <div style={{ color: 'var(--status-err-fg)', fontSize: 12.5, marginTop: 6 }}>{error}</div>}
     </div>
   );
 }
@@ -90,7 +90,7 @@ export default function ReportsSection() {
             </Badge>,
             <button key="t" style={{ ...btnGhost, padding: '4px 12px', fontSize: 12 }}
                     onClick={() => toggle(s)}>{s.enabled ? 'Pause' : 'Resume'}</button>,
-            <button key="d" style={{ ...btnGhost, padding: '4px 12px', fontSize: 12, color: '#a4271c' }}
+            <button key="d" style={{ ...btnGhost, padding: '4px 12px', fontSize: 12, color: 'var(--status-err-fg)' }}
                     onClick={() => remove(s)}>Delete</button>,
           ])}
         />

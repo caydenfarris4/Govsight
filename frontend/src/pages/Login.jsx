@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { login } from '../api.js';
 
+/* Sign-in: ink panel with the type wordmark, form on paper. */
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -20,56 +21,66 @@ export default function Login({ onLogin }) {
     }
   };
 
-  const input = {
-    width: '100%', padding: '10px 12px', border: '1px solid #cfd8e0',
-    borderRadius: 8, fontSize: 15, marginTop: 4,
-  };
-
   return (
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #12263a 0%, #1d3a56 100%)',
+      display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '100vh',
     }}>
-      <form onSubmit={submit} style={{
-        background: '#fff', borderRadius: 12, padding: '40px 36px',
-        width: '100%', maxWidth: 400, boxShadow: '0 20px 60px rgba(0,0,0,.35)',
+      <div className="panel-ink" style={{
+        display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+        padding: 'var(--space-12) var(--space-8)', borderRadius: 0,
       }}>
-        <div style={{ textAlign: 'center', marginBottom: 26 }}>
-          <img src="/assets/govsight_logo.png" alt="GovSight" style={{ height: 48 }}
-               onError={(e) => { e.target.style.display = 'none'; }} />
-          <h1 style={{ fontSize: 19, color: '#12263a', marginTop: 12 }}>
-            GovSight Financial Analyzer
-          </h1>
-          <p style={{ fontSize: 13, color: '#5b6b7a', marginTop: 4 }}>
-            Municipal Financial Intelligence Platform
+        <span className="kicker">GovSight</span>
+        <div>
+          <div style={{
+            fontFamily: 'var(--font-heading)', fontSize: 'var(--text-display)',
+            lineHeight: 1.05, letterSpacing: '-0.02em',
+          }}>
+            <strong style={{ fontWeight: 600 }}>Gov</strong>
+            <span style={{ fontWeight: 400 }}>Sight</span>
+          </div>
+          <p style={{
+            fontSize: 'var(--text-lg)', opacity: 0.8, maxWidth: '36ch',
+            marginTop: 'var(--space-3)',
+          }}>
+            Your financial communication tool. Analytics over the ERP you
+            already run.
           </p>
         </div>
-        <label style={{ fontSize: 13, fontWeight: 600 }}>Username
-          <input style={input} value={username} autoFocus
-                 type="text" name="username" autoComplete="username"
-                 onChange={(e) => setUsername(e.target.value)} />
-        </label>
-        <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginTop: 14 }}>
-          Password
-          <input style={input} type="password" value={password}
-                 name="password" autoComplete="current-password"
-                 onChange={(e) => setPassword(e.target.value)} />
-        </label>
-        <button type="submit" disabled={busy} style={{
-          width: '100%', marginTop: 22, padding: 11, background: '#1d3a56',
-          color: '#fff', border: 'none', borderRadius: 8, fontSize: 15,
-          fontWeight: 600, cursor: 'pointer', opacity: busy ? 0.7 : 1,
+        <span style={{ fontSize: 12, opacity: 0.5 }}>
+          Municipal Financial Intelligence Platform
+        </span>
+      </div>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 'var(--space-8)',
+      }}>
+        <form onSubmit={submit} style={{
+          width: 340, display: 'flex', flexDirection: 'column',
+          gap: 'var(--space-4)',
         }}>
-          {busy ? 'Signing in…' : 'Sign In'}
-        </button>
-        {error && (
-          <div style={{
-            marginTop: 14, padding: '9px 12px', background: '#fdecea',
-            color: '#a4271c', borderRadius: 8, fontSize: 13,
-          }}>{error}</div>
-        )}
-      </form>
+          <h2 style={{ margin: 0 }}>Sign in</h2>
+          <div className="field">
+            <label htmlFor="login-username">Username</label>
+            <input id="login-username" className="input" value={username}
+                   autoFocus type="text" name="username" autoComplete="username"
+                   onChange={(e) => setUsername(e.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="login-password">Password</label>
+            <input id="login-password" className="input" type="password"
+                   value={password} name="password"
+                   autoComplete="current-password"
+                   onChange={(e) => setPassword(e.target.value)} />
+          </div>
+          <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
+            {busy ? 'Signing in…' : 'Sign in'}
+          </button>
+          {error && <div className="msg msg-err">{error}</div>}
+          <p className="text-muted" style={{ fontSize: 12, margin: 0 }}>
+            Sign in with the account your administrator provisioned.
+          </p>
+        </form>
+      </div>
     </div>
   );
 }

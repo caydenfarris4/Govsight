@@ -70,7 +70,7 @@ function App() {
     };
 
     return (
-        <div className="app-shell">
+        <div className="gs-playground app-shell">
             <div className="top-bar">
                 <div>
                     <div className="h1" style={{fontWeight:800,fontSize:17,color:'#fff'}}>Budget Playground</div>
@@ -228,7 +228,7 @@ function LedgerTab({ scenario, setScenario, activeId, dirty, setDirty, exportCSV
                 <button className="btn btn-success" onClick={save} disabled={!dirty||saving}>{saving?<><span className="spinner"></span> Saving...</>:'Save Changes'}</button>
                 <button className="btn btn-secondary" onClick={resetToAdopted} disabled={!dirty}>Reset to Adopted</button>
                 <button className="btn btn-secondary" onClick={exportCSV}>Export CSV</button>
-                {saveMsg && <span style={{fontSize:12,color:saveMsg.includes('fail')?'#c62828':'#2e7d32',fontWeight:700}}>{saveMsg}</span>}
+                {saveMsg && <span style={{fontSize:12,color:saveMsg.includes('fail')?'#d82071':'#006786',fontWeight:700}}>{saveMsg}</span>}
             </div>
             <div className="filter-bar">
                 <select value={filterDept} onChange={e=>setFilterDept(e.target.value)}>
@@ -287,13 +287,13 @@ function LedgerTab({ scenario, setScenario, activeId, dirty, setDirty, exportCSV
                                         const variance  = revised - adopted;
                                         const isDirtyCell = !!edits[line.account_number];
                                         return (
-                                            <tr key={line.account_number} style={{background:isDirtyCell?'#fffde7':undefined}}>
-                                                <td style={{fontFamily:'monospace',fontSize:11,color:'#666'}}>{line.account_number}</td>
+                                            <tr key={line.account_number} style={{background:isDirtyCell?'#f2e7c2':undefined}}>
+                                                <td style={{fontFamily:'monospace',fontSize:11,color:'#605d5d'}}>{line.account_number}</td>
                                                 <td>{line.account_name}</td>
                                                 <td><span className={'badge '+(line.account_type==='Revenue'?'badge-rev':'badge-exp')}>{line.account_type}</span></td>
                                                 <td className="right">{fc(adopted)}</td>
                                                 <td className="right">{fc(ytd)}</td>
-                                                <td className="right" style={{color:adopted&&ytd/adopted>1?'#c62828':'#555'}}>{pctUsed}</td>
+                                                <td className="right" style={{color:adopted&&ytd/adopted>1?'#d82071':'#605d5d'}}>{pctUsed}</td>
                                                 <td><input type="text" className={'cell-input'+(isDirtyCell?' dirty':'')}
                                                     value={focusedCell?.acct===line.account_number&&focusedCell?.field==='revised_budget' ? String(val(line.account_number,'revised_budget')||'') : numFmt(val(line.account_number,'revised_budget'))}
                                                     onFocus={()=>setFocusedCell({acct:line.account_number,field:'revised_budget'})}
@@ -323,33 +323,33 @@ function LedgerTab({ scenario, setScenario, activeId, dirty, setDirty, exportCSV
             <div className="footer-totals">
                 <div className="footer-stat">
                     <div className="label">Revenue — Adopted</div>
-                    <div className="value" style={{color:'#1565c0'}}>{fc(totals.totalRevAdopted)}</div>
+                    <div className="value" style={{color:'#1186ac'}}>{fc(totals.totalRevAdopted)}</div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Revenue — Revised</div>
-                    <div className="value" style={{color:totals.totalRevRevised>=totals.totalRevAdopted?'#2e7d32':'#e65100'}}>{fc(totals.totalRevRevised)}</div>
+                    <div className="value" style={{color:totals.totalRevRevised>=totals.totalRevAdopted?'#006786':'#6d5504'}}>{fc(totals.totalRevRevised)}</div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Expense — Adopted</div>
-                    <div className="value" style={{color:'#1565c0'}}>{fc(totals.totalExpAdopted)}</div>
+                    <div className="value" style={{color:'#1186ac'}}>{fc(totals.totalExpAdopted)}</div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Expense — Revised</div>
-                    <div className="value" style={{color:totals.totalExpRevised<=totals.totalExpAdopted?'#2e7d32':'#e65100'}}>{fc(totals.totalExpRevised)}</div>
+                    <div className="value" style={{color:totals.totalExpRevised<=totals.totalExpAdopted?'#006786':'#6d5504'}}>{fc(totals.totalExpRevised)}</div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Surplus/(Deficit) — Adopted</div>
-                    <div className="value" style={{color:surplusAdopted>=0?'#2e7d32':'#c62828'}}>{surplusAdopted>=0?'':'('+fc(-surplusAdopted)+')'}{surplusAdopted>=0?fc(surplusAdopted):''}</div>
+                    <div className="value" style={{color:surplusAdopted>=0?'#006786':'#d82071'}}>{surplusAdopted>=0?'':'('+fc(-surplusAdopted)+')'}{surplusAdopted>=0?fc(surplusAdopted):''}</div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Surplus/(Deficit) — Revised</div>
-                    <div className="value" style={{color:surplusRevised>=0?'#2e7d32':'#c62828',fontSize:22}}>
+                    <div className="value" style={{color:surplusRevised>=0?'#006786':'#d82071',fontSize:22}}>
                         {surplusRevised>=0?fc(surplusRevised):'('+fc(-surplusRevised)+')'}
                     </div>
                 </div>
                 <div className="footer-stat">
                     <div className="label">Net Change in Position</div>
-                    <div className="value" style={{color:netVariance>=0?'#2e7d32':'#c62828'}}>{fv(netVariance)}</div>
+                    <div className="value" style={{color:netVariance>=0?'#006786':'#d82071'}}>{fv(netVariance)}</div>
                 </div>
             </div>
         </div>
@@ -433,7 +433,7 @@ function ScenariosTab({ scenarios, activeId, onActivate, onRefresh }) {
         <div>
             <div className="toolbar">
                 <button className="btn btn-primary" onClick={openCreate}>New Scenario</button>
-                {msg && <span style={{fontSize:12,color:'#2e7d32',fontWeight:700}}>{msg}</span>}
+                {msg && <span style={{fontSize:12,color:'#006786',fontWeight:700}}>{msg}</span>}
             </div>
             <div className="alert alert-info">
                 Scenarios are independent versions of the budget. Create a "Current Forecast" to track re-estimates, or a "Conservative" to model downside risk. The Ledger always edits the active scenario selected at the top of the page.
@@ -444,7 +444,7 @@ function ScenariosTab({ scenarios, activeId, onActivate, onRefresh }) {
                         {s.is_locked && <span className="lock-badge">LOCKED</span>}
                         <div className="sc-name">{s.name}</div>
                         <div className="sc-meta">FY {s.fiscal_year} &bull; Created {new Date(s.created_at).toLocaleDateString()}</div>
-                        {s.description && <div style={{fontSize:12,color:'#555',marginBottom:10}}>{s.description}</div>}
+                        {s.description && <div style={{fontSize:12,color:'#605d5d',marginBottom:10}}>{s.description}</div>}
                         <div className="sc-actions">
                             <button className="btn btn-primary btn-sm" onClick={()=>onActivate(s.id)} disabled={s.id===activeId}>{s.id===activeId?'Active':'Load'}</button>
                             <button className="btn btn-secondary btn-sm" onClick={()=>openEdit(s)} disabled={!!s.is_locked}>Rename</button>
@@ -537,15 +537,15 @@ function SupplementalsTab({ activeId, scenarios, accounts, onApplied }) {
             <div className="toolbar">
                 <button className="btn btn-primary" onClick={()=>{setForm({scenario_id:activeId||'',account_number:'',department:'',category:'Supplemental',amount:'',justification:''});setMsg('');setShowModal(true);}}>Add Request</button>
                 <button className="btn btn-success" onClick={applyApproved} disabled={!activeId||!sups.some(s=>s.status==='approved')}>Apply Approved to Ledger</button>
-                {msg && <span style={{fontSize:12,color:'#2e7d32',fontWeight:700}}>{msg}</span>}
+                {msg && <span style={{fontSize:12,color:'#006786',fontWeight:700}}>{msg}</span>}
             </div>
             <div className="alert alert-info">
                 Track mid-year budget amendments — supplemental funding requests, budget reductions, or inter-departmental transfers. Approved supplementals can be applied directly to the Revised Forecast in the Ledger.
             </div>
             <div className="stat-grid" style={{gridTemplateColumns:'repeat(3,1fr)',maxWidth:500,marginBottom:16}}>
-                <div className="stat-card"><div className="sv" style={{color:'#e65100'}}>{sups.filter(s=>s.status==='pending').length}</div><div className="sl">Pending</div></div>
-                <div className="stat-card"><div className="sv" style={{color:'#2e7d32'}}>{fc(totalApproved)}</div><div className="sl">Total Approved</div></div>
-                <div className="stat-card"><div className="sv" style={{color:'#888'}}>{fc(totalPending)}</div><div className="sl">Pending Amount</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#6d5504'}}>{sups.filter(s=>s.status==='pending').length}</div><div className="sl">Pending</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#006786'}}>{fc(totalApproved)}</div><div className="sl">Total Approved</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#7d7979'}}>{fc(totalPending)}</div><div className="sl">Pending Amount</div></div>
             </div>
             <div className="card">
                 <div className="spreadsheet-wrap">
@@ -564,11 +564,11 @@ function SupplementalsTab({ activeId, scenarios, accounts, onApplied }) {
                                 const acctName = accounts.find(a=>a.account_number===s.account_number)?.account_name || s.account_number;
                                 return (
                                     <tr key={s.id}>
-                                        <td style={{fontSize:11,color:'#888'}}>{new Date(s.submitted_at).toLocaleDateString()}</td>
+                                        <td style={{fontSize:11,color:'#7d7979'}}>{new Date(s.submitted_at).toLocaleDateString()}</td>
                                         <td style={{fontSize:11}}>{scName}</td>
                                         <td>{s.department}</td>
                                         <td style={{fontSize:11}}>{acctName || '—'}</td>
-                                        <td><span className="badge" style={{background:'#e8eaf6',color:'#1565c0'}}>{s.category}</span></td>
+                                        <td><span className="badge" style={{background:'#e9f8ff',color:'#1186ac'}}>{s.category}</span></td>
                                         <td className={s.amount>=0?'right pos':'right neg'}>{s.amount>=0?'+':''}{fc(s.amount)}</td>
                                         <td style={{fontSize:11,maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={s.justification}>{s.justification || '—'}</td>
                                         <td><span className={'badge badge-'+s.status}>{s.status}</span></td>
@@ -709,7 +709,7 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
                         <label>Months elapsed: {months}</label>
                         <input type="range" min={1} max={12} value={months} onChange={e=>setMonths(parseInt(e.target.value))} style={{display:'block',width:200}} />
                     </div>
-                    <div style={{fontSize:12,color:'#888'}}>
+                    <div style={{fontSize:12,color:'#7d7979'}}>
                         Extrapolating full-year from {months} month{months!==1?'s':''} of actual data.
                         {curves?.available
                             ? ' Using each account\u2019s historical monthly seasonality curve (badge per row); accounts without history use straight-line.'
@@ -718,20 +718,20 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
                 </div>
             </div>
             <div className="stat-grid" style={{gridTemplateColumns:'repeat(3,1fr)',maxWidth:480,marginBottom:12}}>
-                <div className="stat-card"><div className="sv" style={{color:'#c62828'}}>{overBudget}</div><div className="sl">Accounts Over Budget</div></div>
-                <div className="stat-card"><div className="sv" style={{color:'#2e7d32'}}>{underBudget}</div><div className="sl">Accounts Under Budget</div></div>
-                <div className="stat-card"><div className="sv" style={{color:totalExtrap>=0?'#2e7d32':'#c62828'}}>{fc(totalExtrap)}</div><div className="sl">Projected Net Position</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#d82071'}}>{overBudget}</div><div className="sl">Accounts Over Budget</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#006786'}}>{underBudget}</div><div className="sl">Accounts Under Budget</div></div>
+                <div className="stat-card"><div className="sv" style={{color:totalExtrap>=0?'#006786':'#d82071'}}>{fc(totalExtrap)}</div><div className="sl">Projected Net Position</div></div>
             </div>
             <div className="toolbar">
                 <button className="btn btn-primary" onClick={apply} disabled={applying||!Object.values(accepted).some(Boolean)}>
                     {applying?'Applying...':'Apply Selected to Ledger'} ({Object.values(accepted).filter(Boolean).length} selected)
                 </button>
-                {msg && <span style={{fontSize:12,color:msg.includes('Error')?'#c62828':'#2e7d32',fontWeight:700}}>{msg}</span>}
+                {msg && <span style={{fontSize:12,color:msg.includes('Error')?'#d82071':'#006786',fontWeight:700}}>{msg}</span>}
             </div>
             <div className="alert alert-info">
                 Check accounts where you want to accept the extrapolated forecast. You can also enter a custom override. Click "Apply Selected to Ledger" to push chosen values to the Revised Forecast column.
             </div>
-            <div style={{background:'#fff',borderRadius:8,overflow:'hidden',boxShadow:'0 1px 4px rgba(0,0,0,.08)'}}>
+            <div style={{background: '#eae9e9',borderRadius:8,overflow:'hidden',boxShadow:'0 1px 4px rgba(0,0,0,.08)'}}>
                 <div className="rf-row rf-header">
                     <span>Account</span><span className="right">Adopted</span><span className="right">YTD Actual</span><span className="right">Extrapolated</span><span>Accept</span><span>Custom Override</span>
                 </div>
@@ -740,19 +740,19 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
                     const finalVal = ov !== undefined ? parseFloat(ov)||0 : l.extrap;
                     const isOver = l.variance > 0;
                     return (
-                        <div key={l.account_number} className="rf-row" style={{background:accepted[l.account_number]?'#e8f5e9':undefined}}>
+                        <div key={l.account_number} className="rf-row" style={{background:accepted[l.account_number]?'#e9f8ff':undefined}}>
                             <div>
                                 <div style={{fontWeight:600,fontSize:12}}>{l.account_name}</div>
-                                <div style={{fontSize:10,color:'#888'}}>{l.account_number} &bull; {l.department}</div>
+                                <div style={{fontSize:10,color:'#7d7979'}}>{l.account_number} &bull; {l.department}</div>
                             </div>
                             <div className="right" style={{fontSize:12}}>{fc(l.adopted)}</div>
                             <div className="right" style={{fontSize:12}}>{fc(l.ytd)}</div>
                             <div className="right">
-                                <div style={{fontWeight:700,color:isOver&&l.account_type!=='Revenue'?'#c62828':'#2e7d32',fontSize:12}}>{fc(l.extrap)}</div>
-                                <div style={{fontSize:10,color:'#888'}}>{fv(l.variance)}
+                                <div style={{fontWeight:700,color:isOver&&l.account_type!=='Revenue'?'#d82071':'#006786',fontSize:12}}>{fc(l.extrap)}</div>
+                                <div style={{fontSize:10,color:'#7d7979'}}>{fv(l.variance)}
                                     {' '}<span style={{padding:'1px 5px',borderRadius:8,fontSize:9,fontWeight:700,
-                                        background:l.method==='straight-line'?'#f0f0f0':'#e3f0e6',
-                                        color:l.method==='straight-line'?'#777':'#1e6b3c'}}>
+                                        background:l.method==='straight-line'?'#eae7e7':'#e9f8ff',
+                                        color:l.method==='straight-line'?'#7d7979':'#006786'}}>
                                         {l.method==='seasonal'?'SEASONAL':l.method==='type-seasonal'?'TYPE AVG':'STRAIGHT-LINE'}
                                     </span>
                                 </div>
@@ -767,7 +767,7 @@ function ReforecastTab({ scenario, activeId, onApplied }) {
                                     onFocus={()=>setRfFocused(l.account_number)}
                                     onBlur={()=>setRfFocused(null)}
                                     onChange={e=>setOverrides(p=>({...p,[l.account_number]:numStrip(e.target.value)}))}
-                                    style={{background:'#f9f9f9'}} />
+                                    style={{background:'#f8f4f4'}} />
                             </div>
                         </div>
                     );
@@ -826,8 +826,8 @@ function SummaryTab({ scenario }) {
             data:{
                 labels: depts.map(d=>d.dept),
                 datasets:[
-                    {label:'Adopted',data:depts.map(d=>d.adopted),backgroundColor:'rgba(21,101,192,.4)',borderColor:'#1565c0',borderWidth:1},
-                    {label:'Revised',data:depts.map(d=>d.revised),backgroundColor:'rgba(46,125,50,.4)',borderColor:'#2e7d32',borderWidth:1},
+                    {label:'Adopted',data:depts.map(d=>d.adopted),backgroundColor:'rgba(0,136,176,.4)',borderColor:'#1186ac',borderWidth:1},
+                    {label:'Revised',data:depts.map(d=>d.revised),backgroundColor:'rgba(0,103,134,.4)',borderColor:'#006786',borderWidth:1},
                 ]
             },
             options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'Department Expense — Adopted vs Revised'}},scales:{y:{ticks:{callback:v=>'$'+Math.round(v/1000)+'K'}}}}
@@ -846,8 +846,8 @@ function SummaryTab({ scenario }) {
             data:{
                 labels:['Adopted','Revised','Yr+1','Yr+2'],
                 datasets:[
-                    {label:'Total Revenue',data:[totalRevAdopted,totalRevRevised,yr1Rev,yr2Rev],borderColor:'#1565c0',backgroundColor:'rgba(21,101,192,.1)',fill:true,tension:.3},
-                    {label:'Total Expense',data:[totalExpAdopted,totalExpRevised,yr1Exp,yr2Exp],borderColor:'#c62828',backgroundColor:'rgba(198,40,40,.08)',fill:true,tension:.3},
+                    {label:'Total Revenue',data:[totalRevAdopted,totalRevRevised,yr1Rev,yr2Rev],borderColor:'#1186ac',backgroundColor:'rgba(0,136,176,.1)',fill:true,tension:.3},
+                    {label:'Total Expense',data:[totalExpAdopted,totalExpRevised,yr1Exp,yr2Exp],borderColor:'#d82071',backgroundColor:'rgba(214,0,108,.08)',fill:true,tension:.3},
                 ]
             },
             options:{responsive:true,maintainAspectRatio:false,plugins:{title:{display:true,text:'3-Year Budget Trajectory'}},scales:{y:{ticks:{callback:v=>'$'+Math.round(v/1000000)+'M'}}}}
@@ -866,10 +866,10 @@ function SummaryTab({ scenario }) {
     return (
         <div>
             <div className="stat-grid">
-                <div className="stat-card"><div className="sv" style={{color:'#1565c0'}}>{fc(totalRevRevised)}</div><div className="sl">Total Revenue (Revised)</div><div style={{fontSize:11,color:'#888',marginTop:2}}>{fv(totalRevRevised-totalRevAdopted)} vs adopted</div></div>
-                <div className="stat-card"><div className="sv" style={{color:'#e65100'}}>{fc(totalExpRevised)}</div><div className="sl">Total Expense (Revised)</div><div style={{fontSize:11,color:'#888',marginTop:2}}>{fv(totalExpRevised-totalExpAdopted)} vs adopted</div></div>
-                <div className="stat-card"><div className="sv" style={{color:surplusRevised>=0?'#2e7d32':'#c62828'}}>{surplusRevised>=0?fc(surplusRevised):'('+fc(-surplusRevised)+')'}</div><div className="sl">Net Surplus/(Deficit)</div><div style={{fontSize:11,color:'#888',marginTop:2}}>Adopted: {surplusAdopted>=0?fc(surplusAdopted):'('+fc(-surplusAdopted)+')'}</div></div>
-                <div className="stat-card"><div className="sv" style={{color:'#c62828'}}>{negCount}</div><div className="sl">Accounts with Negative Variance</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#1186ac'}}>{fc(totalRevRevised)}</div><div className="sl">Total Revenue (Revised)</div><div style={{fontSize:11,color:'#7d7979',marginTop:2}}>{fv(totalRevRevised-totalRevAdopted)} vs adopted</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#6d5504'}}>{fc(totalExpRevised)}</div><div className="sl">Total Expense (Revised)</div><div style={{fontSize:11,color:'#7d7979',marginTop:2}}>{fv(totalExpRevised-totalExpAdopted)} vs adopted</div></div>
+                <div className="stat-card"><div className="sv" style={{color:surplusRevised>=0?'#006786':'#d82071'}}>{surplusRevised>=0?fc(surplusRevised):'('+fc(-surplusRevised)+')'}</div><div className="sl">Net Surplus/(Deficit)</div><div style={{fontSize:11,color:'#7d7979',marginTop:2}}>Adopted: {surplusAdopted>=0?fc(surplusAdopted):'('+fc(-surplusAdopted)+')'}</div></div>
+                <div className="stat-card"><div className="sv" style={{color:'#d82071'}}>{negCount}</div><div className="sl">Accounts with Negative Variance</div></div>
             </div>
             <div className="chart-box">
                 <canvas ref={barRef} style={{maxHeight:260}}></canvas>
@@ -900,8 +900,8 @@ function SummaryTab({ scenario }) {
                 <div className="card">
                     <div className="card-header">Top 5 Favorable Changes</div>
                     <div className="card-body">
-                        {top5Fav.length === 0 ? <div style={{color:'#888',fontSize:12}}>No favorable variances</div> : top5Fav.map(l=>(
-                            <div key={l.account_number} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid #f5f5f5',fontSize:12}}>
+                        {top5Fav.length === 0 ? <div style={{color:'#7d7979',fontSize:12}}>No favorable variances</div> : top5Fav.map(l=>(
+                            <div key={l.account_number} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid #f8f4f4',fontSize:12}}>
                                 <span>{l.account_name}</span><span className="pos">{fv(l.variance)}</span>
                             </div>
                         ))}
@@ -910,8 +910,8 @@ function SummaryTab({ scenario }) {
                 <div className="card">
                     <div className="card-header">Top 5 Unfavorable Changes</div>
                     <div className="card-body">
-                        {top5Unf.length === 0 ? <div style={{color:'#888',fontSize:12}}>No unfavorable variances</div> : top5Unf.map(l=>(
-                            <div key={l.account_number} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid #f5f5f5',fontSize:12}}>
+                        {top5Unf.length === 0 ? <div style={{color:'#7d7979',fontSize:12}}>No unfavorable variances</div> : top5Unf.map(l=>(
+                            <div key={l.account_number} style={{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid #f8f4f4',fontSize:12}}>
                                 <span>{l.account_name}</span><span className="neg">{fv(l.variance)}</span>
                             </div>
                         ))}

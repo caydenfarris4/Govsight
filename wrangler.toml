@@ -21,6 +21,12 @@ run_worker_first = true
 # Requires the Workers paid plan (Containers). If a build fails with a
 # plan/containers error, the previous deployment stays live - revert
 # this block to unblock builds.
+#
+# Note: concurrent builds (e.g. two branches pushed together) can race
+# on container-application creation with
+# DURABLE_OBJECT_ALREADY_HAS_APPLICATION; a retried or subsequent build
+# resolves it by modifying the now-existing application. Consider
+# disabling non-production branch builds in Workers Builds settings.
 [[containers]]
 class_name = "GovsightPlatform"
 image = "./Dockerfile"
@@ -35,8 +41,14 @@ class_name = "GovsightPlatform"
 tag = "v1"
 new_sqlite_classes = ["GovsightPlatform"]
 
-# The platform's public hostname (DNS record is created automatically
-# because the zone is on this Cloudflare account)
+# Custom domains: wrangler treats this list as the COMPLETE set of the
+# worker's domains on every deploy - a hostname omitted here gets
+# detached (which deactivates its DNS record). Both public hostnames
+# must therefore live in this config, not the dashboard.
+[[routes]]
+pattern = "demo.thegovsight.com"
+custom_domain = true
+
 [[routes]]
 pattern = "app.thegovsight.com"
 custom_domain = true

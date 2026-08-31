@@ -269,13 +269,21 @@ export class GovsightPlatform {
         enableInternet: true,
       });
     }
-    try {
-      // Proxy into the container over its TCP port; http inside the tunnel
-      return await container.getTcpPort(8000)
-        .fetch(request.url.replace('https:', 'http:'), request);
-    } catch (err) {
-      // Cold start: image pull + Python boot takes a little while
-      return new Response(
+    // Proxy into the container over its TCP port; http inside the tunnel.
+    // Cold starts take tens of seconds (Python boot + demo seeding), so
+    // retry briefly before showing the starting-up page.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        return await container.getTcpPort(8000)
+          .fetch(request.url.replace('https:', 'http:'), request);
+      } catch (err) {
+        if (attempt < 3) {
+          await new Promise((r) => setTimeout(r, 2500));
+        }
+      }
+    }
+    // Still unreachable: image pull + Python boot takes a little while
+    return new Response(
         '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="8">' +
         '<body style="font-family:system-ui;background:#f4f6f8;color:#12263a;' +
         'display:flex;align-items:center;justify-content:center;height:100vh">' +
@@ -283,7 +291,6 @@ export class GovsightPlatform {
         '<p style="color:#5b6b7a">First load after idle takes up to a minute. ' +
         'This page refreshes automatically.</p></div></body>',
         { status: 503, headers: { 'Content-Type': 'text/html' } });
-    }
   }
 }
 

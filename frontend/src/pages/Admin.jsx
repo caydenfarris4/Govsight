@@ -33,30 +33,23 @@ export default function Admin({ user }) {
   const Body = current.component;
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px', width: '100%' }}>
-      <h1 style={{ fontSize: 22, color: '#12263a', marginBottom: 2 }}>Administration</h1>
-      <p style={{ color: '#5b6b7a', marginBottom: 18, fontSize: 14 }}>
-        {user.tenant_name}
-      </p>
-      <div style={{ display: 'flex', gap: 22, alignItems: 'flex-start' }}>
-        <nav style={{
-          flexShrink: 0, width: 190, background: '#fff',
-          border: '1px solid #e3e9ee', borderRadius: 10, padding: 8,
-          position: 'sticky', top: 16,
-        }}>
-          {sections.map((s) => {
-            const on = s.id === current.id;
-            return (
-              <button key={s.id} onClick={() => setActive(s.id)} style={{
-                display: 'block', width: '100%', textAlign: 'left',
-                background: on ? '#eef2f6' : 'none', border: 'none',
-                borderLeft: on ? '3px solid #2450b8' : '3px solid transparent',
-                borderRadius: 6, padding: '9px 12px', fontSize: 13.5,
-                fontWeight: on ? 700 : 500, color: on ? '#12263a' : '#5b6b7a',
-                cursor: 'pointer', marginBottom: 2,
-              }}>{s.label}</button>
-            );
-          })}
+    <div style={{
+      maxWidth: 1100, margin: '0 auto', width: '100%',
+      padding: 'var(--space-6) var(--space-4) var(--space-12)',
+    }}>
+      <span className="kicker">Administration</span>
+      <h2 style={{ margin: 'var(--space-1) 0 0' }}>{user.tenant_name}</h2>
+      <div style={{
+        display: 'flex', gap: 'var(--space-6)', alignItems: 'flex-start',
+        marginTop: 'var(--space-6)',
+      }}>
+        <nav className="adminnav" style={{ flexShrink: 0, width: 190 }}>
+          {sections.map((s) => (
+            <button key={s.id} onClick={() => setActive(s.id)}
+                    aria-current={s.id === current.id ? 'true' : undefined}>
+              {s.label}
+            </button>
+          ))}
         </nav>
         <div style={{ flex: 1, minWidth: 0 }}>
           <Body user={user} />

@@ -11,14 +11,16 @@ const BudgetPlaygroundApp = lazy(() => import('../tools/BudgetPlaygroundApp.jsx'
 
 function ToolFrame({ children }) {
   return (
-    <Suspense fallback={<div style={{ padding: 40, color: '#5b6b7a' }}>Loading tool…</div>}>
+    <Suspense fallback={
+      <div className="text-muted" style={{ padding: 40 }}>Loading tool…</div>
+    }>
       {children}
     </Suspense>
   );
 }
 
-// Sub-view toggle for composite tabs (Budget, Treasury) — mirrors the
-// static shell's hub pills, but each sub-view is a real component.
+// Sub-view toggle for composite tabs (Budget, Treasury) — the design
+// system's segmented control; each sub-view is a real component.
 function HubToggle({ storageKey, subs }) {
   const [active, setActive] = useState(() => {
     try {
@@ -34,17 +36,14 @@ function HubToggle({ storageKey, subs }) {
   const current = subs.find((s) => s.id === active) || subs[0];
   return (
     <div style={{ padding: '16px 20px 0', maxWidth: 1240, margin: '0 auto', width: '100%' }}>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
-        {subs.map((s) => {
-          const on = s.id === active;
-          return (
-            <button key={s.id} onClick={() => pick(s.id)} style={{
-              padding: '7px 16px', borderRadius: 99, fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', border: `1px solid ${on ? '#12263a' : '#cfd8e0'}`,
-              background: on ? '#12263a' : '#fff', color: on ? '#fff' : '#5b6b7a',
-            }}>{s.label}</button>
-          );
-        })}
+      <div className="seg" style={{ marginBottom: 'var(--space-1)' }}>
+        {subs.map((s) => (
+          <label key={s.id} className="seg-opt">
+            <input type="radio" name={storageKey} checked={s.id === active}
+                   onChange={() => pick(s.id)} />
+            {s.label}
+          </label>
+        ))}
       </div>
       <div key={current.id}>{current.render()}</div>
     </div>
@@ -97,7 +96,7 @@ export default function ModulePage() {
   const idx = Math.min(Math.max(parseInt(tabIndex || '0', 10) || 0, 0), mod.tabs.length - 1);
   const tab = mod.tabs[idx];
   const Body = COMPONENTS[tab.component] ||
-    (() => <div style={{ padding: 40, color: '#5b6b7a' }}>Coming soon.</div>);
+    (() => <div className="text-muted" style={{ padding: 40 }}>Coming soon.</div>);
 
   const primaries = mod.tabs.filter((t) => !t.secondary);
   const secondaries = mod.tabs.filter((t) => t.secondary);
@@ -105,31 +104,24 @@ export default function ModulePage() {
     const i = mod.tabs.indexOf(t);
     const on = i === idx;
     return (
-      <Link key={t.name} to={`/${moduleId}/${i}`} style={{
-        padding: '9px 16px', fontSize: 13.5, textDecoration: 'none',
-        fontWeight: on ? 700 : (t.secondary ? 500 : 600),
-        color: on ? '#12263a' : (t.secondary ? '#8fa1b0' : '#5b6b7a'),
-        borderBottom: on ? '3px solid ' + mod.color : '3px solid transparent',
-        whiteSpace: 'nowrap',
-      }}>{t.name}</Link>
+      <Link key={t.name} className="tab" aria-selected={on ? 'true' : 'false'}
+            to={`/${moduleId}/${i}`}
+            style={{ whiteSpace: 'nowrap', textDecoration: 'none' }}>
+        {t.name}
+      </Link>
     );
   };
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#fff', borderBottom: '1px solid #e3e9ee', flexShrink: 0 }}>
-        <div style={{
-          maxWidth: 1240, margin: '0 auto', padding: '14px 20px 0', width: '100%',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-            <h1 style={{ fontSize: 19, color: mod.color, margin: 0 }}>
-              GovSight {mod.name}
-            </h1>
-            <span style={{ fontSize: 13, color: '#8fa1b0' }}>{mod.tagline}</span>
+      <div className="module-head">
+        <div className="module-head-inner">
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
+            <h2 style={{ margin: 0, fontSize: 'var(--text-h3)' }}>{mod.name}</h2>
+            <span className="kicker">{mod.tagline}</span>
           </div>
-          <div style={{
-            display: 'flex', gap: 4, marginTop: 8, alignItems: 'center',
-            overflowX: 'auto',
+          <div className="tabs" style={{
+            marginTop: 'var(--space-2)', overflowX: 'auto', alignItems: 'center',
           }}>
             {primaries.map(tabLink)}
             {secondaries.length > 0 && <span style={{ flex: 1 }} />}
@@ -137,7 +129,7 @@ export default function ModulePage() {
           </div>
         </div>
       </div>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', background: '#f4f6f8' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <Body />
       </div>
     </div>

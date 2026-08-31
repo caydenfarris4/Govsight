@@ -41,8 +41,8 @@ function CreateCity({ onCreated }) {
         <button style={btn} disabled={busy || !form.tenant_id || !form.name ||
                                       !form.admin_username || !form.admin_password}
                 onClick={create}>Create city</button>
-        {error && <span style={{ color: '#a4271c', fontSize: 12.5 }}>{error}</span>}
-        {ok && <span style={{ color: '#1e6b3c', fontSize: 12.5 }}>{ok}</span>}
+        {error && <span style={{ color: 'var(--status-err-fg)', fontSize: 12.5 }}>{error}</span>}
+        {ok && <span style={{ color: 'var(--status-ok-fg)', fontSize: 12.5 }}>{ok}</span>}
       </div>
     </div>
   );
@@ -86,7 +86,7 @@ function AIKeyRow({ provider, label, status, onChanged }) {
   };
 
   return (
-    <div style={{ borderTop: '1px solid #eef2f5', padding: '10px 0' }}>
+    <div style={{ borderTop: '1px solid color-mix(in srgb, var(--ink) 8%, transparent)', padding: '10px 0' }}>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontWeight: 700, fontSize: 14, minWidth: 90 }}>{label}</span>
         {status?.configured
@@ -99,13 +99,13 @@ function AIKeyRow({ provider, label, status, onChanged }) {
         <button style={btnGhost} disabled={busy || (!key && !status?.configured)}
                 onClick={test}>Test</button>
         {status?.configured && (
-          <button style={{ ...btnGhost, color: '#a4271c' }} disabled={busy}
+          <button style={{ ...btnGhost, color: 'var(--status-err-fg)' }} disabled={busy}
                   onClick={remove}>Remove</button>
         )}
       </div>
       {(msg || err) && (
         <div style={{ fontSize: 12.5, marginTop: 6,
-                      color: err ? '#a4271c' : '#1e6b3c' }}>{err || msg}</div>
+                      color: err ? 'var(--status-err-fg)' : 'var(--status-ok-fg)' }}>{err || msg}</div>
       )}
     </div>
   );

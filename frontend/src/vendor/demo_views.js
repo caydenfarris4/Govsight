@@ -122,28 +122,28 @@
 
   function engineBadge(live) {
     return live
-      ? '<span style="background:#e2f2e8;color:#1e6b3c;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">PLATFORM ENGINE</span>'
-      : '<span style="background:#eef2f6;color:#5b6b7a;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">IN-BROWSER MODEL</span>';
+      ? '<span style="background:#e9f8ff;color:#006786;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">PLATFORM ENGINE</span>'
+      : '<span style="background:#eae7e7;color:#605d5d;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">IN-BROWSER MODEL</span>';
   }
 
   function demoBanner() {
     const liveSections = DATA && DATA.meta && DATA.meta.live_sections;
     if (liveSections && liveSections.indexOf('accounts') >= 0) {
       const org = (DATA.meta.organization || 'your organization');
-      return '<div style="background:#e2f2e8;color:#1e6b3c;padding:8px 14px;border-radius:8px;' +
+      return '<div style="background:#e9f8ff;color:#006786;padding:8px 14px;border-radius:8px;' +
              'font-size:12px;font-weight:600;margin-bottom:14px">LIVE DATA - served by the GovSight ' +
              'platform for ' + esc(org) + ' (' + liveSections.join(', ') + ').</div>';
     }
-    return '<div style="background:#e8eef7;color:#24508f;padding:8px 14px;border-radius:8px;' +
+    return '<div style="background:#e9f8ff;color:#004961;padding:8px 14px;border-radius:8px;' +
            'font-size:12px;font-weight:600;margin-bottom:14px">DEMO DATA - a complete sample city ' +
            '(3 fiscal years, 3,100+ transactions). Connect your ERP through the platform backend to see live figures.</div>';
   }
 
   function kpi(label, value, sub) {
-    return '<div style="background:#fff;border:1px solid #dde4ea;border-radius:10px;padding:14px 16px;min-width:150px;flex:1">' +
-           '<div style="font-size:11px;color:#5b6b7a;text-transform:uppercase;letter-spacing:.05em">' + esc(label) + '</div>' +
-           '<div style="font-size:22px;font-weight:700;color:#12263a;margin-top:2px">' + value + '</div>' +
-           (sub ? '<div style="font-size:11px;color:#5b6b7a;margin-top:2px">' + sub + '</div>' : '') + '</div>';
+    return '<div style="background: #eae9e9;border:1px solid #d7d3d3;border-radius:10px;padding:14px 16px;min-width:150px;flex:1">' +
+           '<div style="font-size:11px;color:#605d5d;text-transform:uppercase;letter-spacing:.05em">' + esc(label) + '</div>' +
+           '<div style="font-size:22px;font-weight:700;color:#201e1d;margin-top:2px">' + value + '</div>' +
+           (sub ? '<div style="font-size:11px;color:#605d5d;margin-top:2px">' + sub + '</div>' : '') + '</div>';
   }
 
   function kpiRow(items) {
@@ -151,9 +151,9 @@
   }
 
   function card(title, inner, extra) {
-    return '<div style="background:#fff;border:1px solid #dde4ea;border-radius:10px;padding:16px;margin-bottom:16px">' +
-           '<div style="font-weight:600;color:#12263a;margin-bottom:10px">' + esc(title) +
-           (extra ? ' <span style="font-weight:400;font-size:12px;color:#5b6b7a">' + extra + '</span>' : '') +
+    return '<div style="background: #eae9e9;border:1px solid #d7d3d3;border-radius:10px;padding:16px;margin-bottom:16px">' +
+           '<div style="font-weight:600;color:#201e1d;margin-bottom:10px">' + esc(title) +
+           (extra ? ' <span style="font-weight:400;font-size:12px;color:#605d5d">' + extra + '</span>' : '') +
            '</div>' + inner + '</div>';
   }
 
@@ -165,7 +165,7 @@
     if (typeof Chart === 'undefined') {
       const el = byId(id);
       if (el && el.parentElement) {
-        el.parentElement.innerHTML = '<div style="color:#5b6b7a;font-size:13px;padding:20px">' +
+        el.parentElement.innerHTML = '<div style="color:#605d5d;font-size:13px;padding:20px">' +
           'Chart library unavailable (offline) - data table views still work.</div>';
       }
       return;
@@ -181,12 +181,12 @@
     let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
     html += '<thead><tr>' + headers.map(function (h, i) {
       const align = (opts.rightAlign || []).indexOf(i) >= 0 ? 'right' : 'left';
-      return '<th style="text-align:' + align + ';padding:8px 10px;border-bottom:2px solid #dde4ea;color:#5b6b7a;font-size:12px">' + esc(h) + '</th>';
+      return '<th style="text-align:' + align + ';padding:8px 10px;border-bottom:2px solid #d7d3d3;color:#605d5d;font-size:12px">' + esc(h) + '</th>';
     }).join('') + '</tr></thead><tbody>';
     rows.forEach(function (r) {
       html += '<tr>' + r.map(function (c, i) {
         const align = (opts.rightAlign || []).indexOf(i) >= 0 ? 'right' : 'left';
-        return '<td style="text-align:' + align + ';padding:7px 10px;border-bottom:1px solid #eef2f5">' + c + '</td>';
+        return '<td style="text-align:' + align + ';padding:7px 10px;border-bottom:1px solid #eae7e7">' + c + '</td>';
       }).join('') + '</tr>';
     });
     html += '</tbody></table></div>';
@@ -229,14 +229,14 @@
   const views = {};
 
   function finePrint(text) {
-    return '<div style="margin-top:10px;padding-top:8px;border-top:1px solid #eef2f5;' +
-           'font-size:10.5px;color:#8a97a3;line-height:1.5">Source: ' + text + '</div>';
+    return '<div style="margin-top:10px;padding-top:8px;border-top:1px solid #eae7e7;' +
+           'font-size:10.5px;color:#9b9797;line-height:1.5">Source: ' + text + '</div>';
   }
 
   function sourceBadge(live, label) {
     return live
-      ? '<span style="background:#e2f2e8;color:#1e6b3c;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">LIVE - ' + label + '</span>'
-      : '<span style="background:#fdeeda;color:#8a5a12;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">ESTIMATED - ' + label + ' unavailable</span>';
+      ? '<span style="background:#e9f8ff;color:#006786;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">LIVE - ' + label + '</span>'
+      : '<span style="background:#f2e7c2;color:#6d5504;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">ESTIMATED - ' + label + ' unavailable</span>';
   }
 
   function fetchWithTimeout(url, ms) {
@@ -296,13 +296,13 @@
     const city = DATA.city || { name: 'your city', state: '', fallback: {} };
     const fb = city.fallback || {};
     el.innerHTML = demoBanner() +
-      '<div style="background:#12263a;color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:14px;font-size:13px">' +
+      '<div style="background:#201e1d;color:#fff;padding:10px 16px;border-radius:8px;margin-bottom:14px;font-size:13px">' +
       'Localized to <strong>' + esc(city.name) + ', ' + esc(city.state) + '</strong> (city of record - ' +
       'Census place ' + esc(city.state_fips + city.place_fips || '') + '). Demographics pull live from the US Census; ' +
       'estimates are labeled when a feed is unreachable.</div>' +
-      '<div id="demo-demographics">' + card('Demographics', '<div style="color:#5b6b7a;font-size:13px">Loading live Census data\u2026</div>') + '</div>' +
+      '<div id="demo-demographics">' + card('Demographics', '<div style="color:#605d5d;font-size:13px">Loading live Census data\u2026</div>') + '</div>' +
       '<div id="demo-zoning"></div>' +
-      '<div id="demo-climate">' + card('Climate and Weather', '<div style="color:#5b6b7a;font-size:13px">Loading forecast\u2026</div>') + '</div>' +
+      '<div id="demo-climate">' + card('Climate and Weather', '<div style="color:#605d5d;font-size:13px">Loading forecast\u2026</div>') + '</div>' +
       card('Regional Economic Series',
            canvasBox('ec1') +
            finePrint('Demonstration series for the ' + esc(city.name) + ' area. In production these pull live from ' +
@@ -339,7 +339,7 @@
       makeChart('eth-chart', { type: 'doughnut', data: {
         labels: Object.keys(eth),
         datasets: [{ data: Object.values(eth),
-          backgroundColor: ['#2e6fa3', '#1c6e64', '#8a5a12', '#4169e1', '#5b6b7a'] }] },
+          backgroundColor: ['#d6006c', '#0088b0', '#444141', '#ff90b1', '#62c5ee'] }] },
         options: { responsive: true, maintainAspectRatio: false,
           plugins: { legend: { position: 'right' } } } });
     };
@@ -363,7 +363,7 @@
         table(['Zone', 'Share of area'], Object.entries(zb).map(function (e) {
           return [esc(e[0]), e[1].toFixed(1) + '%'];
         }), { rightAlign: [1] }) + '</div>' +
-        '<div style="font-size:12px;color:#5b6b7a;margin-top:8px">Total area ~' +
+        '<div style="font-size:12px;color:#605d5d;margin-top:8px">Total area ~' +
         (zoning.total_area_acres || 0).toLocaleString() + ' acres.</div>' +
         finePrint(esc(zoning.source || 'Municipal planning estimates') +
           ' for ' + esc(city.name) + '. A live parcel-level feed from the city\u2019s GIS server ' +
@@ -371,7 +371,7 @@
     makeChart('zone-chart', { type: 'doughnut', data: {
       labels: Object.keys(zb),
       datasets: [{ data: Object.values(zb),
-        backgroundColor: ['#2e6fa3', '#4169e1', '#8a5a12', '#5b6b7a', '#1c6e64', '#12263a', '#a4271c'] }] },
+        backgroundColor: ['#d6006c', '#0088b0', '#444141', '#ff90b1', '#62c5ee', '#aa0b56', '#006786'] }] },
       options: { responsive: true, maintainAspectRatio: false,
         plugins: { legend: { position: 'right' } } } });
 
@@ -398,12 +398,12 @@
 
     const e = DATA.economic;
     makeChart('ec1', { type: 'line', data: { labels: e.months, datasets: [
-      { label: 'CPI YoY %', data: e.cpi_yoy, borderColor: '#c62828', tension: 0.3 },
-      { label: 'Unemployment %', data: e.unemployment, borderColor: '#2e6fa3', tension: 0.3 },
-      { label: 'Fed funds %', data: e.fed_funds, borderColor: '#12263a', tension: 0.3 }] },
+      { label: 'CPI YoY %', data: e.cpi_yoy, borderColor: '#d82071', tension: 0.3 },
+      { label: 'Unemployment %', data: e.unemployment, borderColor: '#0088b0', tension: 0.3 },
+      { label: 'Fed funds %', data: e.fed_funds, borderColor: '#201e1d', tension: 0.3 }] },
       options: { responsive: true, maintainAspectRatio: false } });
     makeChart('ec3', { type: 'bar', data: { labels: e.months, datasets: [
-      { label: 'Permits', data: e.local_permits, backgroundColor: '#1c6e64' }] },
+      { label: 'Permits', data: e.local_permits, backgroundColor: '#006786' }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
   };
 
@@ -412,7 +412,7 @@
       const funding = s.tax_revenue + s.grant_funding + s.bonds + s.reallocation;
       const gap = funding - s.total_cost;
       return [esc(s.name), s.created, fcM(s.total_cost), fcM(funding),
-        '<span style="font-weight:700;color:' + (gap >= 0 ? '#1e6b3c' : '#a4271c') + '">' + fcM(gap) + '</span>',
+        '<span style="font-weight:700;color:' + (gap >= 0 ? '#006786' : '#aa0b56') + '">' + fcM(gap) + '</span>',
         esc(s.note)];
     });
     el.innerHTML = demoBanner() +
@@ -422,10 +422,10 @@
       card('Funding Mix by Scenario', canvasBox('rc1'));
     makeChart('rc1', { type: 'bar',
       data: { labels: DATA.scenarios.map(function (s) { return s.name; }), datasets: [
-        { label: 'Tax revenue', data: DATA.scenarios.map(function (s) { return s.tax_revenue; }), backgroundColor: '#2e6fa3' },
-        { label: 'Grants', data: DATA.scenarios.map(function (s) { return s.grant_funding; }), backgroundColor: '#1c6e64' },
-        { label: 'Bonds', data: DATA.scenarios.map(function (s) { return s.bonds; }), backgroundColor: '#8a5a12' },
-        { label: 'Reallocation', data: DATA.scenarios.map(function (s) { return s.reallocation; }), backgroundColor: '#5b6b7a' }] },
+        { label: 'Tax revenue', data: DATA.scenarios.map(function (s) { return s.tax_revenue; }), backgroundColor: '#0088b0' },
+        { label: 'Grants', data: DATA.scenarios.map(function (s) { return s.grant_funding; }), backgroundColor: '#006786' },
+        { label: 'Bonds', data: DATA.scenarios.map(function (s) { return s.bonds; }), backgroundColor: '#6d5504' },
+        { label: 'Reallocation', data: DATA.scenarios.map(function (s) { return s.reallocation; }), backgroundColor: '#605d5d' }] },
       options: { responsive: true, maintainAspectRatio: false,
         scales: { x: { stacked: true }, y: { stacked: true, ticks: { callback: function (v) { return fcM(v); } } } } } });
   };
@@ -438,11 +438,11 @@
          'costMin:Minimum cost:33200000', 'costLikely:Most likely cost:34900000', 'costMax:Maximum cost:36800000']
           .map(function (spec) {
             const p = spec.split(':');
-            return '<label style="font-size:12px;color:#5b6b7a">' + p[1] +
+            return '<label style="font-size:12px;color:#605d5d">' + p[1] +
               '<input id="mc-' + p[0] + '" type="number" value="' + p[2] + '" step="100000" ' +
-              'style="width:100%;padding:6px 8px;border:1px solid #cfd8e0;border-radius:6px;margin-top:3px"></label>';
+              'style="width:100%;padding:6px 8px;border:1px solid #d7d3d3;border-radius:6px;margin-top:3px"></label>';
           }).join('') +
-        '</div><button id="mc-run" style="background:#1d3a56;color:#fff;border:none;border-radius:8px;' +
+        '</div><button id="mc-run" style="background:#2d2b2b;color:#fff;border:none;border-radius:8px;' +
         'padding:9px 22px;font-weight:600;cursor:pointer">Run 5,000 simulations</button>' +
         '<div id="mc-stats" style="margin-top:14px"></div>', 'other-revenue held at baseline') +
       card('Outcome Distribution (net position incl. other revenue)', canvasBox('mc-chart'));
@@ -476,7 +476,7 @@
       makeChart('mc-chart', { type: 'bar',
         data: { labels: freq.map(function (_, i) { return fcM(lo + width * (i + 0.5)); }),
           datasets: [{ label: 'Simulations', data: freq,
-            backgroundColor: freq.map(function (_, i) { return lo + width * (i + 0.5) < 0 ? '#c62828' : '#2e6fa3'; }) }] },
+            backgroundColor: freq.map(function (_, i) { return lo + width * (i + 0.5) < 0 ? '#d82071' : '#0088b0'; }) }] },
         options: { responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } }, scales: { x: { ticks: { maxTicksLimit: 9 } } } } });
     });
@@ -534,21 +534,21 @@
       const vacantSavings = rows.filter(function (r) { return r.status === 'Vacant'; })
         .reduce(function (s, r) { return s + loadedCost(r, { cola: assume.cola, benefitsInfl: assume.benefitsInfl, vacancyFactor: 0 }) - loadedCost(r, assume); }, 0);
 
-      let grid = '<div style="overflow-x:auto"><table id="pbb-grid" style="width:100%;border-collapse:collapse;font-size:13px;background:#fff">';
+      let grid = '<div style="overflow-x:auto"><table id="pbb-grid" style="width:100%;border-collapse:collapse;font-size:13px;background: #eae9e9">';
       grid += '<thead><tr>' + ['Position', 'Department', 'FTE', 'Base Salary', 'Benefits %', 'Status', 'Start Mo', 'Loaded Cost', ''].map(function (h, i) {
-        return '<th style="text-align:' + (i >= 2 && i <= 7 ? 'right' : 'left') + ';padding:8px;border-bottom:2px solid #dde4ea;color:#5b6b7a;font-size:12px;position:sticky;top:0;background:#fff">' + h + '</th>';
+        return '<th style="text-align:' + (i >= 2 && i <= 7 ? 'right' : 'left') + ';padding:8px;border-bottom:2px solid #d7d3d3;color:#605d5d;font-size:12px;position:sticky;top:0;background: #eae9e9">' + h + '</th>';
       }).join('') + '</tr></thead><tbody>';
       const depts = Array.from(new Set(rows.map(function (r) { return r.department; })));
       depts.forEach(function (dept) {
-        grid += '<tr><td colspan="7" style="background:#eef3f8;padding:6px 8px;font-weight:700;color:#12263a;font-size:12px">' + esc(dept) + '</td>' +
-          '<td style="background:#eef3f8;text-align:right;padding:6px 8px;font-weight:700;font-size:12px" class="dept-total" data-dept="' + esc(dept) + '">$' + num(byDept[dept]) + '</td><td style="background:#eef3f8"></td></tr>';
+        grid += '<tr><td colspan="7" style="background:#f8f4f4;padding:6px 8px;font-weight:700;color:#201e1d;font-size:12px">' + esc(dept) + '</td>' +
+          '<td style="background:#f8f4f4;text-align:right;padding:6px 8px;font-weight:700;font-size:12px" class="dept-total" data-dept="' + esc(dept) + '">$' + num(byDept[dept]) + '</td><td style="background:#f8f4f4"></td></tr>';
         rows.forEach(function (r, idx) {
           if (r.department !== dept) return;
           const dirty = isDirty(r);
-          const bg = dirty ? 'background:#fff8e1;' : '';
+          const bg = dirty ? 'background:#f2e7c2;' : '';
           grid += '<tr data-idx="' + idx + '"' + (dirty ? ' class="dirty"' : '') + '>' +
             '<td style="padding:2px 4px;' + bg + '"><input data-f="title" value="' + esc(r.title) + '" style="' + cellStyle + ';text-align:left;font-weight:600"></td>' +
-            '<td style="padding:2px 8px;font-size:12px;color:#5b6b7a;' + bg + '">' + esc(r.department) + '</td>' +
+            '<td style="padding:2px 8px;font-size:12px;color:#605d5d;' + bg + '">' + esc(r.department) + '</td>' +
             '<td style="padding:2px 4px;' + bg + '"><input data-f="fte" type="number" step="0.25" min="0" value="' + r.fte + '" style="' + cellStyle + '"></td>' +
             '<td style="padding:2px 4px;' + bg + '"><input data-f="salary" type="number" step="1000" min="0" value="' + r.salary + '" style="' + cellStyle + '"></td>' +
             '<td style="padding:2px 4px;' + bg + '"><input data-f="benefits" type="number" step="0.5" min="0" value="' + r.benefits + '" style="' + cellStyle + '"></td>' +
@@ -559,7 +559,7 @@
             '<td style="padding:2px 4px;' + bg + '"><input data-f="start_month" type="number" min="1" max="12" value="' + r.start_month + '" ' +
               (r.status === 'New Hire' ? '' : 'disabled') + ' style="' + cellStyle + '"></td>' +
             '<td class="loaded" style="padding:5px 8px;text-align:right;font-weight:600;' + bg + '">$' + num(loadedCost(r, assume)) + '</td>' +
-            '<td style="padding:2px 4px;text-align:center"><button data-remove="' + idx + '" title="Remove position" style="border:none;background:none;color:#a4271c;cursor:pointer;font-weight:700">&times;</button></td></tr>';
+            '<td style="padding:2px 4px;text-align:center"><button data-remove="' + idx + '" title="Remove position" style="border:none;background:none;color:#aa0b56;cursor:pointer;font-weight:700">&times;</button></td></tr>';
         });
       });
       grid += '</tbody></table></div>';
@@ -607,13 +607,13 @@
         glBudgetTotal += budget; glModelTotal += model;
         const pct = budget > 0 ? varc / budget * 100 : 0;
         return [esc(d), fc(budget), fc(model),
-          '<span style="font-weight:700;color:' + (varc > 0 ? '#a4271c' : '#1e6b3c') + '">' +
+          '<span style="font-weight:700;color:' + (varc > 0 ? '#aa0b56' : '#006786') + '">' +
           (varc >= 0 ? '+' : '') + fc(varc) + '</span>',
           budget > 0 ? (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%' : 'no GL budget'];
       }).sort(function (a, b) { return a[0] < b[0] ? -1 : 1; });
       glRows.push(['<strong>Total</strong>', '<strong>' + fc(glBudgetTotal) + '</strong>',
         '<strong>' + fc(glModelTotal) + '</strong>',
-        '<strong style="color:' + (glModelTotal - glBudgetTotal > 0 ? '#a4271c' : '#1e6b3c') + '">' +
+        '<strong style="color:' + (glModelTotal - glBudgetTotal > 0 ? '#aa0b56' : '#006786') + '">' +
         (glModelTotal - glBudgetTotal >= 0 ? '+' : '') + fc(glModelTotal - glBudgetTotal) + '</strong>',
         '<strong>' + (glBudgetTotal > 0 ? (((glModelTotal - glBudgetTotal) / glBudgetTotal * 100) >= 0 ? '+' : '') + ((glModelTotal - glBudgetTotal) / glBudgetTotal * 100).toFixed(1) : '0.0') + '%</strong>']);
       return card('GL Personnel Budget Reconciliation',
@@ -625,14 +625,14 @@
       el.innerHTML = demoBanner() +
         card('Workbook Assumptions',
           '<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end">' +
-          '<label style="font-size:12px;color:#5b6b7a">COLA %<input id="pbb-cola" type="number" step="0.25" value="' + assume.cola + '" style="display:block;width:90px;padding:6px 8px;border:1px solid #cfd8e0;border-radius:6px;margin-top:3px"></label>' +
-          '<label style="font-size:12px;color:#5b6b7a">Benefits inflation (pp)<input id="pbb-binfl" type="number" step="0.25" value="' + assume.benefitsInfl + '" style="display:block;width:90px;padding:6px 8px;border:1px solid #cfd8e0;border-radius:6px;margin-top:3px"></label>' +
-          '<label style="font-size:12px;color:#5b6b7a">Vacancy savings %<input id="pbb-vac" type="number" step="5" min="0" max="100" value="' + assume.vacancyFactor + '" style="display:block;width:90px;padding:6px 8px;border:1px solid #cfd8e0;border-radius:6px;margin-top:3px"></label>' +
-          '<button id="pbb-add" style="background:#1d3a56;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Add Position</button>' +
-          '<button id="pbb-save" style="background:#1e6b3c;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Save Sandbox</button>' +
-          '<button id="pbb-reset" style="background:#fff;color:#a4271c;border:1px solid #a4271c;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Reset to Baseline</button>' +
-          '<button id="pbb-export" style="background:#fff;color:#12263a;border:1px solid #cfd8e0;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Export CSV</button>' +
-          '<span id="pbb-msg" style="font-size:12px;color:#1e6b3c;font-weight:600"></span></div>',
+          '<label style="font-size:12px;color:#605d5d">COLA %<input id="pbb-cola" type="number" step="0.25" value="' + assume.cola + '" style="display:block;width:90px;padding:6px 8px;border:1px solid #d7d3d3;border-radius:6px;margin-top:3px"></label>' +
+          '<label style="font-size:12px;color:#605d5d">Benefits inflation (pp)<input id="pbb-binfl" type="number" step="0.25" value="' + assume.benefitsInfl + '" style="display:block;width:90px;padding:6px 8px;border:1px solid #d7d3d3;border-radius:6px;margin-top:3px"></label>' +
+          '<label style="font-size:12px;color:#605d5d">Vacancy savings %<input id="pbb-vac" type="number" step="5" min="0" max="100" value="' + assume.vacancyFactor + '" style="display:block;width:90px;padding:6px 8px;border:1px solid #d7d3d3;border-radius:6px;margin-top:3px"></label>' +
+          '<button id="pbb-add" style="background:#2d2b2b;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Add Position</button>' +
+          '<button id="pbb-save" style="background:#006786;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Save Sandbox</button>' +
+          '<button id="pbb-reset" style="background: #eae9e9;color:#aa0b56;border:1px solid #aa0b56;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Reset to Baseline</button>' +
+          '<button id="pbb-export" style="background: #eae9e9;color:#201e1d;border:1px solid #d7d3d3;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer">Export CSV</button>' +
+          '<span id="pbb-msg" style="font-size:12px;color:#006786;font-weight:600"></span></div>',
           'edit any cell - totals and the baseline delta update live; changed cells highlight') +
         '<div id="pbb-kpis">' + kpiRow([
           kpi('Positions', rows.length),
@@ -751,8 +751,8 @@
       mo++; if (mo > 12) { mo = 1; y++; }
     }
     makeChart('pf1', { type: 'line', data: { labels: labels, datasets: [
-      { label: 'Actual monthly revenue', data: history, borderColor: '#2e6fa3', tension: 0.25 },
-      { label: 'Forecast', data: forecast, borderColor: '#8a5a12', borderDash: [6, 4], tension: 0.25 }] },
+      { label: 'Actual monthly revenue', data: history, borderColor: '#0088b0', tension: 0.25 },
+      { label: 'Forecast', data: forecast, borderColor: '#6d5504', borderDash: [6, 4], tension: 0.25 }] },
       options: { responsive: true, maintainAspectRatio: false,
         scales: { y: { ticks: { callback: function (v) { return fcM(v); } } }, x: { ticks: { maxTicksLimit: 14 } } } } });
     byId('pf-note').innerHTML =
@@ -765,11 +765,11 @@
     el.innerHTML = demoBanner() +
       card('Inputs',
         '<div style="display:flex;gap:14px;flex-wrap:wrap">' +
-        '<label style="font-size:12px;color:#5b6b7a">Current cash balance' +
-        '<input id="cf-bal" type="number" value="8200000" step="250000" style="display:block;padding:6px 8px;border:1px solid #cfd8e0;border-radius:6px;margin-top:3px"></label>' +
-        '<label style="font-size:12px;color:#5b6b7a">Operating floor' +
-        '<input id="cf-floor" type="number" value="4000000" step="250000" style="display:block;padding:6px 8px;border:1px solid #cfd8e0;border-radius:6px;margin-top:3px"></label>' +
-        '<button id="cf-run" style="background:#1d3a56;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-weight:600;cursor:pointer;align-self:flex-end">Project 12 months</button></div>' +
+        '<label style="font-size:12px;color:#605d5d">Current cash balance' +
+        '<input id="cf-bal" type="number" value="8200000" step="250000" style="display:block;padding:6px 8px;border:1px solid #d7d3d3;border-radius:6px;margin-top:3px"></label>' +
+        '<label style="font-size:12px;color:#605d5d">Operating floor' +
+        '<input id="cf-floor" type="number" value="4000000" step="250000" style="display:block;padding:6px 8px;border:1px solid #d7d3d3;border-radius:6px;margin-top:3px"></label>' +
+        '<button id="cf-run" style="background:#2d2b2b;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-weight:600;cursor:pointer;align-self:flex-end">Project 12 months</button></div>' +
         '<div id="cf-stats" style="margin-top:12px"></div>') +
       card('Projected Cash Balance vs Operating Floor', canvasBox('cf-chart', 320),
         'receipts and disbursements follow each type\'s historical monthly seasonality');
@@ -787,11 +787,11 @@
                 kpi('Investable 90 days', fcM(investable(3))),
                 kpi('Investable 12 months', fcM(investable(12)))]);
       makeChart('cf-chart', { type: 'bar', data: { labels: labels, datasets: [
-        { type: 'bar', label: 'Receipts', data: receipts, backgroundColor: '#2e7d32' },
-        { type: 'bar', label: 'Disbursements', data: disb, backgroundColor: '#c62828' },
-        { type: 'line', label: 'Ending balance', data: balances, borderColor: '#12263a', tension: 0.25 },
+        { type: 'bar', label: 'Receipts', data: receipts, backgroundColor: '#006786' },
+        { type: 'bar', label: 'Disbursements', data: disb, backgroundColor: '#d82071' },
+        { type: 'line', label: 'Ending balance', data: balances, borderColor: '#201e1d', tension: 0.25 },
         { type: 'line', label: 'Operating floor', data: labels.map(function () { return floor; }),
-          borderColor: '#8a5a12', borderDash: [6, 4], pointRadius: 0 }] },
+          borderColor: '#6d5504', borderDash: [6, 4], pointRadius: 0 }] },
         options: { responsive: true, maintainAspectRatio: false,
           scales: { y: { ticks: { callback: function (v) { return fcM(v); } } } } } });
     };
@@ -835,7 +835,7 @@
       window.BI_SANDBOX.render(byId('bi-root'), DATA);
     } else {
       byId('bi-root').innerHTML =
-        '<div style="padding:30px;color:#a4271c">Analytics builder failed to load.</div>';
+        '<div style="padding:30px;color:#aa0b56">Analytics builder failed to load.</div>';
     }
   };
 
@@ -855,8 +855,8 @@
         'FY' + cur + ' is ' + elapsed + ' elapsed') +
       '<div id="ha-var"></div>';
     makeChart('ha-chart', { type: 'bar', data: { labels: years.map(String), datasets: [
-      { label: 'Revenue', data: rev, backgroundColor: '#2e7d32' },
-      { label: 'Expenditures', data: exp, backgroundColor: '#c62828' }] },
+      { label: 'Revenue', data: rev, backgroundColor: '#006786' },
+      { label: 'Expenditures', data: exp, backgroundColor: '#d82071' }] },
       options: { responsive: true, maintainAspectRatio: false,
         scales: { y: { ticks: { callback: function (v) { return fcM(v); } } } } } });
     const deptRows = {};
@@ -872,7 +872,7 @@
           .map(function (e) {
             const pct = e[1].budget ? e[1].actual / e[1].budget * 100 : 0;
             return [esc(e[0]), fc(e[1].budget), fc(e[1].actual),
-              '<span style="font-weight:700;color:' + (pct > onPace + 8 ? '#a4271c' : pct < onPace - 10 ? '#8a5a12' : '#1e6b3c') + '">' +
+              '<span style="font-weight:700;color:' + (pct > onPace + 8 ? '#aa0b56' : pct < onPace - 10 ? '#6d5504' : '#006786') + '">' +
               pct.toFixed(1) + '%</span>'];
           }), { rightAlign: [1, 2, 3] }),
       elapsed + ' elapsed - roughly ' + onPace.toFixed(0) + '% is on pace');
@@ -887,23 +887,23 @@
       const flagged = rows.filter(function (r) { return r.Flag; });
       el.innerHTML = demoBanner() +
         '<div style="margin-bottom:10px">' + engineBadge(true) +
-        ' <span style="font-size:12px;color:#5b6b7a">FY' + resp.fiscal_year +
+        ' <span style="font-size:12px;color:#605d5d">FY' + resp.fiscal_year +
         ' through month ' + resp.through_month + '</span></div>' +
         (flagged.length ? flagged.map(function (r) {
           const over = r.Flag === 'OVER PACE';
-          return '<div style="background:' + (over ? '#fdecea' : '#fdeeda') + ';color:' + (over ? '#a4271c' : '#8a5a12') +
+          return '<div style="background:' + (over ? '#fff1f4' : '#f2e7c2') + ';color:' + (over ? '#aa0b56' : '#6d5504') +
             ';padding:10px 14px;border-radius:8px;margin-bottom:8px;font-size:13px"><strong>' +
             r.Flag + ':</strong> ' + esc(r.Department) + ' has spent ' + r['% Spent'].toFixed(1) +
             '% of budget vs its own historical ' + r['Typical % by Now'].toFixed(1) + '% by this point (' +
             (r['Deviation (pp)'] > 0 ? '+' : '') + r['Deviation (pp)'].toFixed(1) + ' pp). Projected full year: ' +
             fcM(r['Projected Full Year']) + ' vs budget ' + fcM(r['Annual Budget']) + '.</div>';
-        }).join('') : '<div style="background:#e2f2e8;color:#1e6b3c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px">All departments are pacing within threshold of their own historical pattern.</div>') +
+        }).join('') : '<div style="background:#e9f8ff;color:#006786;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px">All departments are pacing within threshold of their own historical pattern.</div>') +
         card('Department Pacing vs Own Historical Pattern',
           table(['Department', 'Annual Budget', 'YTD Actual', '% Spent', 'Typical % by now', 'Deviation', 'Projected vs Budget'],
             rows.map(function (r) {
               return [esc(r.Department), fc(r['Annual Budget']), fc(r['YTD Actual']),
                 r['% Spent'].toFixed(1) + '%', r['Typical % by Now'].toFixed(1) + '%',
-                '<span style="font-weight:700;color:' + (r.Flag ? '#a4271c' : '#1e6b3c') + '">' +
+                '<span style="font-weight:700;color:' + (r.Flag ? '#aa0b56' : '#006786') + '">' +
                 (r['Deviation (pp)'] > 0 ? '+' : '') + r['Deviation (pp)'].toFixed(1) + ' pp</span>',
                 (r['Projected vs Budget'] >= 0 ? '+' : '') + fcM(r['Projected vs Budget'])];
             }), { rightAlign: [1, 2, 3, 4, 5, 6] }));
@@ -930,19 +930,19 @@
       '<div style="margin-bottom:10px">' + engineBadge(false) + '</div>' +
       (flagged.length ? flagged.map(function (r) {
         const over = r.dev > 0;
-        return '<div style="background:' + (over ? '#fdecea' : '#fdeeda') + ';color:' + (over ? '#a4271c' : '#8a5a12') +
+        return '<div style="background:' + (over ? '#fff1f4' : '#f2e7c2') + ';color:' + (over ? '#aa0b56' : '#6d5504') +
           ';padding:10px 14px;border-radius:8px;margin-bottom:8px;font-size:13px"><strong>' +
           (over ? 'OVER PACE' : 'UNDER PACE') + ':</strong> ' + esc(r.dept) + ' has spent ' + r.pace.toFixed(1) +
           '% of budget vs a typical ' + (expectedShare * 100).toFixed(1) + '% by this point (' +
           (r.dev > 0 ? '+' : '') + r.dev.toFixed(1) + ' pp). Projected full year: ' +
           fcM(r.actual / Math.max(0.05, expectedShare)) + ' vs budget ' + fcM(r.budget) + '.</div>';
-      }).join('') : '<div style="background:#e2f2e8;color:#1e6b3c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px">All departments are pacing within 8 points of their historical pattern.</div>') +
+      }).join('') : '<div style="background:#e9f8ff;color:#006786;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px">All departments are pacing within 8 points of their historical pattern.</div>') +
       card('Department Pacing vs Historical Pattern',
         table(['Department', 'Annual Budget', 'YTD Actual', '% Spent', 'Typical % by now', 'Deviation'],
           rows.map(function (r) {
             return [esc(r.dept), fc(r.budget), fc(r.actual), r.pace.toFixed(1) + '%',
               (expectedShare * 100).toFixed(1) + '%',
-              '<span style="font-weight:700;color:' + (Math.abs(r.dev) > 8 ? '#a4271c' : '#1e6b3c') + '">' +
+              '<span style="font-weight:700;color:' + (Math.abs(r.dev) > 8 ? '#aa0b56' : '#006786') + '">' +
               (r.dev > 0 ? '+' : '') + r.dev.toFixed(1) + ' pp</span>'];
           }), { rightAlign: [1, 2, 3, 4, 5] }));
   }
@@ -951,10 +951,10 @@
     const depts = ['All'].concat(DATA.departments);
     el.innerHTML = demoBanner() +
       '<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">' +
-      '<select id="tx-dept" style="padding:7px 10px;border:1px solid #cfd8e0;border-radius:6px">' +
+      '<select id="tx-dept" style="padding:7px 10px;border:1px solid #d7d3d3;border-radius:6px">' +
       depts.map(function (d) { return '<option>' + esc(d) + '</option>'; }).join('') + '</select>' +
-      '<input id="tx-search" placeholder="Search vendor or description" style="flex:1;min-width:200px;padding:7px 10px;border:1px solid #cfd8e0;border-radius:6px">' +
-      '<input id="tx-min" type="number" placeholder="Min $" style="width:110px;padding:7px 10px;border:1px solid #cfd8e0;border-radius:6px"></div>' +
+      '<input id="tx-search" placeholder="Search vendor or description" style="flex:1;min-width:200px;padding:7px 10px;border:1px solid #d7d3d3;border-radius:6px">' +
+      '<input id="tx-min" type="number" placeholder="Min $" style="width:110px;padding:7px 10px;border:1px solid #d7d3d3;border-radius:6px"></div>' +
       '<div id="tx-kpis"></div>' + card('Monthly Spend', canvasBox('tx-chart', 220)) +
       '<div id="tx-table"></div><div id="tx-pager" style="text-align:center;margin:10px 0"></div>';
     let pageN = 0;
@@ -977,7 +977,7 @@
       rows.forEach(function (t) { const k = t.date.slice(0, 7); byMonth[k] = (byMonth[k] || 0) + t.amount; });
       const months = Object.keys(byMonth).sort();
       makeChart('tx-chart', { type: 'bar', data: { labels: months,
-        datasets: [{ label: 'Spend', data: months.map(function (m) { return byMonth[m]; }), backgroundColor: '#2e6fa3' }] },
+        datasets: [{ label: 'Spend', data: months.map(function (m) { return byMonth[m]; }), backgroundColor: '#0088b0' }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
           scales: { y: { ticks: { callback: function (v) { return fcM(v); } } } } } });
       const pages = Math.max(1, Math.ceil(rows.length / PAGE));
@@ -1018,8 +1018,8 @@
               kpi('Reserves', months.toFixed(1) + ' months',
                   'GFOA floor: ' + floor.toFixed(1) + ' months of GF spend')]) +
       (months < floor
-        ? '<div style="background:#fdecea;color:#a4271c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px">Unassigned reserves are below the ' + floor.toFixed(1) + '-month policy floor.</div>'
-        : '<div style="background:#e2f2e8;color:#1e6b3c;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px">Unassigned general fund reserves cover ' + months.toFixed(1) + ' months of spending - above the ' + floor.toFixed(1) + '-month policy floor.</div>') +
+        ? '<div style="background:#fff1f4;color:#aa0b56;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px">Unassigned reserves are below the ' + floor.toFixed(1) + '-month policy floor.</div>'
+        : '<div style="background:#e9f8ff;color:#006786;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px">Unassigned general fund reserves cover ' + months.toFixed(1) + ' months of spending - above the ' + floor.toFixed(1) + '-month policy floor.</div>') +
       card('Balance Sheet by Fund',
         table(['Account', 'Name', 'Fund', 'Category', 'Amount'],
           DATA.balance_sheet.map(function (b) {
@@ -1033,7 +1033,7 @@
     // requirement for department-restricted users
     if (getPersona() === 'employee') {
       el.innerHTML = demoBanner() +
-        '<div style="background:#fdeeda;color:#8a5a12;padding:12px 16px;border-radius:8px;font-size:13px">' +
+        '<div style="background:#f2e7c2;color:#6d5504;padding:12px 16px;border-radius:8px;font-size:13px">' +
         'Monthly close review requires citywide department access - it reads every ' +
         'department\'s vendors and amounts. Ask your city administrator to grant ' +
         'all-departments visibility.</div>';
@@ -1045,18 +1045,18 @@
     }, '0000-00-00');
     const month = latestDate.slice(0, 7);
     const monthName = new Date(month + '-15').toLocaleString('en-US', { month: 'long', year: 'numeric' });
-    const colors = { high: ['#fdecea', '#a4271c'], medium: ['#fdeeda', '#8a5a12'],
-                     info: ['#e8eef7', '#24508f'] };
+    const colors = { high: ['#fff1f4', '#aa0b56'], medium: ['#f2e7c2', '#6d5504'],
+                     info: ['#e9f8ff', '#004961'] };
     el.innerHTML = demoBanner() +
       card('Monthly Close Review - ' + monthName,
-        '<button id="close-run" style="background:#1d3a56;color:#fff;border:none;border-radius:8px;padding:9px 22px;font-weight:600;cursor:pointer">Run close review</button>' +
+        '<button id="close-run" style="background:#2d2b2b;color:#fff;border:none;border-radius:8px;padding:9px 22px;font-weight:600;cursor:pointer">Run close review</button>' +
         '<div id="close-out" style="margin-top:14px"></div>',
         'unusual amounts, duplicates, split-purchase patterns, and restricted-fund activity');
 
     const renderReport = function (reviewed, findings, engine, skipped) {
       byId('close-out').innerHTML =
         '<div style="margin-bottom:8px">' + engineBadge(engine) +
-        (skipped && skipped.length ? ' <span style="font-size:11.5px;color:#8a5a12">Skipped: ' + skipped.map(esc).join(', ') + '</span>' : '') +
+        (skipped && skipped.length ? ' <span style="font-size:11.5px;color:#6d5504">Skipped: ' + skipped.map(esc).join(', ') + '</span>' : '') +
         '</div>' +
         kpiRow([kpi('Transactions reviewed', reviewed.toLocaleString()),
                 kpi('High-priority findings', findings.filter(function (f) { return f[0] === 'high'; }).length),
@@ -1066,7 +1066,7 @@
           return '<div style="background:' + c[0] + ';color:' + c[1] +
             ';padding:10px 14px;border-radius:8px;margin-bottom:8px;font-size:13px"><strong>' +
             f[1] + ':</strong> ' + f[2] + '</div>';
-        }).join('') : '<div style="background:#e2f2e8;color:#1e6b3c;padding:10px 14px;border-radius:8px;font-size:13px">No exceptions found.</div>');
+        }).join('') : '<div style="background:#e9f8ff;color:#006786;padding:10px 14px;border-radius:8px;font-size:13px">No exceptions found.</div>');
     };
 
     byId('close-run').addEventListener('click', function () {
@@ -1155,10 +1155,10 @@
 
     const renderComputed = function (note) {
       el.innerHTML = demoBanner() +
-        '<div style="background:#fdeeda;color:#8a5a12;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px">' +
+        '<div style="background:#f2e7c2;color:#6d5504;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px">' +
         esc(note || 'AI insight generation is unavailable. Below are analytical insights computed directly from the ledger.') + '</div>' +
         insights.map(function (i) {
-          return card(i[0], '<div style="font-size:13.5px;color:#22303c;line-height:1.6">' + i[1] + '</div>');
+          return card(i[0], '<div style="font-size:13.5px;color:#201e1d;line-height:1.6">' + i[1] + '</div>');
         }).join('');
     };
 
@@ -1166,17 +1166,17 @@
     // engine-computed insights remain the fallback everywhere else.
     if (onPlatform()) {
       el.innerHTML = demoBanner() +
-        '<div style="padding:20px;color:#5b6b7a;font-size:13px">Generating AI insights from the ledger…</div>';
+        '<div style="padding:20px;color:#605d5d;font-size:13px">Generating AI insights from the ledger…</div>';
       platformGet('/api/mantis/insights').then(function (resp) {
         if (!resp.ai) { renderComputed(resp.reason); return; }
         el.innerHTML = demoBanner() +
-          '<div style="margin-bottom:12px"><span style="background:#e8eef7;color:#24508f;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">AI GENERATED - ' + esc(resp.model || 'Claude') + '</span>' +
-          ' <span style="font-size:11.5px;color:#8a97a3">narrative written by AI from platform engine metrics - verify before acting</span></div>' +
+          '<div style="margin-bottom:12px"><span style="background:#e9f8ff;color:#004961;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">AI GENERATED - ' + esc(resp.model || 'Claude') + '</span>' +
+          ' <span style="font-size:11.5px;color:#9b9797">narrative written by AI from platform engine metrics - verify before acting</span></div>' +
           resp.insights.map(function (i) {
-            return card(i.title, '<div style="font-size:13.5px;color:#22303c;line-height:1.6">' + esc(i.body) + '</div>');
+            return card(i.title, '<div style="font-size:13.5px;color:#201e1d;line-height:1.6">' + esc(i.body) + '</div>');
           }).join('') +
           '<div style="margin-top:4px">' + insights.map(function (i) {
-            return card(i[0], '<div style="font-size:13.5px;color:#22303c;line-height:1.6">' + i[1] + '</div>');
+            return card(i[0], '<div style="font-size:13.5px;color:#201e1d;line-height:1.6">' + i[1] + '</div>');
           }).join('') + '</div>';
       }).catch(function () { renderComputed(); });
     } else {
@@ -1231,14 +1231,14 @@
       '<div style="max-width:880px;margin:0 auto">' +
       '<div id="chat-log"></div>' +
       '<div id="chat-empty" style="text-align:center;padding:26px 0">' +
-        '<div style="font-size:17px;font-weight:600;color:#12263a">Mantis AI Assistant</div>' +
-        '<div style="font-size:13.5px;color:#5b6b7a;margin:6px 0 18px">Ask about budgets, spending patterns, departments, or vendors in the demo ledger.</div>' +
+        '<div style="font-size:17px;font-weight:600;color:#201e1d">Mantis AI Assistant</div>' +
+        '<div style="font-size:13.5px;color:#605d5d;margin:6px 0 18px">Ask about budgets, spending patterns, departments, or vendors in the demo ledger.</div>' +
         '<div id="chat-suggest" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>' +
       '</div>' +
       '<form id="chat-form" style="display:flex;gap:10px;margin-top:18px">' +
         '<input id="chat-input" type="text" placeholder="Ask a question about the demo financial data…" ' +
-          'style="flex:1;padding:11px 16px;border-radius:10px;border:1px solid #cfd8e0;font-size:14px;background:#fff">' +
-        '<button id="chat-send" type="submit" style="background:#12263a;color:#fff;border:none;border-radius:10px;' +
+          'style="flex:1;padding:11px 16px;border-radius:10px;border:1px solid #d7d3d3;font-size:14px;background: #eae9e9">' +
+        '<button id="chat-send" type="submit" style="background:#201e1d;color:#fff;border:none;border-radius:10px;' +
           'padding:11px 22px;font-size:14px;font-weight:600;cursor:pointer">Send</button>' +
       '</form></div>';
 
@@ -1252,7 +1252,7 @@
     SUGGESTIONS.forEach(function (s) {
       const b = document.createElement('button');
       b.textContent = s;
-      b.setAttribute('style', 'border:1px solid #cfd8e0;background:#fff;color:#3c4a58;border-radius:99px;padding:8px 14px;font-size:12.5px;cursor:pointer');
+      b.setAttribute('style', 'border:1px solid #d7d3d3;background: #eae9e9;color:#444141;border-radius:99px;padding:8px 14px;font-size:12.5px;cursor:pointer');
       b.addEventListener('click', function () { send(s); });
       suggestHost.appendChild(b);
     });
@@ -1263,8 +1263,8 @@
         (role === 'user' ? 'flex-end' : 'flex-start'));
       const inner = document.createElement('div');
       inner.setAttribute('style', role === 'user'
-        ? 'background:#2450b8;color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:13.5px;max-width:78%'
-        : 'background:#fff;border:1px solid #e3e9ee;border-radius:14px 14px 14px 4px;padding:12px 16px;font-size:13.5px;max-width:85%;color:#22303c;white-space:pre-wrap;line-height:1.55');
+        ? 'background:#0088b0;color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:13.5px;max-width:78%'
+        : 'background: #eae9e9;border:1px solid #d7d3d3;border-radius:14px 14px 14px 4px;padding:12px 16px;font-size:13.5px;max-width:85%;color:#201e1d;white-space:pre-wrap;line-height:1.55');
       inner.innerHTML = html;
       wrap.appendChild(inner);
       byId('chat-log').appendChild(wrap);
@@ -1281,7 +1281,7 @@
       const empty = byId('chat-empty');
       if (empty && empty.parentElement) empty.remove();
       bubble('user', esc(message));
-      const pending = bubble('assistant', '<span style="color:#8fa1b0">Analyzing…</span>');
+      const pending = bubble('assistant', '<span style="color:#9b9797">Analyzing…</span>');
       fetch('/api/chat', {
         method: 'POST', credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
@@ -1290,7 +1290,7 @@
       }).then(function (r) { return r.json().then(function (d) { return { status: r.status, d: d }; }); })
         .then(function (res) {
           if (!res.d.ok) {
-            pending.innerHTML = '<span style="color:#8a5a12">' +
+            pending.innerHTML = '<span style="color:#6d5504">' +
               esc(res.d.message || res.d.error || ('Request failed (' + res.status + ')')) + '</span>';
           } else {
             pending.textContent = res.d.reply;
@@ -1299,7 +1299,7 @@
           }
         })
         .catch(function (err) {
-          pending.innerHTML = '<span style="color:#a4271c">Could not reach the AI service: ' +
+          pending.innerHTML = '<span style="color:#aa0b56">Could not reach the AI service: ' +
             esc(err.message) + '</span>';
         })
         .then(function () { busy = false; });
@@ -1322,40 +1322,40 @@
         return allDepts.indexOf(d) >= 0; }).length;
 
       el.innerHTML =
-        '<div style="background:#e8eef7;color:#24508f;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:14px">' +
+        '<div style="background:#e9f8ff;color:#004961;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:14px">' +
         'DEMO ADMINISTRATION - permission changes are saved in this browser and immediately shape the Employee view. ' +
         'On the full platform this screen manages real per-city accounts with server-enforced access.</div>' +
 
         card('City',
-          '<div style="font-size:13.5px;color:#22303c;line-height:1.7">' +
+          '<div style="font-size:13.5px;color:#201e1d;line-height:1.7">' +
           '<strong>Spanish Fork, UT</strong> - this city\'s data is fully siloed: its own databases, ' +
           'users, and permissions. Other cities on GovSight cannot see any of it.</div>') +
 
         card('Users',
           // admin (self)
-          '<div style="border-bottom:1px solid #eef2f5;padding:10px 0;display:flex;align-items:center;gap:12px">' +
+          '<div style="border-bottom:1px solid #eae7e7;padding:10px 0;display:flex;align-items:center;gap:12px">' +
             '<div style="flex:1"><span style="font-weight:700;font-size:14px">' + esc(PERSONAS.admin.username) + '</span>' +
-            ' <span style="font-size:11.5px;color:#8fa1b0">(you)</span>' +
-            '<div style="font-size:12px;color:#5b6b7a;margin-top:2px">' + esc(PERSONAS.admin.title) + ' - All departments (citywide)</div></div>' +
-            '<span style="background:#e2f2e8;color:#1e6b3c;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">ADMIN</span>' +
+            ' <span style="font-size:11.5px;color:#9b9797">(you)</span>' +
+            '<div style="font-size:12px;color:#605d5d;margin-top:2px">' + esc(PERSONAS.admin.title) + ' - All departments (citywide)</div></div>' +
+            '<span style="background:#e9f8ff;color:#006786;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">ADMIN</span>' +
           '</div>' +
           // employee (editable)
           '<div style="padding:10px 0">' +
             '<div style="display:flex;align-items:center;gap:12px">' +
               '<div style="flex:1"><span style="font-weight:700;font-size:14px">' + esc(emp.username) + '</span>' +
-              '<div style="font-size:12px;color:#5b6b7a;margin-top:2px">' + esc(emp.title) +
+              '<div style="font-size:12px;color:#605d5d;margin-top:2px">' + esc(emp.title) +
               ' - <span id="adm-count">' + count + '</span> of ' + allDepts.length + ' departments</div></div>' +
-              '<span style="background:#e8eef7;color:#24508f;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">VIEWER</span>' +
-              '<button id="adm-view-as" style="background:#12263a;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">View as ' + esc(emp.username) + '</button>' +
+              '<span style="background:#e9f8ff;color:#004961;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700">VIEWER</span>' +
+              '<button id="adm-view-as" style="background:#201e1d;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer">View as ' + esc(emp.username) + '</button>' +
             '</div>' +
-            '<div style="margin-top:10px;padding:12px;background:#f4f6f8;border-radius:8px">' +
-              '<div style="font-size:12px;font-weight:600;color:#5b6b7a;margin-bottom:8px">Department access - what ' + esc(emp.username) + ' can see</div>' +
+            '<div style="margin-top:10px;padding:12px;background:#f3f2f2;border-radius:8px">' +
+              '<div style="font-size:12px;font-weight:600;color:#605d5d;margin-bottom:8px">Department access - what ' + esc(emp.username) + ' can see</div>' +
               '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px">' +
               allDepts.map(function (d) {
                 return '<label style="font-size:12.5px;display:flex;gap:6px;align-items:center;cursor:pointer">' +
                   '<input type="checkbox" data-dept="' + esc(d) + '"' + (current[d] ? ' checked' : '') + '> ' + esc(d) + '</label>';
               }).join('') + '</div>' +
-              '<div style="font-size:11.5px;color:#8a97a3;margin-top:8px">Changes apply instantly. ' +
+              '<div style="font-size:11.5px;color:#9b9797;margin-top:8px">Changes apply instantly. ' +
               'Budgets, transactions, insights, personnel, and AI analysis all filter to these departments for this user; ' +
               'the monthly close review requires citywide access.</div>' +
             '</div>' +
@@ -1393,8 +1393,8 @@
           const on = s.id === active;
           return '<button data-sub="' + s.id + '" style="padding:7px 16px;border-radius:99px;' +
             'font-size:13px;font-weight:600;cursor:pointer;border:1px solid ' +
-            (on ? '#12263a' : '#cfd8e0') + ';background:' + (on ? '#12263a' : '#fff') +
-            ';color:' + (on ? '#fff' : '#5b6b7a') + '">' + esc(s.label) + '</button>';
+            (on ? '#201e1d' : '#d7d3d3') + ';background:' + (on ? '#201e1d' : '#fff') +
+            ';color:' + (on ? '#fff' : '#605d5d') + '">' + esc(s.label) + '</button>';
         }).join('') + '</div>' +
         '<div id="hub-body"></div>';
       el.querySelectorAll('[data-sub]').forEach(function (btn) {
@@ -1408,7 +1408,7 @@
       const sub = subs.find(function (s) { return s.id === active; });
       if (sub.iframe) {
         host.innerHTML = '<iframe src="' + sub.iframe + '" title="' + esc(sub.label) +
-          '" style="width:100%;height:1150px;border:none;background:#fff;border-radius:10px"></iframe>';
+          '" style="width:100%;height:1150px;border:none;background: #eae9e9;border-radius:10px"></iframe>';
       } else {
         sub.render(host);
       }
@@ -1440,11 +1440,11 @@
     setEmployeeDepartments: setEmployeeDepartments,
     render: function (name, container) {
       const fn = views[name];
-      if (!fn) { container.innerHTML = '<div style="padding:30px;color:#5b6b7a">View not found: ' + esc(name) + '</div>'; return; }
-      container.innerHTML = '<div style="padding:30px;color:#5b6b7a">Loading demo data…</div>';
+      if (!fn) { container.innerHTML = '<div style="padding:30px;color:#605d5d">View not found: ' + esc(name) + '</div>'; return; }
+      container.innerHTML = '<div style="padding:30px;color:#605d5d">Loading demo data…</div>';
       loadData().then(function () { applyPersona(); fn(container); })
         .catch(function (err) {
-          container.innerHTML = '<div style="padding:30px;color:#a4271c">Could not load demo data: ' + esc(err.message) + '</div>';
+          container.innerHTML = '<div style="padding:30px;color:#aa0b56">Could not load demo data: ' + esc(err.message) + '</div>';
         });
     }
   };
