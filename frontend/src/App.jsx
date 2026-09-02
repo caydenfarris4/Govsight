@@ -38,7 +38,17 @@ export default function App() {
   }, [user]);
 
   if (user === undefined) {
-    return <div className="text-muted" style={{ padding: 60 }}>Loading…</div>;
+    return (
+      <div style={{ padding: 'var(--space-8)' }} aria-label="Loading…" role="status">
+        <div className="skeleton" style={{ height: 40, width: 300, marginBottom: 'var(--space-4)' }} />
+        <div className="skeleton" style={{ height: 18, width: 420, marginBottom: 'var(--space-8)' }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-6)', maxWidth: 1000 }}>
+          <div className="skeleton" style={{ height: 180 }} />
+          <div className="skeleton" style={{ height: 180 }} />
+          <div className="skeleton" style={{ height: 180 }} />
+        </div>
+      </div>
+    );
   }
   if (!user) {
     return <Login onLogin={setUser} />;

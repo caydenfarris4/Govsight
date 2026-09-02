@@ -89,7 +89,7 @@ export default function MantisChat() {
           {status.degraded_reason}
         </div>
       )}
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1 }} aria-live="polite">
         {messages.length === 0 && (
           <div style={{ padding: 'var(--space-8) 0', textAlign: 'center' }}>
             <span className="kicker">Mantis</span>
@@ -154,6 +154,7 @@ export default function MantisChat() {
           className="input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          aria-label="Ask Mantis a question"
           placeholder="Ask a question about your financial data…"
           style={{ flex: 1 }}
         />

@@ -1,6 +1,7 @@
-import React, { Suspense, lazy, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { MODULES } from '../modules.js';
+import { rememberVisit } from '../navState.js';
 import VendorView from '../components/VendorView.jsx';
 import InvestmentOptimizer from '../components/InvestmentOptimizer.jsx';
 import MantisChat from './MantisChat.jsx';
@@ -9,34 +10,48 @@ import MantisChat from './MantisChat.jsx';
 const ScenarioPlannerApp = lazy(() => import('../tools/ScenarioPlannerApp.jsx'));
 const BudgetPlaygroundApp = lazy(() => import('../tools/BudgetPlaygroundApp.jsx'));
 
-function ToolFrame({ children }) {
+function ToolSkeleton() {
   return (
-    <Suspense fallback={
-      <div className="text-muted" style={{ padding: 40 }}>Loading tool…</div>
-    }>
-      {children}
-    </Suspense>
+    <div style={{ padding: 'var(--space-6) var(--space-4)', maxWidth: 1240, margin: '0 auto' }}
+         aria-hidden="true">
+      <div className="skeleton" style={{ height: 52, marginBottom: 'var(--space-3)' }} />
+      <div className="skeleton" style={{ height: 34, width: '55%', marginBottom: 'var(--space-4)' }} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+        <div className="skeleton" style={{ height: 280 }} />
+        <div className="skeleton" style={{ height: 280 }} />
+      </div>
+    </div>
   );
 }
 
-// Sub-view toggle for composite tabs (Budget, Treasury) — the design
-// system's segmented control; each sub-view is a real component.
+function ToolFrame({ children }) {
+  return <Suspense fallback={<ToolSkeleton />}>{children}</Suspense>;
+}
+
+// Sub-view toggle for composite tabs (Budget, Treasury). The active
+// sub-view lives in the URL (?sub=) so views are linkable and survive
+// reload; sessionStorage only remembers the choice across navigations.
 function HubToggle({ storageKey, subs }) {
-  const [active, setActive] = useState(() => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const fromUrl = searchParams.get('sub');
+  let active = subs.some((s) => s.id === fromUrl) ? fromUrl : null;
+  if (!active) {
     try {
       const saved = sessionStorage.getItem(storageKey);
-      if (subs.some((s) => s.id === saved)) return saved;
+      if (subs.some((s) => s.id === saved)) active = saved;
     } catch { /* ignore */ }
-    return subs[0].id;
-  });
+  }
+  if (!active) active = subs[0].id;
+
   const pick = (id) => {
-    setActive(id);
+    setSearchParams({ sub: id }, { replace: true });
     try { sessionStorage.setItem(storageKey, id); } catch { /* ignore */ }
   };
   const current = subs.find((s) => s.id === active) || subs[0];
   return (
     <div style={{ padding: '16px 20px 0', maxWidth: 1240, margin: '0 auto', width: '100%' }}>
-      <div className="seg" style={{ marginBottom: 'var(--space-1)' }}>
+      <div className="seg" role="group" aria-label="Sub-views"
+           style={{ marginBottom: 'var(--space-1)' }}>
         {subs.map((s) => (
           <label key={s.id} className="seg-opt">
             <input type="radio" name={storageKey} checked={s.id === active}
@@ -91,10 +106,20 @@ const COMPONENTS = {
 export default function ModulePage() {
   const { moduleId, tabIndex } = useParams();
   const mod = MODULES[moduleId];
+
+  const idx = mod
+    ? Math.min(Math.max(parseInt(tabIndex || '0', 10) || 0, 0), mod.tabs.length - 1)
+    : 0;
+  const tab = mod ? mod.tabs[idx] : null;
+
+  useEffect(() => {
+    if (!mod || !tab) return;
+    document.title = `GovSight — ${mod.name} · ${tab.name}`;
+    rememberVisit(moduleId, idx, tab.name);
+  }, [moduleId, idx, mod, tab]);
+
   if (!mod) return <Navigate to="/" replace />;
 
-  const idx = Math.min(Math.max(parseInt(tabIndex || '0', 10) || 0, 0), mod.tabs.length - 1);
-  const tab = mod.tabs[idx];
   const Body = COMPONENTS[tab.component] ||
     (() => <div className="text-muted" style={{ padding: 40 }}>Coming soon.</div>);
 
@@ -104,7 +129,7 @@ export default function ModulePage() {
     const i = mod.tabs.indexOf(t);
     const on = i === idx;
     return (
-      <Link key={t.name} className="tab" aria-selected={on ? 'true' : 'false'}
+      <Link key={t.name} className="tab" aria-current={on ? 'page' : undefined}
             to={`/${moduleId}/${i}`}
             style={{ whiteSpace: 'nowrap', textDecoration: 'none' }}>
         {t.name}
@@ -120,16 +145,17 @@ export default function ModulePage() {
             <h2 style={{ margin: 0, fontSize: 'var(--text-h3)' }}>{mod.name}</h2>
             <span className="kicker">{mod.tagline}</span>
           </div>
-          <div className="tabs" style={{
+          <nav className="tabs" aria-label={`${mod.name} sections`} style={{
             marginTop: 'var(--space-2)', overflowX: 'auto', alignItems: 'center',
           }}>
             {primaries.map(tabLink)}
             {secondaries.length > 0 && <span style={{ flex: 1 }} />}
             {secondaries.map(tabLink)}
-          </div>
+          </nav>
         </div>
       </div>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+      {/* key resets scroll position when switching tabs */}
+      <div key={`${moduleId}/${idx}`} style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <Body />
       </div>
     </div>

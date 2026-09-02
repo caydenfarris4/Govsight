@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { login } from '../api.js';
 
 /* Sign-in: ink panel with the type wordmark, form on paper. */
@@ -21,10 +21,10 @@ export default function Login({ onLogin }) {
     }
   };
 
+  useEffect(() => { document.title = 'GovSight — Sign in'; }, []);
+
   return (
-    <div style={{
-      display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '100vh',
-    }}>
+    <div className="login-split">
       <div className="panel-ink" style={{
         display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
         padding: 'var(--space-12) var(--space-8)', borderRadius: 0,
@@ -55,7 +55,7 @@ export default function Login({ onLogin }) {
         padding: 'var(--space-8)',
       }}>
         <form onSubmit={submit} style={{
-          width: 340, display: 'flex', flexDirection: 'column',
+          width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column',
           gap: 'var(--space-4)',
         }}>
           <h2 style={{ margin: 0 }}>Sign in</h2>
