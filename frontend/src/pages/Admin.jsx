@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import UsersSection from './admin/UsersSection.jsx';
 import CityProfileSection from './admin/CityProfileSection.jsx';
 import DataSourceSection from './admin/DataSourceSection.jsx';
@@ -28,9 +29,17 @@ const SECTIONS = [
 
 export default function Admin({ user }) {
   const sections = SECTIONS.filter((s) => !s.platformOnly || user.is_platform_admin);
-  const [active, setActive] = useState('users');
+  // The active section lives in the URL (?section=) so admin views are
+  // linkable and survive reload.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const active = searchParams.get('section') || 'users';
+  const setActive = (id) => setSearchParams({ section: id }, { replace: true });
   const current = sections.find((s) => s.id === active) || sections[0];
   const Body = current.component;
+
+  useEffect(() => {
+    document.title = `GovSight — Admin · ${current.label}`;
+  }, [current.label]);
 
   return (
     <div style={{
@@ -43,7 +52,8 @@ export default function Admin({ user }) {
         display: 'flex', gap: 'var(--space-6)', alignItems: 'flex-start',
         marginTop: 'var(--space-6)',
       }}>
-        <nav className="adminnav" style={{ flexShrink: 0, width: 190 }}>
+        <nav className="adminnav" aria-label="Admin sections"
+             style={{ flexShrink: 0, width: 190 }}>
           {sections.map((s) => (
             <button key={s.id} onClick={() => setActive(s.id)}
                     aria-current={s.id === current.id ? 'true' : undefined}>

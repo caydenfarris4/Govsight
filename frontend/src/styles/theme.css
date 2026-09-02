@@ -404,3 +404,91 @@ button, input, select, textarea { font-family: inherit; }
 .adminnav button:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
 .adminnav button[aria-current='true'] { color: var(--color-accent-700); background: var(--color-accent-100); }
 .tag-warn { background: var(--status-warn-bg); color: var(--status-warn-fg); }
+
+/* ————————————————————————————————————————————————————————————————
+   UX pass — states, motion, semantics, responsiveness. Informed by the
+   installed design skills (redesign audit, taste rules, Vercel web
+   interface guidelines). */
+
+h1, h2, h3, h4 { text-wrap: balance; }
+p { text-wrap: pretty; }
+a, button, .btn, .tab, .seg-opt, .check, .switch { touch-action: manipulation; }
+html { -webkit-tap-highlight-color: transparent; }
+
+/* skip link — first tabbable element, visible only on focus */
+.skip-link {
+  position: absolute; left: 10px; top: -48px; z-index: 200;
+  background: var(--ink); color: var(--paper);
+  padding: 8px 14px; border-radius: var(--radius-md); font-size: 14px;
+  text-decoration: none; transition: top var(--dur-fast) var(--ease-out);
+}
+.skip-link:focus-visible { top: 10px; color: var(--paper); }
+
+/* buttons: explicit transitions + tactile press */
+.btn {
+  transition: background var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out),
+              translate var(--dur-fast) var(--ease-out);
+}
+.btn:active:not(:disabled) { translate: 0 1px; }
+
+/* tabs as links: hover + current, one cardinal underline */
+.tab { transition: color var(--dur-fast) var(--ease-out),
+                   border-color var(--dur-fast) var(--ease-out); }
+.tab[aria-current='page'] { color: var(--color-text); border-bottom-color: var(--color-cardinal); }
+
+/* skeleton loaders — shaped placeholders instead of spinner text */
+.skeleton {
+  position: relative; overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  border-radius: var(--radius-md); color: transparent; user-select: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton::after {
+    content: ""; position: absolute; inset: 0; translate: -100% 0;
+    background: linear-gradient(90deg, transparent,
+      color-mix(in srgb, var(--paper) 60%, transparent), transparent);
+    animation: gs-shimmer 1.4s var(--ease-out) infinite;
+  }
+  @keyframes gs-shimmer { to { translate: 100% 0; } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* dashboard directory — module columns with per-tab deep links */
+.dir-col { padding-top: var(--space-2); border-top: 2px solid var(--ink); }
+.dir-links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.dir-links a {
+  display: flex; align-items: center; gap: 8px; padding: 6px 2px;
+  color: var(--color-text); text-decoration: none; font-size: 14px;
+  border-radius: var(--radius-md);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.dir-links a:hover { color: var(--color-accent-700); }
+.dir-links a i { font-size: 16px; color: var(--text-muted);
+  transition: color var(--dur-fast) var(--ease-out); }
+.dir-links a:hover i { color: var(--color-accent-700); }
+.resume-link {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--color-accent-700); text-decoration: none; font-size: 14px;
+}
+.resume-link:hover { color: var(--color-accent); }
+
+/* responsive shell */
+.login-split { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+@media (max-width: 720px) {
+  .login-split { grid-template-columns: 1fr; min-height: 100dvh; }
+  .login-split .panel-ink { padding: var(--space-6) var(--space-4) !important; gap: var(--space-3); }
+}
+@media (max-width: 860px) {
+  .nav { flex-wrap: wrap; row-gap: var(--space-2); }
+  .nav .nav-user { display: none; }
+}

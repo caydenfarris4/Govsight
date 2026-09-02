@@ -11,7 +11,14 @@ export default function VendorView({ view }) {
   useEffect(() => {
     let cancelled = false;
     const el = ref.current;
-    el.innerHTML = '<div style="padding:30px;color:#5b6b7a">Loading data…</div>';
+    el.innerHTML =
+      '<div role="status" aria-label="Loading data…" style="display:grid;gap:15px">' +
+      '<div class="skeleton" style="height:88px"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px">' +
+      '<div class="skeleton" style="height:110px"></div>' +
+      '<div class="skeleton" style="height:110px"></div>' +
+      '<div class="skeleton" style="height:110px"></div></div>' +
+      '<div class="skeleton" style="height:320px"></div></div>';
     getBundle()
       .then((bundle) => {
         if (cancelled) return;
